@@ -1,0 +1,74 @@
+# Generated mod outputs
+output/
+Installation/
+cache/
+tmp-*.png
+tmp-*.jpg
+tmp-*.jpeg
+tmp-*.webp
+
+# Personal dumps and emulator/Nintendo content
+romfs/
+exefs/
+sdmc/
+**/romfs/
+**/exefs/
+**/sdmc/
+*.nsp
+*.xci
+*.nca
+*.nso
+*.npdm
+*.tik
+*.cert
+prod.keys
+title.keys
+keys.txt
+
+# Extracted or generated game binaries
+*.bin
+*.ips
+*.ips32
+*.elf
+*.nro
+*.nacp
+*.kip
+main
+subsdk*
+
+# Local research outputs that can contain Nintendo binaries or generated artifacts
+research/
+research/analysis_nso/
+research/downloads/
+research/tmp_nso/
+research/*.bin
+research/**/*.bin
+research/**/*.npdm
+research/**/*.nso
+research/**/*.nca
+research/**/*.elf
+research/swsh-mods-exl/build/
+research/swsh-mods-exl/deploy/
+research/swsh-mods-exl/artifact/
+
+# Local external/reverse engineering mirrors
+pkNX_reflect/
+*.dll
+*.exe
+*.pdb
+*.o
+*.obj
+*.a
+*.lib
+*.map
+
+# Debug screenshots and local test captures
+_*.png
+_*.jpg
+_*.jpeg
+_*.webp
+
+# Editor/system noise
+.DS_Store
+Thumbs.db
+*.log

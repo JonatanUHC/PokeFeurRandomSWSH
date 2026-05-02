@@ -381,7 +381,7 @@ Reports are written inside the generated `romfs` folder.
 
 ## PokeFeur Viewer
 
-[PokeFeur Trainer Viewer](https://jonatanuhc.github.io/PokeFeur/trainer_viewer_6_1.html?lang=fr) is Jonatan's trainer viewer for PokeFeur. It can load generated Sword/Shield trainer data and show teams, levels, items, moves, abilities, IVs, EVs, and stats.
+[PokeFeur Trainer Viewer](https://jonatanuhc.github.io/PokeFeur/trainer_viewer_6_1.html?lang=fr) is Jonatan's (me :) )trainer viewer for PokeFeur. It can load generated Sword/Shield trainer data and show teams, levels, items, moves, abilities, IVs, EVs, and stats.
 
 Recommended use:
 
@@ -917,7 +917,7 @@ Ces projets sont cités comme références, dépendances ou sources de données.
 | Pokemon Showdown | [github.com/smogon/pokemon-showdown](https://github.com/smogon/pokemon-showdown) | Index publics pour Pokemon, attaques, talents, formats et noms |
 | PokeAPI | [pokeapi.co](https://pokeapi.co/) / [github.com/PokeAPI/pokeapi](https://github.com/PokeAPI/pokeapi) | Référence publique de données Pokemon et vérification des noms/index |
 | PokeFeur local dex | [local-dex-data.js](https://jonatanuhc.github.io/PokeFeur/assets/js/local-dex-data.js) | Index d'objets utilisé pour mapper les objets Smogon vers les IDs Sword/Shield |
-| PokeFeur Trainer Viewer | [trainer_viewer_6_1.html](https://jonatanuhc.github.io/PokeFeur/trainer_viewer_6_1.html?lang=fr) | Viewer de dresseurs PokeFeur créé par Jonatan, utilisé pour la vérification visuelle des dresseurs |
+| PokeFeur Trainer Viewer | [trainer_viewer_6_1.html](https://jonatanuhc.github.io/PokeFeur/trainer_viewer_6_1.html?lang=fr) | Viewer de dresseurs PokeFeur créé par Jonatan (moi :) ), utilisé pour la vérification visuelle des dresseurs |
 
 ### Références de recherche et outils de l'écosystème
 

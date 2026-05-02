@@ -70,6 +70,37 @@ It provides **no ROMs, no game dumps, no game files, no Nintendo files, and no w
 
 This README intentionally documents only the randomizer and the generated output. How you use the generated folder afterward depends on your own setup and is outside this document.
 
+---
+
+## ✨ Highlight Feature — Hidden Battle System
+
+> **The overworld model you see and the Pokémon you actually fight can be two completely different things.**
+
+In Sword/Shield, wild Pokémon walk around in the world. Normally, what you see is what you fight. PokeFeur introduces a **hidden battle layer** that breaks that link entirely.
+
+```
+What you see running in the grass  ≠  What you fight when you touch it
+       [Wooloo model]                       → actual battle: Dragapult
+```
+
+There are three modes:
+
+| Mode | Visible model | Battle Pokémon | Requires ExLaunch |
+|------|--------------|----------------|-------------------|
+| **Classic** | Matches battle | Matches model | No |
+| **Vanilla visible + hidden battle** | Always vanilla (no visual spoilers) | Randomized separately | Yes |
+| **Random visible + hidden battle** | Also randomized | Randomized separately | Yes |
+
+**Why it matters:**
+
+- In **Vanilla visible**, you never know what you're actually going to fight just by looking at the world — every encounter is a surprise, even if the overworld looks like a normal playthrough.
+- In **Random visible**, the world itself becomes chaotic: a Gyarados is running around but you touch it and fight a Snom. Full chaos mode.
+- Both hidden modes use a separate randomization draw from the visible model, so encounters are truly independent.
+
+> ⚠️ Both hidden battle modes require your own `exefs` dump and ExLaunch to be enabled.
+
+---
+
 ## Requirements
 
 - Windows 10 or Windows 11.
@@ -480,6 +511,37 @@ Le logiciel lit tes propres fichiers extraits du jeu et écrit un dossier de sor
 Il ne fournit **AUCUNE ROM, aucun dump, aucun fichier de jeu, aucun fichier Nintendo, et aucun moyen d'en obtenir**. Ce projet ne remplace pas l'achat du jeu ni l'extraction de ta propre copie.
 
 Ce README documente volontairement le randomizer et les fichiers générés. L'utilisation du dossier généré ensuite dépend de ton environnement et n'est pas détaillée ici.
+
+---
+
+## ✨ Fonctionnalité phare — Système de combats cachés
+
+> **Le Pokémon que tu vois se balader dans le monde et celui que tu affrontes réellement peuvent être deux choses complètement différentes.**
+
+Dans Épée/Bouclier, les Pokémon sauvages se baladent directement dans le décor. Normalement, ce que tu vois, c'est ce que tu combats. PokeFeur introduit une **couche de combat cachée** qui brise totalement ce lien.
+
+```
+Ce que tu vois courir dans l'herbe  ≠  Ce que tu affronte quand tu le touches
+        [modèle Moumouton]                    → vrai combat : Lanssouple
+```
+
+Il y a trois modes :
+
+| Mode | Modèle visible | Pokémon du combat | Nécessite ExLaunch |
+|------|---------------|-------------------|-------------------|
+| **Classique** | Correspond au combat | Correspond au modèle | Non |
+| **Modèles vanilla + combat caché** | Toujours vanilla (pas de spoils visuels) | Randomisé séparément | Oui |
+| **Modèles aléatoires + combat caché** | Aussi randomisé | Randomisé séparément | Oui |
+
+**Pourquoi c'est intéressant :**
+
+- En mode **Vanilla visible**, tu ne peux jamais savoir ce que tu vas vraiment affronter juste en regardant le monde — chaque rencontre est une surprise, même si la Terre Sauvage a l'air d'une partie normale.
+- En mode **Modèles aléatoires**, le monde lui-même devient chaotique : un Léviator court dans les herbes, tu le touches et tu te retrouves face à un Sorbex. Mode chaos total.
+- Les deux modes cachés utilisent un tirage séparé de celui du modèle visible, donc les rencontres sont vraiment indépendantes.
+
+> ⚠️ Les deux modes de combat caché nécessitent ton propre dump `exefs` et qu'ExLaunch soit activé.
+
+---
 
 ## Ce qu'il te faut
 

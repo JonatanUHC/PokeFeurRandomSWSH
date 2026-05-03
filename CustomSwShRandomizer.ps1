@@ -692,11 +692,6 @@ function Resolve-RequiredSourceExefsRoot {
     )
 
     if ([string]::IsNullOrWhiteSpace($SourceExefsRoot)) {
-        $detected = Resolve-SourceExefsRoot -SourceRomfsRoot $SourceRomfsRoot -SourceExefsRoot "" -GameVersion $GameVersion
-        if (-not [string]::IsNullOrWhiteSpace($detected)) {
-            Assert-PathIsUserDumpSource -Path $detected -Kind "ExeFS"
-            return $detected
-        }
         throw "Dossier ExeFS obligatoire: selectionne le dossier exefs de ton dump utilisateur, celui qui contient main.npdm."
     }
 
@@ -10018,7 +10013,18 @@ function Invoke-Randomization {
 
     $SourceRomfsRoot = Resolve-RequiredSourceRomfsRoot -SourceRomfsRoot $SourceRomfsRoot
     $sourceGameVersion = Get-SourceGameVersion -RomfsRoot $SourceRomfsRoot
-    $resolvedSourceExefsRoot = Resolve-RequiredSourceExefsRoot -SourceRomfsRoot $SourceRomfsRoot -SourceExefsRoot $SourceExefsRoot -GameVersion $sourceGameVersion
+    $hasExplicitSourceExefs = -not [string]::IsNullOrWhiteSpace($SourceExefsRoot)
+    $canGenerateExLaunchOutputs = ($hasExplicitSourceExefs -and (Get-AnyExLaunchRuntimeFeatureEnabled))
+    $resolvedSourceExefsRoot = ""
+    if ($canGenerateExLaunchOutputs) {
+        $resolvedSourceExefsRoot = Resolve-RequiredSourceExefsRoot -SourceRomfsRoot $SourceRomfsRoot -SourceExefsRoot $SourceExefsRoot -GameVersion $sourceGameVersion
+    } elseif ($hasExplicitSourceExefs) {
+        try {
+            $resolvedSourceExefsRoot = Resolve-SourceExefsRoot -SourceRomfsRoot $SourceRomfsRoot -SourceExefsRoot $SourceExefsRoot -GameVersion $sourceGameVersion
+        } catch {
+            $resolvedSourceExefsRoot = ""
+        }
+    }
     Assert-ValidSourceRomfsForRandomizer -RomfsRoot $SourceRomfsRoot
     $OutputRomfsRoot = Resolve-OutputRomfsRoot -OutputPath $OutputRomfsRoot
     $outputPackageRoot = Get-OutputPackageRoot -OutputRomfsRoot $OutputRomfsRoot
@@ -10170,11 +10176,35 @@ function Invoke-Randomization {
         Write-RandomizerProgress -Message "[Step] Calcul des caps histoire majeurs ordonnes" -ProgressCallback $ProgressCallback
         $storyMajorBattleCaps = Get-StoryMajorBattleCapEntries -SourceRomfsRoot $SourceRomfsRoot -OutputRomfsRoot $OutputRomfsRoot
     }
-    if (Get-AnyExLaunchRuntimeFeatureEnabled) {
+    if ($canGenerateExLaunchOutputs) {
         Write-RandomizerProgress -Message "[Step] Options EXP runtime: ExLaunch requis, pas d'IPS brut ecrit" -ProgressCallback $ProgressCallback
+    } elseif (Get-AnyExLaunchRuntimeFeatureEnabled) {
+        Write-RandomizerProgress -Message "[Step] Options runtime detectees mais aucun ExeFS explicite n'est fourni: generation ROMFS-only, ExLaunch ignore" -ProgressCallback $ProgressCallback
     }
-    $exefsPatchResult = Write-ExeFsPatches -OutputRomfsRoot $OutputRomfsRoot -GymLeagueStoryCaps $storyGymLeagueCaps
-    $expLevelCapExLaunchConfigPath = Write-ExpLevelCapExLaunchConfig -OutputRomfsRoot $OutputRomfsRoot -MainStorySoftCaps $mainStorySoftCaps -GymLeagueStoryCaps $storyGymLeagueCaps
+    $exefsPatchResult = [pscustomobject]@{
+        Enabled = $false
+        PatchRoot = (Join-Path $outputPackageRoot "exefs")
+        FilesWritten = 0
+        DisableExpShareEnabled = $false
+        DynamicExpLevelCapEnabled = $false
+        StoryGymLeagueExpCapEnabled = $false
+        ExpLevelCapRequiresExLaunch = $false
+        Patches = @()
+    }
+    $expLevelCapExLaunchConfigPath = ""
+    if ($canGenerateExLaunchOutputs) {
+        $exefsPatchResult = Write-ExeFsPatches -OutputRomfsRoot $OutputRomfsRoot -GymLeagueStoryCaps $storyGymLeagueCaps
+        $expLevelCapExLaunchConfigPath = Write-ExpLevelCapExLaunchConfig -OutputRomfsRoot $OutputRomfsRoot -MainStorySoftCaps $mainStorySoftCaps -GymLeagueStoryCaps $storyGymLeagueCaps
+    } else {
+        $staleExefsRoot = Join-Path $outputPackageRoot "exefs"
+        $staleSdmcRoot = Join-Path $outputPackageRoot "sdmc"
+        if (Test-Path -LiteralPath $staleExefsRoot) {
+            Remove-Item -LiteralPath $staleExefsRoot -Recurse -Force
+        }
+        if (Test-Path -LiteralPath $staleSdmcRoot) {
+            Remove-Item -LiteralPath $staleSdmcRoot -Recurse -Force
+        }
+    }
     $exLaunchModuleDeployment = [pscustomobject]@{
         Requested = $false
         Available = $false
@@ -10190,7 +10220,7 @@ function Invoke-Randomization {
         Subsdk9Path = ""
         MissingFiles = @()
     }
-    if ([bool]$exefsPatchResult.ExpLevelCapRequiresExLaunch) {
+    if ($canGenerateExLaunchOutputs -and [bool]$exefsPatchResult.ExpLevelCapRequiresExLaunch) {
         Write-RandomizerProgress -Message "[Step] Deploiement auto du module ExLaunch" -ProgressCallback $ProgressCallback
         $exLaunchModuleDeployment = Deploy-ExLaunchModule -SourceRomfsRoot $SourceRomfsRoot -SourceExefsRoot $resolvedSourceExefsRoot -OutputRomfsRoot $OutputRomfsRoot -GameVersion $sourceGameVersion -RuntimePcControlsEnabled (Get-RandomizerPcMenuEnabled)
         if ($exLaunchModuleDeployment.Deployed) {
@@ -11138,16 +11168,25 @@ function Test-GuiBuildConfiguration {
     [void](Try-ParseInvariantDouble -Text (& $textOf "ExpYieldMultiplier") -Value ([ref]$expMultiplier))
     if (& $checkedOf "RuntimePcControls") { $needsRuntime = $true; [void]$runtimeReasons.Add("PC runtime") }
     if (& $checkedOf "DisableExpShare") { $needsRuntime = $true; [void]$runtimeReasons.Add("EXP Share runtime") }
-    if (& $checkedOf "GymLeagueStoryLevelCap") { $needsRuntime = $true; [void]$runtimeReasons.Add("EXP cap") }
+    if (& $checkedOf "EarlyBike") { $needsRuntime = $true; [void]$runtimeReasons.Add("early bike") }
+    if (& $checkedOf "DynamicExpLevelCap") { $needsRuntime = $true; [void]$runtimeReasons.Add("dynamic EXP cap") }
+    if (& $checkedOf "StrictBossMaxLevelCap") { $needsRuntime = $true; [void]$runtimeReasons.Add("strict boss EXP cap") }
+    if (& $checkedOf "MainStorySoftLevelCap") { $needsRuntime = $true; [void]$runtimeReasons.Add("soft story EXP cap") }
+    if (& $checkedOf "GymLeagueStoryLevelCap") { $needsRuntime = $true; [void]$runtimeReasons.Add("gym/champion EXP cap") }
+    if (& $checkedOf "StoryMajorBattleOrderLevelCap") { $needsRuntime = $true; [void]$runtimeReasons.Add("ordered major battle EXP cap") }
     if ((-not (& $checkedOf "ForceOneExpYield")) -and [Math]::Abs($expMultiplier - 1.0) -gt 0.0001) { $needsRuntime = $true; [void]$runtimeReasons.Add("EXP boost") }
     if ($visibleBehavior -ne "RomfsMatch") { $needsRuntime = $true; [void]$runtimeReasons.Add("visible/combat split") }
 
     if ($needsRuntime) {
-        try {
-            $sourceExefs = Resolve-RequiredSourceExefsRoot -SourceRomfsRoot $sourceRomfsText -SourceExefsRoot $sourceExefsText -GameVersion $gameVersion
-            & $addInfo $(if ($lang -eq "en") { "ExeFS source OK for runtime features: $sourceExefs" } else { "Source ExeFS OK pour les options runtime: $sourceExefs" })
-        } catch {
-            & $addError $_.Exception.Message
+        if ([string]::IsNullOrWhiteSpace($sourceExefsText)) {
+            & $addWarning $(if ($lang -eq "en") { "Runtime/ExLaunch options are enabled, but no ExeFS folder was explicitly provided. The build will stay ROMFS-only and will not generate exefs or sdmc." } else { "Des options runtime/ExLaunch sont actives, mais aucun dossier ExeFS n'a ete explicitement fourni. La generation restera en mode ROMFS-only et ne produira ni exefs ni sdmc." })
+        } else {
+            try {
+                $sourceExefs = Resolve-RequiredSourceExefsRoot -SourceRomfsRoot $sourceRomfsText -SourceExefsRoot $sourceExefsText -GameVersion $gameVersion
+                & $addInfo $(if ($lang -eq "en") { "ExeFS source OK for runtime features: $sourceExefs" } else { "Source ExeFS OK pour les options runtime: $sourceExefs" })
+            } catch {
+                & $addError $_.Exception.Message
+            }
         }
     } elseif (-not [string]::IsNullOrWhiteSpace($sourceExefsText)) {
         try {
@@ -11761,16 +11800,16 @@ function Add-ConcreteDescriptionExamples {
         $Ui.Descriptions.StaticStableMapping = "Static mapping. Example: Stable by species makes every static Pikachu become the same replacement; Stable by slot randomizes each fixed encounter separately."
         $Ui.Descriptions.GrassMode = "Wild encounter species. Example: if Route 1 has Skwovet and Rookidee in the table, this controls whether those table species are replaced in ROMFS."
         $Ui.Descriptions.GrassStableMapping = "Wild mapping rule. Example: Stable by species means every vanilla Victreebel becomes Empoleon everywhere. Stable by slot means a Victreebel in one area can become Empoleon while a Victreebel elsewhere can become another roll. True random per spawn rerolls visible/battle hooks with each spawn seed."
-        $Ui.Descriptions.VisibleEncounterBehavior = "Overworld Pokemon behavior. Example: Classic means seeing Victreebel starts a Victreebel battle. Vanilla visible + hidden battle keeps Victreebel visible everywhere but can start an Empoleon battle. Random visible + hidden battle randomizes visible tables too, so you can see Empoleon outside and still fight Victreebel or another hidden roll."
+        $Ui.Descriptions.VisibleEncounterBehavior = "REQUIRES EXEFS outside Classic. Overworld Pokemon behavior. Example: Classic means seeing Victreebel starts a Victreebel battle. Vanilla visible + hidden battle keeps Victreebel visible everywhere but can start an Empoleon battle. Random visible + hidden battle randomizes visible tables too, so you can see Empoleon outside and still fight Victreebel or another hidden roll."
         $Ui.Descriptions.UndergroundMode = "Underground encounters. Example: underground species slots are separate from normal route grass, so this option controls that pool independently."
-        $Ui.Descriptions.DisableExpShare = "Default EXP Share state. Example: checked means the generated config starts with EXP Share OFF, so only participating Pokemon should receive EXP. If the PC runtime menu is enabled, this remains the default state but you can toggle it in game."
-        $Ui.Descriptions.EarlyBike = "Rotom Bike from the start. Example: after loading the field early in the save, the module grants the real Rotom Bike key item once."
-        $Ui.Descriptions.RuntimePcControls = "Pokemon Center PC runtime menu. Example: this does not choose EXP Share by itself; it only adds the in-game PC menu that can toggle EXP Share / EXP boost without rebuilding the mod."
-        $Ui.Descriptions.DynamicExpLevelCap = "Dynamic EXP cap. Example: if the current cap is 36, a Pokemon at level 36 receives 1 EXP instead of normal EXP, while lower-level Pokemon still gain EXP."
-        $Ui.Descriptions.StrictBossMaxLevelCap = "Strict boss cap. Example: if the next listed boss's highest Pokemon is Lv.28, the cap can use 28 as the limit."
-        $Ui.Descriptions.MainStorySoftLevelCap = "Soft story cap. Example: the cap follows badge/story blocks, so it changes at major milestones rather than after every small rival fight."
-        $Ui.Descriptions.GymLeagueStoryLevelCap = "Gym/Champion story cap. Example: after teams are generated, the tool reads the actual gym and Leon levels and builds caps from those generated teams."
-        $Ui.Descriptions.StoryMajorBattleOrderLevelCap = "Major battle order cap. Example: Hop, Bede, Marnie, Gym Leaders, Rose and Leon are placed in story order, then caps follow that sequence."
+        $Ui.Descriptions.DisableExpShare = "REQUIRES EXEFS. Default EXP Share state. Example: checked means the generated config starts with EXP Share OFF, so only participating Pokemon should receive EXP. If the PC runtime menu is enabled, this remains the default state but you can toggle it in game."
+        $Ui.Descriptions.EarlyBike = "REQUIRES EXEFS. Rotom Bike from the start. Example: after loading the field early in the save, the module grants the real Rotom Bike key item once."
+        $Ui.Descriptions.RuntimePcControls = "REQUIRES EXEFS. Pokemon Center PC runtime menu. Example: this does not choose EXP Share by itself; it only adds the in-game PC menu that can toggle EXP Share / EXP boost without rebuilding the mod."
+        $Ui.Descriptions.DynamicExpLevelCap = "REQUIRES EXEFS. Dynamic EXP cap. Example: if the current cap is 36, a Pokemon at level 36 receives 1 EXP instead of normal EXP, while lower-level Pokemon still gain EXP."
+        $Ui.Descriptions.StrictBossMaxLevelCap = "REQUIRES EXEFS. Strict boss cap. Example: if the next listed boss's highest Pokemon is Lv.28, the cap can use 28 as the limit."
+        $Ui.Descriptions.MainStorySoftLevelCap = "REQUIRES EXEFS. Soft story cap. Example: the cap follows badge/story blocks, so it changes at major milestones rather than after every small rival fight."
+        $Ui.Descriptions.GymLeagueStoryLevelCap = "REQUIRES EXEFS. Gym/Champion story cap. Example: after teams are generated, the tool reads the actual gym and Leon levels and builds caps from those generated teams."
+        $Ui.Descriptions.StoryMajorBattleOrderLevelCap = "REQUIRES EXEFS. Major battle order cap. Example: Hop, Bede, Marnie, Gym Leaders, Rose and Leon are placed in story order, then caps follow that sequence."
         $Ui.Descriptions.AutoInstallToEden = "Auto-install. Example: after generation, the tool can copy the finished mod to Eden/Ryujinx/Yuzu/Sudachi/Citron/Suyu/Citron Neo targets you checked, using the detected title ID."
         $Ui.Descriptions.EdenModName = "Installed mod folder name. Example: Randomizer replaces the previous Randomizer folder; MyRun_Seed123 keeps a separate named mod folder."
         foreach ($key in @($Ui.Descriptions.Keys)) {
@@ -11802,7 +11841,7 @@ function Add-ConcreteDescriptionExamples {
     $Ui.Descriptions.TypesMonotypeOnly = "Forcer monotype. Exemple: au lieu de tirer Feu/Eau, le Pokemon tire Feu/Feu, ce qui revient a un seul type Feu en jeu."
     $Ui.Descriptions.AbilityMode = "Talents des especes. Exemple: les slots de talent de Pikachu peuvent changer globalement; tous les Pikachu qui utilisent ce slot suivent ensuite la nouvelle donnee."
     $Ui.Descriptions.StatMode = "Stats de base. Exemple: Melanger peut echanger la Vitesse d'un Pokemon rapide avec sa Defense; Redistribuer garde le meme BST total mais cree une autre repartition."
-    $Ui.Descriptions.ExpYieldMultiplier = "Multiplicateur EXP. Exemple: 2.5 transforme environ 400 EXP en 1000 EXP quand le boost runtime est actif. 1.0 garde l'EXP vanilla."
+    $Ui.Descriptions.ExpYieldMultiplier = "NECESSITE EXEFS si different de 1.0. Multiplicateur EXP. Exemple: 2.5 transforme environ 400 EXP en 1000 EXP quand le boost runtime est actif. 1.0 garde l'EXP vanilla."
     $Ui.Descriptions.ForceOneExpYield = "Mode No EXP. Exemple: un Pokemon qui donne normalement 350 EXP donne 1 EXP. Utile pour une run challenge ou les niveaux doivent tres peu monter."
     $Ui.Descriptions.MoveTypeMode = "Types des attaques. Exemple: Tonnerre peut devenir de type Feu, donc l'efficacite et le STAB suivent le nouveau type."
     $Ui.Descriptions.MovePowerMode = "Puissance des attaques. Exemple: une attaque a 60 de puissance peut passer a 95 si ta plage min/max l'autorise. Les attaques de statut a 0 restent non offensives."
@@ -11824,16 +11863,16 @@ function Add-ConcreteDescriptionExamples {
     $Ui.Descriptions.StaticStableMapping = "Mapping des rencontres fixes. Exemple: Stable par espece transforme tous les Pikachu fixes en meme remplacement; Stable par slot randomise chaque rencontre fixe separement."
     $Ui.Descriptions.GrassMode = "Especes des rencontres sauvages. Exemple: si la Route 1 contient Rongourmand et Minisange dans sa table, cette option controle si ces especes de table sont remplacees dans le ROMFS."
     $Ui.Descriptions.GrassStableMapping = "Regle de mapping sauvage. Exemple: Stable par espece veut dire que tous les Empiflor vanilla deviennent Pingoleon partout. Stable par slot permet a un Empiflor d'une zone de devenir Pingoleon et a un Empiflor d'une autre zone de tirer autre chose. Vrai random par spawn reroll les hooks visible/combat avec le seed de chaque apparition."
-    $Ui.Descriptions.VisibleEncounterBehavior = "Comportement des Pokemon visibles. Exemple: Classique signifie voir Empiflor puis combattre Empiflor. Visuel vanilla + combat cache garde Empiflor visible partout mais peut lancer un combat contre Pingoleon. Visuel random + combat cache randomise aussi les tables visibles: tu peux voir Pingoleon dehors et combattre Empiflor ou un autre tirage cache."
+    $Ui.Descriptions.VisibleEncounterBehavior = "NECESSITE EXEFS hors mode Classique. Comportement des Pokemon visibles. Exemple: Classique signifie voir Empiflor puis combattre Empiflor. Visuel vanilla + combat cache garde Empiflor visible partout mais peut lancer un combat contre Pingoleon. Visuel random + combat cache randomise aussi les tables visibles: tu peux voir Pingoleon dehors et combattre Empiflor ou un autre tirage cache."
     $Ui.Descriptions.UndergroundMode = "Rencontres underground. Exemple: les slots du souterrain sont separes des hautes herbes classiques; cette option controle donc ce pool independamment."
-    $Ui.Descriptions.DisableExpShare = "Etat par defaut de l'EXP Share. Exemple: coche = la config generee demarre avec EXP Share OFF, donc seuls les Pokemon participants doivent recevoir l'EXP. Si le menu PC runtime est actif, ca reste l'etat par defaut mais tu peux le changer en jeu."
-    $Ui.Descriptions.EarlyBike = "Velo Rotom des le debut. Exemple: apres chargement du terrain au debut d'une sauvegarde, le module donne une seule fois le vrai objet rare Velo Rotom."
-    $Ui.Descriptions.RuntimePcControls = "Menu runtime via le PC du Centre Pokemon. Exemple: cette option ne choisit pas l'etat EXP Share toute seule; elle ajoute seulement le menu en jeu pour changer EXP Share / boost EXP sans regenerer le mod."
-    $Ui.Descriptions.DynamicExpLevelCap = "Cap EXP dynamique. Exemple: si le cap actuel est 36, un Pokemon niveau 36 recoit 1 EXP au lieu de l'EXP normale, tandis qu'un Pokemon sous le cap continue de gagner de l'EXP."
-    $Ui.Descriptions.StrictBossMaxLevelCap = "Cap boss strict. Exemple: si le prochain boss liste a un Pokemon max niveau 28, le cap peut utiliser 28 comme limite."
-    $Ui.Descriptions.MainStorySoftLevelCap = "Cap histoire souple. Exemple: le cap suit des blocs badges/histoire, donc il change aux gros paliers plutot qu'apres chaque petit combat rival."
-    $Ui.Descriptions.GymLeagueStoryLevelCap = "Cap arenes/Tarak. Exemple: apres generation des equipes, l'outil lit les vrais niveaux generes des arenes et de Tarak, puis construit les caps depuis ces equipes."
-    $Ui.Descriptions.StoryMajorBattleOrderLevelCap = "Cap ordre des combats majeurs. Exemple: Nabil, Travis, Rosemary, champions, Shehroz et Tarak sont places dans l'ordre de l'histoire, puis les caps suivent cette sequence."
+    $Ui.Descriptions.DisableExpShare = "NECESSITE EXEFS. Etat par defaut de l'EXP Share. Exemple: coche = la config generee demarre avec EXP Share OFF, donc seuls les Pokemon participants doivent recevoir l'EXP. Si le menu PC runtime est actif, ca reste l'etat par defaut mais tu peux le changer en jeu."
+    $Ui.Descriptions.EarlyBike = "NECESSITE EXEFS. Velo Rotom des le debut. Exemple: apres chargement du terrain au debut d'une sauvegarde, le module donne une seule fois le vrai objet rare Velo Rotom."
+    $Ui.Descriptions.RuntimePcControls = "NECESSITE EXEFS. Menu runtime via le PC du Centre Pokemon. Exemple: cette option ne choisit pas l'etat EXP Share toute seule; elle ajoute seulement le menu en jeu pour changer EXP Share / boost EXP sans regenerer le mod."
+    $Ui.Descriptions.DynamicExpLevelCap = "NECESSITE EXEFS. Cap EXP dynamique. Exemple: si le cap actuel est 36, un Pokemon niveau 36 recoit 1 EXP au lieu de l'EXP normale, tandis qu'un Pokemon sous le cap continue de gagner de l'EXP."
+    $Ui.Descriptions.StrictBossMaxLevelCap = "NECESSITE EXEFS. Cap boss strict. Exemple: si le prochain boss liste a un Pokemon max niveau 28, le cap peut utiliser 28 comme limite."
+    $Ui.Descriptions.MainStorySoftLevelCap = "NECESSITE EXEFS. Cap histoire souple. Exemple: le cap suit des blocs badges/histoire, donc il change aux gros paliers plutot qu'apres chaque petit combat rival."
+    $Ui.Descriptions.GymLeagueStoryLevelCap = "NECESSITE EXEFS. Cap arenes/Tarak. Exemple: apres generation des equipes, l'outil lit les vrais niveaux generes des arenes et de Tarak, puis construit les caps depuis ces equipes."
+    $Ui.Descriptions.StoryMajorBattleOrderLevelCap = "NECESSITE EXEFS. Cap ordre des combats majeurs. Exemple: Nabil, Travis, Rosemary, champions, Shehroz et Tarak sont places dans l'ordre de l'histoire, puis les caps suivent cette sequence."
     $Ui.Descriptions.AutoInstallToEden = "Installation auto. Exemple: apres generation, l'outil peut copier le mod fini vers Eden/Ryujinx/Yuzu/Sudachi/Citron/Suyu/Citron Neo selon les cibles cochees et detectees."
     $Ui.Descriptions.EdenModName = "Nom du dossier de mod installe. Exemple: Randomizer remplace l'ancien dossier Randomizer; MaRun_Seed123 garde un dossier de mod separe."
     $exampleNeedle = if ($Language -eq "en") { "Example:" } else { "Exemple:" }
@@ -11965,7 +12004,7 @@ function Get-UiStrings {
                 AbilityMode = "Global species abilities"
                 AllowWonderGuard = "Allow Wonder Guard in the pool"
                 StatMode = "Species base stats"
-                ExpYieldMultiplier = "EXP yield multiplier"
+                ExpYieldMultiplier = "EXP yield multiplier [REQUIRES EXEFS if not 1.0]"
                 ForceOneExpYield = "No EXP mode: force 1 EXP from every Pokemon"
                 MoveTypeMode = "Move type randomization"
                 MovePowerMode = "Move power randomization"
@@ -12002,17 +12041,17 @@ function Get-UiStrings {
                 GrassMode = "Wild encounter species"
                 AllowLegendaryGrass = "Allow legendary Pokemon in grass / visible encounters"
                 GrassStableMapping = "Wild encounter mapping rule"
-                VisibleEncounterBehavior = "Overworld Pokemon behavior"
+                VisibleEncounterBehavior = "Overworld Pokemon behavior [REQUIRES EXEFS outside Classic]"
                 UndergroundMode = "Underground encounters"
                 AllowLegendaryUnderground = "Allow legendary Pokemon in underground"
-                DisableExpShare = "Default EXP Share: OFF"
-                EarlyBike = "Rotom Bike from the start"
-                RuntimePcControls = "PC menu: change options in game"
-                DynamicExpLevelCap = "Dynamic EXP cap (ExLaunch)"
-                StrictBossMaxLevelCap = "Strict boss max level cap for listed bosses"
-                MainStorySoftLevelCap = "Soft main-story progression EXP cap"
-                GymLeagueStoryLevelCap = "Gym/Champion EXP cap"
-                StoryMajorBattleOrderLevelCap = "Ordered main-story major battle mode"
+                DisableExpShare = "Default EXP Share: OFF [REQUIRES EXEFS]"
+                EarlyBike = "Rotom Bike from the start [REQUIRES EXEFS]"
+                RuntimePcControls = "PC menu: change options in game [REQUIRES EXEFS]"
+                DynamicExpLevelCap = "Dynamic EXP cap (ExLaunch) [REQUIRES EXEFS]"
+                StrictBossMaxLevelCap = "Strict boss max level cap for listed bosses [REQUIRES EXEFS]"
+                MainStorySoftLevelCap = "Soft main-story progression EXP cap [REQUIRES EXEFS]"
+                GymLeagueStoryLevelCap = "Gym/Champion EXP cap [REQUIRES EXEFS]"
+                StoryMajorBattleOrderLevelCap = "Ordered main-story major battle mode [REQUIRES EXEFS]"
                 AutoInstallToEden = "Auto-install"
                 EdenModName = "Mod folder"
                 InstallTargetEden = "Eden"
@@ -12027,7 +12066,7 @@ function Get-UiStrings {
                 ResetButton = "Reset emulator install"
                 ResetDefault = "This removes only the generated mod folder and the swsh-mods-exl config file when that config was generated by this randomizer."
                 DetailsDefault = "Hover or focus any option to see exactly what it changes and where it is applied."
-                StatusDefault = "Ready. Pick the user's ROMFS and ExeFS dump folders, choose your options, then generate the mod. The output includes ROMFS, ExLaunch files, config, and JSON reports when relevant."
+                StatusDefault = "Ready. Pick the user's ROMFS dump folder, add ExeFS only if a runtime/ExLaunch option needs it, choose your options, then generate the mod. The output includes ROMFS, ExLaunch files, config, and JSON reports when relevant."
                 StatusRunning = "Building mod..."
                 SeedError = "Seed must be a numeric integer. Use -1 for auto."
             }
@@ -12228,7 +12267,7 @@ function Get-UiStrings {
             AbilityMode = "Talents globaux des especes"
             AllowWonderGuard = "Autoriser Wonder Guard dans le pool"
             StatMode = "Stats de base des especes"
-            ExpYieldMultiplier = "Multiplicateur EXP donne"
+            ExpYieldMultiplier = "Multiplicateur EXP donne [NECESSITE EXEFS si != 1.0]"
             ForceOneExpYield = "Mode No EXP: forcer 1 EXP par Pokemon battu"
             MoveTypeMode = "Randomiser les types d'attaques"
             MovePowerMode = "Randomiser la puissance"
@@ -12265,17 +12304,17 @@ function Get-UiStrings {
             GrassMode = "Especes des rencontres sauvages"
             AllowLegendaryGrass = "Autoriser legendaires en herbes / visibles"
             GrassStableMapping = "Regle de mapping sauvage"
-            VisibleEncounterBehavior = "Pokemon visibles dehors"
+            VisibleEncounterBehavior = "Pokemon visibles dehors [NECESSITE EXEFS hors Classique]"
             UndergroundMode = "Underground / chika"
             AllowLegendaryUnderground = "Autoriser legendaires en underground"
-            DisableExpShare = "EXP Share par defaut: OFF"
-            EarlyBike = "Velo Rotom des le debut"
-            RuntimePcControls = "Menu PC: changer en jeu"
-            DynamicExpLevelCap = "Cap EXP dynamique (ExLaunch)"
-            StrictBossMaxLevelCap = "Cap boss max strict pour les boss listes"
-            MainStorySoftLevelCap = "Cap progression principale (souple)"
-            GymLeagueStoryLevelCap = "Cap EXP arenes/Tarak"
-            StoryMajorBattleOrderLevelCap = "Mode ordre histoire principale (boss majeurs)"
+            DisableExpShare = "EXP Share par defaut: OFF [NECESSITE EXEFS]"
+            EarlyBike = "Velo Rotom des le debut [NECESSITE EXEFS]"
+            RuntimePcControls = "Menu PC: changer en jeu [NECESSITE EXEFS]"
+            DynamicExpLevelCap = "Cap EXP dynamique (ExLaunch) [NECESSITE EXEFS]"
+            StrictBossMaxLevelCap = "Cap boss max strict pour les boss listes [NECESSITE EXEFS]"
+            MainStorySoftLevelCap = "Cap progression principale (souple) [NECESSITE EXEFS]"
+            GymLeagueStoryLevelCap = "Cap EXP arenes/Tarak [NECESSITE EXEFS]"
+            StoryMajorBattleOrderLevelCap = "Mode ordre histoire principale (boss majeurs) [NECESSITE EXEFS]"
             AutoInstallToEden = "Installation auto"
             EdenModName = "Dossier du mod"
             InstallTargetEden = "Eden"
@@ -12290,7 +12329,7 @@ function Get-UiStrings {
             ResetButton = "Reset de l'installation emulateur"
             ResetDefault = "Le reset supprime seulement le dossier de mod genere et le fichier swsh-mods-exl quand cette config a ete generee par ce randomizer."
             DetailsDefault = "Survole ou selectionne une option pour voir exactement ce qu'elle modifie et ou c'est applique."
-            StatusDefault = "Pret. Choisis les dossiers ROMFS et ExeFS de ton dump, regle tes options, puis genere le mod. La sortie contient ROMFS, ExLaunch, config et rapports JSON si necessaire."
+            StatusDefault = "Pret. Choisis le dossier ROMFS de ton dump, ajoute ExeFS seulement si une option runtime/ExLaunch en a besoin, regle tes options, puis genere le mod. La sortie contient ROMFS, fichiers ExLaunch, config et rapports JSON si necessaire."
             StatusRunning = "Generation en cours..."
             SeedError = "Le seed doit etre un entier numerique. Utilise -1 pour auto."
         }
@@ -12432,7 +12471,7 @@ function Get-RandomizerHelpText {
         & $addSection "Main build"
         & $addOption $ui.SourceLabel "Folder from the user's ROMFS dump. Example: select the romfs folder from Pokemon Sword/Shield; if the expected SWSH files are missing, generation must stop instead of producing a broken mod."
         & $addOption $ui.SourceExefsLabel "Folder from the user's ExeFS dump. Example: the tool copies main.npdm from this user dump when ExLaunch is needed; no Nintendo ExeFS file is bundled by the tool."
-        & $addOption $ui.OutputLabel "Root folder where the generated mod is written. Example: choosing output\\Sword creates the emulator-ready romfs/exefs/sdmc structure under that folder."
+        & $addOption $ui.OutputLabel "Root folder where the generated mod is written. Example: choosing output\\Sword always creates romfs there; exefs and sdmc are added only when an ExeFS folder is explicitly provided for ExLaunch/runtime features."
         & $addOption $ui.GameVersion "Chooses the title ID and version-specific install paths. Example: Sword and Shield use different emulator content folders."
         & $addOption $ui.Seed "Controls repeatability. Example: seed 123 always produces the same Victreebel to Empoleon style mappings; -1 creates a new random seed."
         & $addOption $ui.UiLanguage "Changes the software language immediately."
@@ -12449,7 +12488,7 @@ function Get-RandomizerHelpText {
         & $addSection "Generation principale"
         & $addOption $ui.SourceLabel "Dossier romfs du dump utilisateur. Exemple: selectionne le dossier romfs de Pokemon Epee/Bouclier; si les fichiers SWSH attendus manquent, la generation doit s'arreter au lieu de sortir un mod casse."
         & $addOption $ui.SourceExefsLabel "Dossier exefs du dump utilisateur. Exemple: l'outil copie main.npdm depuis ce dump utilisateur quand ExLaunch est necessaire; aucun fichier ExeFS Nintendo n'est fourni avec le logiciel."
-        & $addOption $ui.OutputLabel "Dossier racine ou le mod genere est ecrit. Exemple: choisir output\\Epee cree la structure romfs/exefs/sdmc prete pour l'emulateur dans ce dossier."
+        & $addOption $ui.OutputLabel "Dossier racine ou le mod genere est ecrit. Exemple: choisir output\\Epee cree toujours romfs dedans; exefs et sdmc ne sont ajoutes que si un dossier ExeFS est explicitement fourni pour les options ExLaunch/runtime."
         & $addOption $ui.GameVersion "Choisit le title ID et les chemins d'installation selon le jeu. Exemple: Epee et Bouclier n'utilisent pas le meme dossier de contenu emulateur."
         & $addOption $ui.Seed "Controle la reproductibilite. Exemple: seed 123 redonne toujours les memes mappings du style Empiflor vers Pingoleon; -1 cree un nouveau tirage."
         & $addOption $ui.UiLanguage "Change immediatement la langue du logiciel."
@@ -12851,11 +12890,7 @@ function Show-Gui {
     $initialSourceExefs = if (-not [string]::IsNullOrWhiteSpace($SourceExefs)) {
         $SourceExefs
     } else {
-        try {
-            Resolve-SourceExefsRoot -SourceRomfsRoot $initialSourceRomfs -SourceExefsRoot "" -GameVersion $initialGameVersion
-        } catch {
-            ""
-        }
+        ""
     }
     $initialOutputRomfs = if (-not [string]::IsNullOrWhiteSpace($OutputRomfs)) { $OutputRomfs } else { Get-DefaultOutputRomfsPath -GameVersion $initialGameVersion }
 
@@ -12962,16 +12997,6 @@ function Show-Gui {
                 $selectedPath = $romfsChild
             }
             $controls.Source.Text = $selectedPath
-            $exefsCandidate = Join-Path $selectedRoot "exefs"
-            if (-not (Test-Path -LiteralPath (Join-Path $exefsCandidate "main.npdm"))) {
-                $romfsParent = Split-Path -Parent $selectedPath
-                if ($romfsParent) {
-                    $exefsCandidate = Join-Path $romfsParent "exefs"
-                }
-            }
-            if (Test-Path -LiteralPath (Join-Path $exefsCandidate "main.npdm")) {
-                $controls.SourceExefs.Text = $exefsCandidate
-            }
             $detectedVersion = Get-SourceGameVersion -RomfsRoot $selectedPath
             [void](Set-ComboValue -Combo $controls.GameVersion -Value $detectedVersion)
         }
@@ -12992,7 +13017,7 @@ function Show-Gui {
     $controls.GameVersion.Add_SelectedIndexChanged({
         $selectedVersion = Get-ComboValue -Combo $controls.GameVersion
         $controls.Source.Text = Get-ExistingDefaultPathOrEmpty -Path (Get-DefaultSourceRomfsPath -GameVersion $selectedVersion)
-        $controls.SourceExefs.Text = Get-ExistingDefaultPathOrEmpty -Path (Get-DefaultSourceExefsPath -GameVersion $selectedVersion)
+        $controls.SourceExefs.Text = ""
         $controls.Output.Text = Get-DefaultOutputRomfsPath -GameVersion $selectedVersion
     })
 
@@ -13699,7 +13724,7 @@ function Show-Gui {
     Register-ControlDescription -Control $buildSummaryButton -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.BuildSummary; en = $uiDescEn.Descriptions.BuildSummary }
     Register-ControlDescription -Control $sourceBox -DetailsBox $detailsBox -Description @{ fr = "Dossier ROMFS original du dump utilisateur. Exemple: selectionne ...\\Epee\\romfs; le logiciel copie seulement les fichiers necessaires puis modifie les tables ROMFS en sortie."; en = "Original ROMFS folder from the user's dump. Example: select ...\\Sword\\romfs; the tool copies only needed files and edits ROMFS tables in the generated output." }
     Register-ControlDescription -Control $sourceExefsBox -DetailsBox $detailsBox -Description @{ fr = "Dossier ExeFS original du dump utilisateur. Exemple: selectionne ...\\Epee\\exefs, le dossier qui contient main.npdm. Le logiciel copie ce main.npdm utilisateur et ajoute seulement son subsdk9 custom."; en = "Original ExeFS folder from the user's dump. Example: select ...\\Sword\\exefs, the folder containing main.npdm. The tool copies that user-provided main.npdm and only adds its custom subsdk9." }
-    Register-ControlDescription -Control $outputBox -DetailsBox $detailsBox -Description @{ fr = "Dossier de sortie du mod complet. Exemple: ...\\output\\Epee. Le logiciel cree automatiquement romfs dedans, puis ajoute aussi exefs\\subsdk9, exefs\\main.npdm copie depuis ton dump, sdmc\\config et les rapports JSON."; en = "Generated full mod folder. Example: ...\\output\\Sword. The tool automatically creates romfs inside it, then also adds exefs\\subsdk9, exefs\\main.npdm copied from your dump, sdmc\\config, and JSON reports." }
+    Register-ControlDescription -Control $outputBox -DetailsBox $detailsBox -Description @{ fr = "Dossier de sortie du mod. Exemple: ...\\output\\Epee. Le logiciel cree toujours romfs dedans. Il n'ajoute exefs\\subsdk9, exefs\\main.npdm copie depuis ton dump et sdmc\\config que si un dossier ExeFS est explicitement fourni pour les options ExLaunch/runtime."; en = "Generated mod folder. Example: ...\\output\\Sword. The tool always creates romfs there. It only adds exefs\\subsdk9, exefs\\main.npdm copied from your dump, and sdmc\\config when an ExeFS folder is explicitly provided for ExLaunch/runtime features." }
     Register-ControlDescription -Control $controls.DisableExpShare -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.DisableExpShare; en = $uiDescEn.Descriptions.DisableExpShare }
     Register-ControlDescription -Control $controls.EarlyBike -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.EarlyBike; en = $uiDescEn.Descriptions.EarlyBike }
     Register-ControlDescription -Control $controls.RuntimePcControls -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.RuntimePcControls; en = $uiDescEn.Descriptions.RuntimePcControls }

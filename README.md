@@ -107,6 +107,7 @@ There are three modes:
 - Windows PowerShell 5.1 or newer.
 - Your own `romfs` dump from a Pokemon Sword or Pokemon Shield copy that you personally own.
 - Your own `exefs` dump only if you enable ExLaunch runtime options such as EXP Share control, level caps, PC runtime menu, or hidden overworld battles.
+- If you use ExLaunch runtime options, your game/update target must be **Pokemon Sword or Shield v1.3.2**. On emulators, make sure the `1.3.2` update is actually installed and selected.
 - Internet access the first time you use Smogon modes, because the tool builds a local cache from public Smogon pages and public Pokemon Showdown indexes.
 - Node.js only if you manually rebuild Smogon cache files from `tools/build-smogon-dex-cache.js`.
 
@@ -146,8 +147,9 @@ output/Sword/
 ```
 
 - `romfs/` contains modified files derived from your own `romfs`.
-- `exefs/` is created when runtime options need ExLaunch. `main.npdm` must come from your own `exefs`; `subsdk9` is the custom project module.
+- `exefs/` is created when runtime options need ExLaunch. The project deploys its ExLaunch-compatible `main.npdm` together with the custom `subsdk9` module.
 - `sdmc/config/swsh-mods-exl/config.toml` stores runtime settings such as EXP Share state, EXP multiplier, level caps, and overworld battle behavior.
+- The repo ships emulator-specific ExLaunch payloads for stable Eden/Yuzu-style targets and for Ryujinx separately.
 
 The generated output can contain modified Nintendo data. Do not publish or share generated `romfs`, `exefs`, `sdmc`, or full `output` folders.
 
@@ -360,7 +362,7 @@ Common runtime features:
 
 For these options, `main.npdm` must come from your own `exefs`, and the generated `subsdk9` must be present in the generated `exefs`.
 
-The public repository should not include generated ExLaunch artifacts such as `subsdk9`, AMX runtime scripts, build folders, or downloaded release zips. Keep those artifacts local and rebuild or provide them from your own allowed toolchain setup. Nintendo ExeFS files are never bundled: `main.npdm` is copied from the user's own dump only when needed.
+The public repository can include the curated ExLaunch payloads that this randomizer ships on purpose for emulator/runtime support, but should not include throwaway build folders, downloaded release zips, or unrelated local reverse-engineering outputs. Do not publish user dumps or generated full mod outputs.
 
 ## Generated JSON Reports
 
@@ -430,6 +432,12 @@ Check that:
 - `main.npdm` exists in that `exefs`;
 - `output/<game>/exefs/subsdk9` exists after generation;
 - `output/<game>/sdmc/config/swsh-mods-exl/config.toml` exists when runtime config is needed.
+
+### Emulator crashes after changing ExLaunch options or builds
+
+The randomizer does **not** delete shader caches automatically.
+
+If Eden, Ryujinx, or another supported emulator starts crashing after you changed ExLaunch-related options, try clearing that emulator's shader cache manually, then launch the game again.
 
 ### The first Smogon generation is slow
 
@@ -802,7 +810,7 @@ Fonctions runtime typiques:
 
 Pour ces options, `main.npdm` doit venir de ton propre `exefs`, et `subsdk9` doit être présent dans le `exefs` généré.
 
-Le dépôt public ne doit pas contenir les artefacts ExLaunch générés comme `subsdk9`, les scripts runtime AMX, les dossiers de build ou les zips téléchargés. Garde ces artefacts en local et reconstruis-les ou fournis-les depuis ton propre environnement autorisé. Les fichiers ExeFS Nintendo ne sont jamais inclus: `main.npdm` est copié depuis le dump utilisateur uniquement quand nécessaire.
+Le dépôt public peut contenir les payloads ExLaunch sélectionnés que ce randomizer embarque volontairement pour le support runtime/emulateurs, mais il ne doit pas contenir les dossiers de build jetables, les zips téléchargés ou d'autres sorties locales de reverse engineering. Ne publie pas de dumps utilisateur ni de mods générés complets.
 
 ## Rapports JSON générés
 
@@ -872,6 +880,12 @@ Vérifie que:
 - `main.npdm` existe dans ce `exefs`;
 - `output/<jeu>/exefs/subsdk9` existe après génération;
 - `output/<jeu>/sdmc/config/swsh-mods-exl/config.toml` existe quand une config runtime est nécessaire.
+
+### L'emulateur crash apres un changement d'options ou de build ExLaunch
+
+Le randomizer ne supprime **jamais** automatiquement les caches shaders.
+
+Si Eden, Ryujinx ou un autre emulateur supporte commence a crash apres un changement lie a ExLaunch, essaie de vider manuellement le cache shaders de cet emulateur puis relance le jeu.
 
 ### Le premier chargement Smogon est lent
 

@@ -866,6 +866,7 @@ function Get-EmulatorInstallTargets {
             RootPath = Get-EdenRootPath
             RelativeModPath = ("load\" + $titleId + "\" + $safeModName)
             RelativeSdmcPath = "sdmc"
+            LegacyRelativeModPaths = @()
             TitleId = $titleId
             ModName = $safeModName
         },
@@ -873,8 +874,13 @@ function Get-EmulatorInstallTargets {
             Key = "ryujinx"
             Name = "Ryujinx"
             RootPath = Get-RyujinxRootPath
-            RelativeModPath = ("mods\contents\" + $titleId + "\" + $safeModName)
+            RelativeModPath = ("sdcard\atmosphere\contents\" + $titleId + "\" + $safeModName)
             RelativeSdmcPath = "sdcard"
+            LegacyRelativeModPaths = @(
+                ("mods\contents\" + $titleId + "\" + $safeModName),
+                ("mods\exefs_patches\" + $titleId),
+                ("sdcard\atmosphere\exefs_patches\" + $titleId)
+            )
             TitleId = $titleId
             ModName = $safeModName
         },
@@ -884,6 +890,7 @@ function Get-EmulatorInstallTargets {
             RootPath = Get-YuzuRootPath
             RelativeModPath = ("load\" + $titleId + "\" + $safeModName)
             RelativeSdmcPath = "sdmc"
+            LegacyRelativeModPaths = @()
             TitleId = $titleId
             ModName = $safeModName
         },
@@ -893,6 +900,7 @@ function Get-EmulatorInstallTargets {
             RootPath = Get-SudachiRootPath
             RelativeModPath = ("load\" + $titleId + "\" + $safeModName)
             RelativeSdmcPath = "sdmc"
+            LegacyRelativeModPaths = @()
             TitleId = $titleId
             ModName = $safeModName
         },
@@ -902,6 +910,7 @@ function Get-EmulatorInstallTargets {
             RootPath = Get-CitronRootPath
             RelativeModPath = ("load\" + $titleId + "\" + $safeModName)
             RelativeSdmcPath = "sdmc"
+            LegacyRelativeModPaths = @()
             TitleId = $titleId
             ModName = $safeModName
         },
@@ -911,6 +920,7 @@ function Get-EmulatorInstallTargets {
             RootPath = Get-SuyuRootPath
             RelativeModPath = ("load\" + $titleId + "\" + $safeModName)
             RelativeSdmcPath = "sdmc"
+            LegacyRelativeModPaths = @()
             TitleId = $titleId
             ModName = $safeModName
         },
@@ -920,6 +930,7 @@ function Get-EmulatorInstallTargets {
             RootPath = Get-CitronNeoRootPath
             RelativeModPath = ("load\" + $titleId + "\" + $safeModName)
             RelativeSdmcPath = "sdmc"
+            LegacyRelativeModPaths = @()
             TitleId = $titleId
             ModName = $safeModName
         }
@@ -927,6 +938,7 @@ function Get-EmulatorInstallTargets {
         $rootPath = [string]$_.RootPath
         $relativeModPath = [string]$_.RelativeModPath
         $relativeSdmcPath = [string]$_.RelativeSdmcPath
+        $legacyRelativeModPaths = @($_.PSObject.Properties["LegacyRelativeModPaths"].Value)
         $modRoot = if ([string]::IsNullOrWhiteSpace($rootPath)) { "" } else { Join-Path $rootPath $relativeModPath }
         $sdmcRoot = if ([string]::IsNullOrWhiteSpace($rootPath)) { "" } else { Join-Path $rootPath $relativeSdmcPath }
         [pscustomobject]@{
@@ -938,6 +950,15 @@ function Get-EmulatorInstallTargets {
             RelativeSdmcPath = $relativeSdmcPath
             ModRoot = $modRoot
             SdmcRoot = $sdmcRoot
+            LegacyModRoots = @(
+                @([object[]]$legacyRelativeModPaths | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } | ForEach-Object {
+                    if ([string]::IsNullOrWhiteSpace($rootPath)) {
+                        ""
+                    } else {
+                        Join-Path $rootPath ([string]$_)
+                    }
+                }) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) -and ([string]$_ -ne $modRoot) }
+            )
             SdmcConfigRoot = if ([string]::IsNullOrWhiteSpace($sdmcRoot)) { "" } else { Join-Path $sdmcRoot "config\swsh-mods-exl" }
             SdmcConfigPath = if ([string]::IsNullOrWhiteSpace($sdmcRoot)) { "" } else { Join-Path $sdmcRoot "config\swsh-mods-exl\config.toml" }
             TitleId = [string]$_.TitleId
@@ -961,6 +982,7 @@ function Get-RequestedEmulatorKeys {
 function Install-PackageToEmulatorTarget {
     param(
         [string]$OutputRomfsRoot,
+        [string]$GameVersion,
         [pscustomobject]$Target
     )
 
@@ -973,6 +995,7 @@ function Install-PackageToEmulatorTarget {
     $alreadyAtTarget = (-not [string]::IsNullOrWhiteSpace($targetModFullPath)) -and
         ($sourcePackageFullPath.TrimEnd('\') -ieq $targetModFullPath.TrimEnd('\'))
     $removedExistingSdmcPaths = New-Object System.Collections.Generic.List[string]
+    $removedExistingLegacyModPaths = New-Object System.Collections.Generic.List[string]
 
     $result = [pscustomobject]@{
         Emulator = [string]$Target.Name
@@ -990,6 +1013,7 @@ function Install-PackageToEmulatorTarget {
         SdmcConfigPath = [string]$Target.SdmcConfigPath
         AlreadyAtTarget = $alreadyAtTarget
         RemovedExistingMod = $false
+        RemovedExistingLegacyModPaths = @()
         RemovedExistingSdmcPaths = @()
         CopiedRomfs = $false
         CopiedExefs = $false
@@ -1008,6 +1032,13 @@ function Install-PackageToEmulatorTarget {
     }
 
     try {
+        foreach ($legacyModRoot in @($Target.LegacyModRoots)) {
+            if (-not [string]::IsNullOrWhiteSpace([string]$legacyModRoot) -and (Test-Path -LiteralPath $legacyModRoot)) {
+                Remove-Item -LiteralPath $legacyModRoot -Recurse -Force
+                $removedExistingLegacyModPaths.Add([string]$legacyModRoot)
+            }
+        }
+
         if (-not $alreadyAtTarget) {
             if (Test-Path -LiteralPath $Target.ModRoot) {
                 Remove-Item -LiteralPath $Target.ModRoot -Recurse -Force
@@ -1021,11 +1052,15 @@ function Install-PackageToEmulatorTarget {
 
             if (Test-Path -LiteralPath $sourceExefsPath) {
                 Copy-DirectoryChildren -SourcePath $sourceExefsPath -DestinationPath (Join-Path $Target.ModRoot "exefs")
+                $null = Sync-RyujinxSpecificSubsdk9 -DestinationExefsRoot (Join-Path $Target.ModRoot "exefs") -GameVersion $GameVersion -TargetKey ([string]$Target.Key)
                 $result.CopiedExefs = $true
             }
         } else {
             $result.CopiedRomfs = $true
             $result.CopiedExefs = (Test-Path -LiteralPath $sourceExefsPath)
+            if ($result.CopiedExefs) {
+                $null = Sync-RyujinxSpecificSubsdk9 -DestinationExefsRoot (Join-Path $Target.ModRoot "exefs") -GameVersion $GameVersion -TargetKey ([string]$Target.Key)
+            }
         }
 
         if (Test-Path -LiteralPath $sourceSdmcPath) {
@@ -1038,10 +1073,12 @@ function Install-PackageToEmulatorTarget {
             $result.CopiedSdmc = $true
         }
 
+        $result.RemovedExistingLegacyModPaths = @($removedExistingLegacyModPaths.ToArray())
         $result.RemovedExistingSdmcPaths = @($removedExistingSdmcPaths.ToArray())
         $result.Installed = $true
         return $result
     } catch {
+        $result.RemovedExistingLegacyModPaths = @($removedExistingLegacyModPaths.ToArray())
         $result.RemovedExistingSdmcPaths = @($removedExistingSdmcPaths.ToArray())
         $result.Error = $_.Exception.Message
         return $result
@@ -1066,7 +1103,7 @@ function Install-PackageToSelectedEmulators {
             continue
         }
 
-        $results.Add((Install-PackageToEmulatorTarget -OutputRomfsRoot $OutputRomfsRoot -Target $target))
+        $results.Add((Install-PackageToEmulatorTarget -OutputRomfsRoot $OutputRomfsRoot -GameVersion $GameVersion -Target $target))
     }
 
     return [object[]]$results.ToArray()
@@ -1126,6 +1163,8 @@ $installRoot
 What the randomizer writes:
 - romfs + exefs go inside the emulator mod folder for title id $titleId
 - ExLaunch config goes under sdmc/sdcard config\\swsh-mods-exl\\config.toml
+- ExLaunch runtime features target Pokemon Sword/Shield update 1.3.2. Install the 1.3.2 game update in your emulator before launching the mod.
+- If an emulator starts crashing after changing ExLaunch builds or runtime options, try clearing that emulator's shader cache manually. The randomizer never deletes shader caches automatically.
 
 Manual paths:
 $(($manualPathLines -join "`r`n"))
@@ -1145,6 +1184,8 @@ $installRoot
 Ce que le randomizer ecrit :
 - romfs + exefs vont dans le dossier de mod de l'emulateur pour le title id $titleId
 - la config ExLaunch va dans sdmc/sdcard config\\swsh-mods-exl\\config.toml
+- les fonctions runtime ExLaunch ciblent Pokemon Epee/Bouclier en version 1.3.2. Installe la mise a jour 1.3.2 dans l'emulateur avant de lancer le mod.
+- Si un emulateur commence a crash apres un changement de build ExLaunch ou d'options runtime, essaie de vider manuellement son cache shaders. Le randomizer ne supprime jamais les caches shaders automatiquement.
 
 Chemins manuels :
 $(($manualPathLines -join "`r`n"))
@@ -1184,6 +1225,7 @@ function Write-InstallationPackage {
         Copy-DirectoryChildren -SourcePath $sourceRomfsPath -DestinationPath (Join-Path $targetModRoot "romfs")
         if (Test-Path -LiteralPath $sourceExefsPath) {
             Copy-DirectoryChildren -SourcePath $sourceExefsPath -DestinationPath (Join-Path $targetModRoot "exefs")
+            $null = Sync-RyujinxSpecificSubsdk9 -DestinationExefsRoot (Join-Path $targetModRoot "exefs") -GameVersion $GameVersion -TargetKey ([string]$target.Key)
         }
         if (Test-Path -LiteralPath $sourceSdmcPath) {
             Copy-DirectoryTreeMerge -SourcePath $sourceSdmcPath -DestinationPath $targetSdmcRoot
@@ -1232,6 +1274,11 @@ function Reset-SelectedEmulatorInstallations {
         try {
             if ([bool]$target.IsDetected) {
                 $removedMod = Remove-PathIfExists -Path $target.ModRoot
+                foreach ($legacyModRoot in @($target.LegacyModRoots)) {
+                    if (-not [string]::IsNullOrWhiteSpace([string]$legacyModRoot)) {
+                        $removedMod = (Remove-PathIfExists -Path $legacyModRoot) -or $removedMod
+                    }
+                }
                 if (Test-Path -LiteralPath $target.SdmcConfigPath) {
                     if (Test-RandomizerManagedSwshModsExlConfig -Path $target.SdmcConfigPath) {
                         Remove-Item -LiteralPath $target.SdmcConfigPath -Force
@@ -1246,6 +1293,11 @@ function Reset-SelectedEmulatorInstallations {
                 }
                 Remove-EmptyDirectoryChain -StartPath $target.SdmcConfigRoot -StopAtPath $target.SdmcRoot
                 Remove-EmptyDirectoryChain -StartPath (Split-Path -Parent $target.ModRoot) -StopAtPath $target.RootPath
+                foreach ($legacyModRoot in @($target.LegacyModRoots)) {
+                    if (-not [string]::IsNullOrWhiteSpace([string]$legacyModRoot)) {
+                        Remove-EmptyDirectoryChain -StartPath (Split-Path -Parent ([string]$legacyModRoot)) -StopAtPath $target.RootPath
+                    }
+                }
             } else {
                 $error = if ($script:UiLanguage -eq "en") {
                     ("{0} was not found on this PC." -f [string]$target.Name)
@@ -1303,7 +1355,7 @@ function Install-PackageToEden {
         }
     }
 
-    $edenResult = Install-PackageToEmulatorTarget -OutputRomfsRoot $OutputRomfsRoot -Target $target[0]
+    $edenResult = Install-PackageToEmulatorTarget -OutputRomfsRoot $OutputRomfsRoot -GameVersion $GameVersion -Target $target[0]
     return [pscustomobject]@{
         Requested = $edenResult.Requested
         Installed = $edenResult.Installed
@@ -1359,10 +1411,40 @@ function Get-ExLaunchArtifactExefsRoot {
     return $candidates[0]
 }
 
-function Get-ExLaunchArtifactRomfsRoot {
-    param([string]$GameVersion)
+function Get-ExpectedExLaunchSubsdk9Hash {
+    param(
+        [string]$GameVersion,
+        [string]$Variant = "stable"
+    )
 
-    $titleId = Get-GameTitleId -GameVersion $GameVersion
+    $normalizedGameVersion = Get-NormalizedGameVersionSelection -Value $GameVersion
+    if ($normalizedGameVersion -eq "Auto") {
+        $normalizedGameVersion = "Sword"
+    }
+    $titleId = Get-GameTitleId -GameVersion $normalizedGameVersion
+    $normalizedVariant = ([string]$Variant).Trim().ToLowerInvariant()
+    switch ("$titleId|$normalizedVariant") {
+        "0100ABF008968000|stable" { return "3358B4547EAC17A009B9BEFCF2BAC72BA0A4E4124A66111C678BFFC620460973" }
+        "0100ABF008968000|ryujinx" { return "AE717A5C4240742C5394F7672641AE3A3A17EA14095E40FA9ACDA4EEE600C196" }
+        "01008DB008C2C000|stable" { return "6FFBBDE4BDFD3FF472CFBC3AA547A9C7EB95D0C10DD9A192E214B1D1FB01965D" }
+        "01008DB008C2C000|ryujinx" { return "B6E0DCFC12E9685483A29E7374E7556AD106BD25F91A2C6B87E043D6C4F7C0D5" }
+        default { return "" }
+    }
+}
+
+function Get-ExLaunchMainNpdmSourcePath {
+    param(
+        [string]$GameVersion,
+        [string]$Variant = "stable"
+    )
+
+    $normalizedGameVersion = Get-NormalizedGameVersionSelection -Value $GameVersion
+    if ($normalizedGameVersion -eq "Auto") {
+        $normalizedGameVersion = "Sword"
+    }
+
+    $titleId = Get-GameTitleId -GameVersion $normalizedGameVersion
+    $normalizedVariant = ([string]$Variant).Trim().ToLowerInvariant()
     $scriptRoot = if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
         $PSScriptRoot
     } elseif (-not [string]::IsNullOrWhiteSpace($PSCommandPath)) {
@@ -1370,7 +1452,212 @@ function Get-ExLaunchArtifactRomfsRoot {
     } else {
         (Get-Location).Path
     }
-    return Join-Path $scriptRoot ("research\swsh-mods-exl\artifact\atmosphere\contents\" + $titleId + "\romfs")
+
+    $candidates = switch ($normalizedVariant) {
+        "ryujinx" {
+            @(
+                (Join-Path $scriptRoot ("assets\exlaunch\" + $titleId + "\main.npdm_ryujinx")),
+                (Join-Path $scriptRoot ("assets\exlaunch\" + $titleId + "\main.npdm"))
+            )
+        }
+        default {
+            @(
+                (Join-Path $scriptRoot ("assets\exlaunch\" + $titleId + "\main.npdm_stable")),
+                (Join-Path $scriptRoot ("assets\exlaunch\" + $titleId + "\main.npdm"))
+            )
+        }
+    }
+
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate) {
+            return $candidate
+        }
+    }
+
+    return ""
+}
+
+function Get-ExLaunchVariantSubsdk9SourcePath {
+    param(
+        [string]$GameVersion,
+        [string]$Variant = "stable"
+    )
+
+    $normalizedGameVersion = Get-NormalizedGameVersionSelection -Value $GameVersion
+    if ($normalizedGameVersion -eq "Auto") {
+        $normalizedGameVersion = "Sword"
+    }
+
+    $titleId = Get-GameTitleId -GameVersion $normalizedGameVersion
+    $normalizedVariant = ([string]$Variant).Trim().ToLowerInvariant()
+    $scriptRoot = if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+        $PSScriptRoot
+    } elseif (-not [string]::IsNullOrWhiteSpace($PSCommandPath)) {
+        Split-Path -Parent $PSCommandPath
+    } else {
+        (Get-Location).Path
+    }
+
+    $candidates = switch ($normalizedVariant) {
+        "ryujinx" {
+            @(
+                (Join-Path $scriptRoot ("assets\exlaunch\" + $titleId + "\subsdk9_ryujinx")),
+                (Join-Path $scriptRoot ("research\swsh-mods-exl\artifact\atmosphere\contents\" + $titleId + "\exefs\subsdk9")),
+                (Join-Path $scriptRoot ("research\downloads\" + ($(if ($titleId -eq "01008DB008C2C000") { "SHIELD_artifact\SHIELD_artifact" } else { "SWORD_artifact\SWORD_artifact" })) + "\atmosphere\contents\" + $titleId + "\exefs\subsdk9"))
+            )
+        }
+        default {
+            @(
+                (Join-Path $scriptRoot ("assets\exlaunch\" + $titleId + "\subsdk9_stable")),
+                (Join-Path $scriptRoot ("assets\exlaunch\" + $titleId + "\subsdk9"))
+            )
+        }
+    }
+
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate) {
+            return $candidate
+        }
+    }
+
+    return ""
+}
+
+function Test-ExLaunchSubsdk9Hash {
+    param(
+        [string]$Path,
+        [string]$GameVersion,
+        [string]$Variant = "stable"
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Path) -or (-not (Test-Path -LiteralPath $Path))) {
+        return $false
+    }
+
+    $expectedHash = Get-ExpectedExLaunchSubsdk9Hash -GameVersion $GameVersion -Variant $Variant
+    if ([string]::IsNullOrWhiteSpace($expectedHash)) {
+        return $true
+    }
+
+    $actualHash = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+    return ($actualHash -ieq $expectedHash)
+}
+
+function Write-ExLaunchVariantManifest {
+    param(
+        [string]$OutputRomfsRoot,
+        [string]$GameVersion
+    )
+
+    $packageRoot = Get-OutputPackageRoot -OutputRomfsRoot $OutputRomfsRoot
+    $variantsRoot = Join-Path $packageRoot "exlaunch_variants"
+    Ensure-Directory -Path $variantsRoot
+
+    $stableSourcePath = Get-ExLaunchVariantSubsdk9SourcePath -GameVersion $GameVersion -Variant "stable"
+    $ryujinxSourcePath = Get-ExLaunchVariantSubsdk9SourcePath -GameVersion $GameVersion -Variant "ryujinx"
+    $stableVariantRoot = Join-Path $variantsRoot "stable"
+    $ryujinxVariantRoot = Join-Path $variantsRoot "ryujinx"
+    Ensure-Directory -Path $stableVariantRoot
+    Ensure-Directory -Path $ryujinxVariantRoot
+
+    if (-not [string]::IsNullOrWhiteSpace($stableSourcePath) -and (Test-Path -LiteralPath $stableSourcePath)) {
+        Copy-Item -LiteralPath $stableSourcePath -Destination (Join-Path $stableVariantRoot "subsdk9") -Force
+    }
+    if (-not [string]::IsNullOrWhiteSpace($ryujinxSourcePath) -and (Test-Path -LiteralPath $ryujinxSourcePath)) {
+        Copy-Item -LiteralPath $ryujinxSourcePath -Destination (Join-Path $ryujinxVariantRoot "subsdk9") -Force
+    }
+
+    $manifestPath = Join-Path $variantsRoot "manifest.json"
+    $stableHash = if (Test-Path -LiteralPath (Join-Path $stableVariantRoot "subsdk9")) { (Get-FileHash -LiteralPath (Join-Path $stableVariantRoot "subsdk9") -Algorithm SHA256).Hash } else { "" }
+    $ryujinxHash = if (Test-Path -LiteralPath (Join-Path $ryujinxVariantRoot "subsdk9")) { (Get-FileHash -LiteralPath (Join-Path $ryujinxVariantRoot "subsdk9") -Algorithm SHA256).Hash } else { "" }
+    $manifest = [ordered]@{
+        gameVersion = (Get-NormalizedGameVersionSelection -Value $GameVersion)
+        titleId = (Get-GameTitleId -GameVersion $GameVersion)
+        defaultOutputVariant = "stable"
+        autoInstallVariantByEmulator = [ordered]@{
+            eden = "stable"
+            ryujinx = "ryujinx"
+            yuzu = "stable"
+            sudachi = "stable"
+            citron = "stable"
+            suyu = "stable"
+            citronneo = "stable"
+        }
+        variants = [ordered]@{
+            stable = [ordered]@{
+                file = (Join-Path $stableVariantRoot "subsdk9")
+                expectedHash = (Get-ExpectedExLaunchSubsdk9Hash -GameVersion $GameVersion -Variant "stable")
+                actualHash = $stableHash
+            }
+            ryujinx = [ordered]@{
+                file = (Join-Path $ryujinxVariantRoot "subsdk9")
+                expectedHash = (Get-ExpectedExLaunchSubsdk9Hash -GameVersion $GameVersion -Variant "ryujinx")
+                actualHash = $ryujinxHash
+            }
+        }
+    } | ConvertTo-Json -Depth 6
+    [IO.File]::WriteAllText($manifestPath, $manifest, [Text.UTF8Encoding]::new($false))
+    return $manifestPath
+}
+
+function Sync-RyujinxSpecificSubsdk9 {
+    param(
+        [string]$DestinationExefsRoot,
+        [string]$GameVersion,
+        [string]$TargetKey
+    )
+
+    if (([string]$TargetKey).ToLowerInvariant() -ne "ryujinx") {
+        return $false
+    }
+
+    if ([string]::IsNullOrWhiteSpace($DestinationExefsRoot)) {
+        return $false
+    }
+
+    $sourcePath = Get-ExLaunchVariantSubsdk9SourcePath -GameVersion $GameVersion -Variant "ryujinx"
+    $mainNpdmSourcePath = Get-ExLaunchMainNpdmSourcePath -GameVersion $GameVersion -Variant "ryujinx"
+    if ([string]::IsNullOrWhiteSpace($sourcePath) -or (-not (Test-Path -LiteralPath $sourcePath))) {
+        return $false
+    }
+    if ([string]::IsNullOrWhiteSpace($mainNpdmSourcePath) -or (-not (Test-Path -LiteralPath $mainNpdmSourcePath))) {
+        return $false
+    }
+
+    if (-not (Test-ExLaunchSubsdk9Hash -Path $sourcePath -GameVersion $GameVersion -Variant "ryujinx")) {
+        return $false
+    }
+
+    $destinationPath = Join-Path $DestinationExefsRoot "subsdk9"
+    $mainNpdmDestinationPath = Join-Path $DestinationExefsRoot "main.npdm"
+    Ensure-Directory -Path $DestinationExefsRoot
+    Copy-Item -LiteralPath $sourcePath -Destination $destinationPath -Force
+    Copy-Item -LiteralPath $mainNpdmSourcePath -Destination $mainNpdmDestinationPath -Force
+    return $true
+}
+
+function Get-ExLaunchArtifactRomfsRoot {
+    param([string]$GameVersion)
+
+    $scriptRoot = if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+        $PSScriptRoot
+    } elseif (-not [string]::IsNullOrWhiteSpace($PSCommandPath)) {
+        Split-Path -Parent $PSCommandPath
+    } else {
+        (Get-Location).Path
+    }
+    $titleId = Get-GameTitleId -GameVersion $GameVersion
+    $candidates = @(
+        (Join-Path $scriptRoot "assets\exlaunch\runtime"),
+        (Join-Path $scriptRoot ("research\swsh-mods-exl\artifact\atmosphere\contents\" + $titleId + "\romfs")),
+        (Join-Path $scriptRoot ("research\downloads\" + ($(if ($titleId -eq "01008DB008C2C000") { "SHIELD_artifact\SHIELD_artifact" } else { "SWORD_artifact\SWORD_artifact" })) + "\atmosphere\contents\" + $titleId + "\romfs"))
+    )
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate) {
+            return $candidate
+        }
+    }
+    return $candidates[0]
 }
 
 function Initialize-ScriptRecordCodec {
@@ -1626,11 +1913,19 @@ function Copy-ExLaunchCustomRomfsFiles {
         "bin\script\amx\randomizer_pc_menu.amx"
     )
 
+    $missingFiles = New-Object System.Collections.Generic.List[string]
     foreach ($relativePath in $relativeFiles) {
         $sourcePath = Join-Path $artifactRomfsRoot $relativePath
         if (-not (Test-Path -LiteralPath $sourcePath)) {
-            continue
+            $missingFiles.Add($relativePath)
         }
+    }
+    if ($missingFiles.Count -gt 0) {
+        throw ("ExLaunch runtime files missing under '{0}': {1}" -f $artifactRomfsRoot, (($missingFiles.ToArray()) -join ", "))
+    }
+
+    foreach ($relativePath in $relativeFiles) {
+        $sourcePath = Join-Path $artifactRomfsRoot $relativePath
         $targetPath = Join-Path $OutputRomfsRoot $relativePath
         Ensure-ParentDirectory -Path $targetPath
         Copy-Item -LiteralPath $sourcePath -Destination $targetPath -Force
@@ -1661,12 +1956,12 @@ function Deploy-ExLaunchModule {
     }
     $titleId = Get-GameTitleId -GameVersion $normalizedGameVersion
     $userExefsRoot = Resolve-SourceExefsRoot -SourceRomfsRoot $SourceRomfsRoot -SourceExefsRoot $SourceExefsRoot -GameVersion $normalizedGameVersion
-    $subsdkSourceRoot = Get-ExLaunchArtifactExefsRoot -GameVersion $normalizedGameVersion
-    $mainNpdmSourcePath = if (-not [string]::IsNullOrWhiteSpace($userExefsRoot)) { Join-Path $userExefsRoot "main.npdm" } else { "" }
-    $subsdkSourcePath = Join-Path $subsdkSourceRoot "subsdk9"
+    $mainNpdmSourcePath = Get-ExLaunchMainNpdmSourcePath -GameVersion $normalizedGameVersion
+    $subsdkSourcePath = Get-ExLaunchVariantSubsdk9SourcePath -GameVersion $normalizedGameVersion -Variant "stable"
+    $subsdkSourceRoot = if ([string]::IsNullOrWhiteSpace($subsdkSourcePath)) { "" } else { Split-Path -Parent $subsdkSourcePath }
     $missingFiles = New-Object System.Collections.Generic.List[string]
     if ([string]::IsNullOrWhiteSpace($mainNpdmSourcePath) -or (-not (Test-Path -LiteralPath $mainNpdmSourcePath))) {
-        $missingFiles.Add("main.npdm depuis le dump utilisateur exefs")
+        $missingFiles.Add("main.npdm ExLaunch-compatible du projet")
     }
     if (-not (Test-Path -LiteralPath $subsdkSourcePath)) {
         $missingFiles.Add($subsdkSourcePath)
@@ -1691,6 +1986,7 @@ function Deploy-ExLaunchModule {
             TargetRoot = $targetRoot
             MainNpdmPath = $mainNpdmTargetPath
             Subsdk9Path = $subsdkTargetPath
+            VariantManifestPath = ""
             MissingFiles = @($missingFiles.ToArray())
         }
     }
@@ -1698,7 +1994,11 @@ function Deploy-ExLaunchModule {
     Ensure-Directory -Path $targetRoot
     Copy-Item -LiteralPath $mainNpdmSourcePath -Destination $mainNpdmTargetPath -Force
     Copy-Item -LiteralPath $subsdkSourcePath -Destination $subsdkTargetPath -Force
+    if (-not (Test-ExLaunchSubsdk9Hash -Path $subsdkTargetPath -GameVersion $normalizedGameVersion -Variant "stable")) {
+        throw ("subsdk9 stable hash mismatch for {0} at {1}" -f $normalizedGameVersion, $subsdkTargetPath)
+    }
     $pcScriptApplied = Copy-ExLaunchCustomRomfsFiles -SourceRomfsRoot $SourceRomfsRoot -OutputRomfsRoot $OutputRomfsRoot -GameVersion $normalizedGameVersion -RuntimePcControlsEnabled $RuntimePcControlsEnabled
+    $variantManifestPath = Write-ExLaunchVariantManifest -OutputRomfsRoot $OutputRomfsRoot -GameVersion $normalizedGameVersion
 
     return [pscustomobject]@{
         Requested = $true
@@ -1713,6 +2013,7 @@ function Deploy-ExLaunchModule {
         TargetRoot = $targetRoot
         MainNpdmPath = $mainNpdmTargetPath
         Subsdk9Path = $subsdkTargetPath
+        VariantManifestPath = $variantManifestPath
         MissingFiles = @()
     }
 }
@@ -1938,6 +2239,7 @@ function Write-ExpLevelCapExLaunchConfig {
 
     $packageRoot = Get-OutputPackageRoot -OutputRomfsRoot $OutputRomfsRoot
     $packageConfigPath = Join-Path $packageRoot "sdmc\config\swsh-mods-exl\config.toml"
+    $romfsFallbackConfigPath = Join-Path $packageRoot "romfs\config\swsh-mods-exl\config.toml"
     $emulatorSdmcRoot = Get-EmulatorSdmcRootForOutput -OutputRomfsRoot $OutputRomfsRoot
     $configPath = if ([string]::IsNullOrWhiteSpace($emulatorSdmcRoot)) {
         $packageConfigPath
@@ -2002,6 +2304,9 @@ active = $earlyBikeActiveText
 
     Ensure-ParentDirectory -Path $configPath
     [IO.File]::WriteAllText($configPath, $content, [Text.UTF8Encoding]::new($false))
+
+    Ensure-ParentDirectory -Path $romfsFallbackConfigPath
+    [IO.File]::WriteAllText($romfsFallbackConfigPath, $content, [Text.UTF8Encoding]::new($false))
     return $configPath
 }
 
@@ -9250,8 +9555,8 @@ function Write-RandomizationReport {
                 runtimePcScriptApplied = $Result.RuntimePcScriptApplied
                 missingFiles = @($Result.ExLaunchModuleMissingFiles)
                 notes = [ordered]@{
-                    fr = "Le main.npdm vient toujours du dump ExeFS utilisateur detecte a cote du ROMFS source. Le subsdk9 est le module custom ExLaunch du randomizer. Les scripts ROMFS runtime sont ajoutes en patchant le script_id_record.bin copie depuis le dump utilisateur, sans utiliser de script_id_record vanilla embarque."
-                    en = "main.npdm always comes from the user's ExeFS dump detected next to the source ROMFS. subsdk9 is the randomizer's custom ExLaunch module. Runtime ROMFS scripts are added by patching script_id_record.bin copied from the user's dump, without using a bundled vanilla script_id_record."
+                    fr = "Le main.npdm ExLaunch-compatible fourni par le projet est deploye avec le module. Le subsdk9 est le module custom ExLaunch du randomizer. Les scripts ROMFS runtime sont ajoutes en patchant le script_id_record.bin copie depuis le dump utilisateur, sans utiliser de script_id_record vanilla embarque."
+                    en = "The project's ExLaunch-compatible main.npdm is deployed with the module. subsdk9 is the randomizer's custom ExLaunch module. Runtime ROMFS scripts are added by patching script_id_record.bin copied from the user's dump, without using a bundled vanilla script_id_record."
                 }
             }
         }
@@ -10355,6 +10660,7 @@ function Invoke-Randomization {
         ExLaunchModuleTargetRoot = $exLaunchModuleDeployment.TargetRoot
         ExLaunchModuleMainNpdmPath = $exLaunchModuleDeployment.MainNpdmPath
         ExLaunchModuleSubsdk9Path = $exLaunchModuleDeployment.Subsdk9Path
+        ExLaunchVariantManifestPath = if ($exLaunchModuleDeployment.PSObject.Properties.Name -contains "VariantManifestPath") { $exLaunchModuleDeployment.VariantManifestPath } else { "" }
         ExLaunchModuleMissingFiles = @($exLaunchModuleDeployment.MissingFiles)
         InstallationPackageRoot = ""
         InstallationPackageReadmePath = ""
@@ -11746,10 +12052,11 @@ function Register-ControlDescription {
         return
     }
 
+    $getLocalizedDescriptionText = (Get-Item -LiteralPath function:\Get-LocalizedDescriptionText).ScriptBlock
     $update = {
         param($sender, $args)
         $script:LastDetailsDescription = $Description
-        $DetailsBox.Text = Get-LocalizedDescriptionText -Description $Description
+        $DetailsBox.Text = & $getLocalizedDescriptionText -Description $Description
     }.GetNewClosure()
 
     $Control.Add_Enter($update)
@@ -12144,15 +12451,15 @@ function Get-UiStrings {
                 DisableExpShare = "Default EXP Share: OFF: writes enabled=false to the generated ExLaunch [exp_share] config. If the PC runtime menu is enabled, this is only the starting state and the player can toggle it in game."
                 EarlyBike = "Rotom Bike from the start: writes active=true to the generated ExLaunch [early_bike] config. The module grants the real Rotom Bike key item once the field is loaded."
                 RuntimePcControls = "PC menu runtime controls: opt-in replacement of the Pokemon Center PC script. This option does not disable EXP Share by itself; it only allows changing runtime options in game. When unchecked, the vanilla PC menu stays intact and the generated config defaults are used directly."
-                DynamicExpLevelCap = "Dynamic EXP level cap: no longer writes the old raw IPS. The reliable path uses ExLaunch at the final EXP calculation point. The tool copies main.npdm from the user's ExeFS dump and only adds the custom subsdk9 module."
-                StrictBossMaxLevelCap = "Strict boss max level cap: still computes and normalizes the listed boss teams, but in-game EXP enforcement now requires the ExLaunch module. main.npdm is copied from the user's ExeFS dump; the randomizer only adds the custom subsdk9 module. Without that module, the JSON is a reference and EXP is not blocked."
+                DynamicExpLevelCap = "Dynamic EXP level cap: no longer writes the old raw IPS. The reliable path uses ExLaunch at the final EXP calculation point. The tool deploys the project's ExLaunch-compatible main.npdm together with the custom subsdk9 module."
+                StrictBossMaxLevelCap = "Strict boss max level cap: still computes and normalizes the listed boss teams, but in-game EXP enforcement now requires the ExLaunch module. The tool deploys the project's ExLaunch-compatible main.npdm together with the custom subsdk9 module. Without that module, the JSON is a reference and EXP is not blocked."
                 MainStorySoftLevelCap = "Soft main-story progression EXP cap: computes a 9-step badge-based cap table from grouped major progression fights instead of only the next gym. Gyms stay the backbone, and the real villain / endgame bosses in the same progression block are folded into that block's cap. This is meant to reduce overleveling without changing the cap every few minutes. In-game enforcement still requires the ExLaunch module; the generated details are exported in story-main-progression-soft-caps.json."
-                GymLeagueStoryLevelCap = "Gym/champion story EXP cap: computes a 9-step cap table from generated gym/champion teams. In-game enforcement requires ExLaunch. main.npdm is copied from the user's ExeFS dump; the randomizer only provides the custom subsdk9 module."
+                GymLeagueStoryLevelCap = "Gym/champion story EXP cap: computes a 9-step cap table from generated gym/champion teams. In-game enforcement requires ExLaunch. The tool deploys the project's ExLaunch-compatible main.npdm together with the custom subsdk9 module."
                 StoryMajorBattleOrderLevelCap = "Ordered main-story major battle mode: keeps the dynamic EXP patch globally, then normalizes a fixed ordered list of major base-story fights to each team's max level after randomization. It covers the gyms plus major Hop, Bede, Marnie, Oleana, Rose, and Leon battles from the main story, exports them to story-major-battle-caps.json, and uses every starter-dependent or version-dependent variant that exists in trainer data. This is still based on a curated ordered list, not a live hidden story-state reader."
                 AutoInstallToEden = "Auto-install into selected detected emulators: after generation finishes, the tool tries to copy romfs, exefs and the generated sdmc subtree into every checked emulator found on the PC."
                 EdenModName = "Installed mod folder name: controls the final mod folder name under the emulator-specific load/mods path. Keep Randomizer if you simply want the new build to replace the previous run."
                 InstallTargetEden = "Install to Eden: this target uses %AppData%\\eden\\load\\<titleId>\\<modName> plus %AppData%\\eden\\sdmc\\config\\swsh-mods-exl\\config.toml."
-                InstallTargetRyujinx = "Install to Ryujinx: this target uses %AppData%\\Ryujinx\\mods\\contents\\<titleId>\\<modName> plus %AppData%\\Ryujinx\\sdcard\\config\\swsh-mods-exl\\config.toml."
+                InstallTargetRyujinx = "Install to Ryujinx: this target uses %AppData%\\Ryujinx\\sdcard\\atmosphere\\contents\\<titleId>\\<modName> plus %AppData%\\Ryujinx\\sdcard\\config\\swsh-mods-exl\\config.toml. Legacy mods\\contents installs are cleaned automatically."
                 InstallTargetYuzu = "Install to Yuzu: this target uses %AppData%\\yuzu\\load\\<titleId>\\<modName> plus %AppData%\\yuzu\\sdmc\\config\\swsh-mods-exl\\config.toml."
                 InstallTargetSudachi = "Install to Sudachi: this target uses %AppData%\\sudachi\\load\\<titleId>\\<modName> plus %AppData%\\sudachi\\sdmc\\config\\swsh-mods-exl\\config.toml."
                 InstallTargetCitron = "Install to Citron: this target uses %AppData%\\citron\\load\\<titleId>\\<modName> plus %AppData%\\citron\\sdmc\\config\\swsh-mods-exl\\config.toml."
@@ -12407,15 +12714,15 @@ function Get-UiStrings {
             DisableExpShare = "EXP Share par defaut: OFF: ecrit enabled=false dans la config ExLaunch [exp_share] generee. Si le menu PC runtime est active, c'est seulement l'etat de depart et le joueur peut le changer en jeu."
             EarlyBike = "Velo Rotom des le debut: ecrit active=true dans la config ExLaunch [early_bike]. Le module ajoute une fois le vrai objet rare Velo Rotom quand le terrain est charge."
             RuntimePcControls = "Menu PC pour changer en jeu: remplace le script du PC du Centre Pokemon uniquement si cette option est cochee. Cette option ne desactive pas l'EXP Share toute seule; elle permet seulement de modifier les options runtime en jeu. Decoche, le menu PC vanilla reste intact et les options du logiciel sont appliquees directement."
-            DynamicExpLevelCap = "Levelcap EXP dynamique: n'ecrit plus l'ancien IPS brut. Le chemin fiable passe par ExLaunch a la fin du calcul EXP. L'outil copie main.npdm depuis le dump ExeFS utilisateur et ajoute seulement le module custom subsdk9."
-            StrictBossMaxLevelCap = "Cap boss max strict: calcule toujours les caps et peut normaliser les equipes boss listees, mais le blocage EXP en jeu requiert maintenant le module ExLaunch. main.npdm vient du dump ExeFS utilisateur; le randomizer ajoute seulement le module custom subsdk9. Sans ce module, le JSON sert de reference et l'EXP n'est pas bloquee."
+            DynamicExpLevelCap = "Levelcap EXP dynamique: n'ecrit plus l'ancien IPS brut. Le chemin fiable passe par ExLaunch a la fin du calcul EXP. L'outil deploie le main.npdm ExLaunch-compatible du projet avec le module custom subsdk9."
+            StrictBossMaxLevelCap = "Cap boss max strict: calcule toujours les caps et peut normaliser les equipes boss listees, mais le blocage EXP en jeu requiert maintenant le module ExLaunch. L'outil deploie le main.npdm ExLaunch-compatible du projet avec le module custom subsdk9. Sans ce module, le JSON sert de reference et l'EXP n'est pas bloquee."
             MainStorySoftLevelCap = "Cap progression principale souple: calcule une table de 9 caps basee sur les badges, mais chaque palier prend le niveau max des gros combats de progression du meme bloc plutot que seulement la prochaine arene. Les arenes restent l'ossature, et les vrais boss antagonistes / fin d'histoire du meme bloc sont ajoutes pour eviter l'overlevel sans changer le cap toutes les 10 minutes. L'application en jeu demande le module ExLaunch; le detail est exporte dans story-main-progression-soft-caps.json."
-            GymLeagueStoryLevelCap = "Cap EXP histoire arenes/Tarak: calcule une table de 9 caps depuis les vraies equipes generees. L'application en jeu requiert ExLaunch. main.npdm vient du dump ExeFS utilisateur; le randomizer fournit seulement le module custom subsdk9."
+            GymLeagueStoryLevelCap = "Cap EXP histoire arenes/Tarak: calcule une table de 9 caps depuis les vraies equipes generees. L'application en jeu requiert ExLaunch. L'outil deploie le main.npdm ExLaunch-compatible du projet avec le module custom subsdk9."
             StoryMajorBattleOrderLevelCap = "Mode ordre histoire principale: garde le patch EXP dynamique global puis normalise une liste fixe et ordonnee des gros combats de l'histoire principale sur le niveau max de chaque equipe apres randomisation. Ca couvre les arenes plus les combats majeurs de Nabil, Travis, Rosemary, Liv, Shehroz et Tarak, exportes dans story-major-battle-caps.json, avec toutes les variantes dependantes du starter ou de la version presentes dans les donnees dresseurs. Ca repose encore sur une liste ordonnee preparee a la main, pas sur un lecteur temps reel de l'etat cache du scenario."
             AutoInstallToEden = "Installation auto vers les emulateurs coches et detectes: apres la generation, l'outil tente de copier romfs, exefs et le sous-arbre sdmc genere vers tous les emulateurs coches et trouves sur le PC."
             EdenModName = "Nom du dossier de mod installe: controle le nom final du dossier de mod dans le chemin load/mods propre a chaque emulateur. Garde Randomizer si tu veux simplement remplacer la run precedente."
             InstallTargetEden = "Installer vers Eden: utilise %AppData%\\eden\\load\\<titleId>\\<nomDuMod> plus %AppData%\\eden\\sdmc\\config\\swsh-mods-exl\\config.toml."
-            InstallTargetRyujinx = "Installer vers Ryujinx: utilise %AppData%\\Ryujinx\\mods\\contents\\<titleId>\\<nomDuMod> plus %AppData%\\Ryujinx\\sdcard\\config\\swsh-mods-exl\\config.toml."
+            InstallTargetRyujinx = "Installer vers Ryujinx: utilise %AppData%\\Ryujinx\\sdcard\\atmosphere\\contents\\<titleId>\\<nomDuMod> plus %AppData%\\Ryujinx\\sdcard\\config\\swsh-mods-exl\\config.toml. Les anciennes installations mods\\contents sont nettoyees automatiquement."
             InstallTargetYuzu = "Installer vers Yuzu: utilise %AppData%\\yuzu\\load\\<titleId>\\<nomDuMod> plus %AppData%\\yuzu\\sdmc\\config\\swsh-mods-exl\\config.toml."
             InstallTargetSudachi = "Installer vers Sudachi: utilise %AppData%\\sudachi\\load\\<titleId>\\<nomDuMod> plus %AppData%\\sudachi\\sdmc\\config\\swsh-mods-exl\\config.toml."
             InstallTargetCitron = "Installer vers Citron: utilise %AppData%\\citron\\load\\<titleId>\\<nomDuMod> plus %AppData%\\citron\\sdmc\\config\\swsh-mods-exl\\config.toml."
@@ -12480,7 +12787,7 @@ function Get-RandomizerHelpText {
         & $addLine "Every option below is generated from the same labels/descriptions used by the interface. Examples use Victreebel and Empoleon so the behavior stays concrete."
         & $addSection "Main build"
         & $addOption $ui.SourceLabel "Folder from the user's ROMFS dump. Example: select the romfs folder from Pokemon Sword/Shield; if the expected SWSH files are missing, generation must stop instead of producing a broken mod."
-        & $addOption $ui.SourceExefsLabel "Folder from the user's ExeFS dump. Example: the tool copies main.npdm from this user dump when ExLaunch is needed; no Nintendo ExeFS file is bundled by the tool."
+        & $addOption $ui.SourceExefsLabel "Folder from the user's ExeFS dump. Example: select the exefs folder next to your dump when a runtime flow asks for it. The shipped ExLaunch package now provides its own compatible main.npdm/subsdk9 payloads."
         & $addOption $ui.OutputLabel "Root folder where the generated mod is written. Example: choosing output\\Sword always creates romfs there; exefs and sdmc are added only when an ExeFS folder is explicitly provided for ExLaunch/runtime features."
         & $addOption $ui.GameVersion "Chooses the title ID and version-specific install paths. Example: Sword and Shield use different emulator content folders."
         & $addOption $ui.Seed "Controls repeatability. Example: seed 123 always produces the same Victreebel to Empoleon style mappings; -1 creates a new random seed."
@@ -12497,7 +12804,7 @@ function Get-RandomizerHelpText {
         & $addLine "Chaque option ci-dessous reprend les memes libelles/descriptions que l'interface. Les exemples utilisent Empiflor et Pingoleon pour que l'effet soit concret."
         & $addSection "Generation principale"
         & $addOption $ui.SourceLabel "Dossier romfs du dump utilisateur. Exemple: selectionne le dossier romfs de Pokemon Epee/Bouclier; si les fichiers SWSH attendus manquent, la generation doit s'arreter au lieu de sortir un mod casse."
-        & $addOption $ui.SourceExefsLabel "Dossier exefs du dump utilisateur. Exemple: l'outil copie main.npdm depuis ce dump utilisateur quand ExLaunch est necessaire; aucun fichier ExeFS Nintendo n'est fourni avec le logiciel."
+        & $addOption $ui.SourceExefsLabel "Dossier exefs du dump utilisateur. Exemple: selectionne le dossier exefs a cote de ton dump quand un flux runtime le demande. Le package ExLaunch fourni embarque maintenant son propre couple main.npdm/subsdk9 compatible."
         & $addOption $ui.OutputLabel "Dossier racine ou le mod genere est ecrit. Exemple: choisir output\\Epee cree toujours romfs dedans; exefs et sdmc ne sont ajoutes que si un dossier ExeFS est explicitement fourni pour les options ExLaunch/runtime."
         & $addOption $ui.GameVersion "Choisit le title ID et les chemins d'installation selon le jeu. Exemple: Epee et Bouclier n'utilisent pas le meme dossier de contenu emulateur."
         & $addOption $ui.Seed "Controle la reproductibilite. Exemple: seed 123 redonne toujours les memes mappings du style Empiflor vers Pingoleon; -1 cree un nouveau tirage."
@@ -13733,8 +14040,8 @@ function Show-Gui {
     Register-ControlDescription -Control $validateBuildButton -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.ValidateBuild; en = $uiDescEn.Descriptions.ValidateBuild }
     Register-ControlDescription -Control $buildSummaryButton -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.BuildSummary; en = $uiDescEn.Descriptions.BuildSummary }
     Register-ControlDescription -Control $sourceBox -DetailsBox $detailsBox -Description @{ fr = "Dossier ROMFS original du dump utilisateur. Exemple: selectionne ...\\Epee\\romfs; le logiciel copie seulement les fichiers necessaires puis modifie les tables ROMFS en sortie."; en = "Original ROMFS folder from the user's dump. Example: select ...\\Sword\\romfs; the tool copies only needed files and edits ROMFS tables in the generated output." }
-    Register-ControlDescription -Control $sourceExefsBox -DetailsBox $detailsBox -Description @{ fr = "Dossier ExeFS original du dump utilisateur. Exemple: selectionne ...\\Epee\\exefs, le dossier qui contient main.npdm. Le logiciel copie ce main.npdm utilisateur et ajoute seulement son subsdk9 custom fourni avec le projet."; en = "Original ExeFS folder from the user's dump. Example: select ...\\Sword\\exefs, the folder containing main.npdm. The tool copies that user-provided main.npdm and only adds its custom subsdk9 shipped with the project." }
-    Register-ControlDescription -Control $outputBox -DetailsBox $detailsBox -Description @{ fr = "Dossier de sortie du mod. Exemple: ...\\output\\Epee. Le logiciel cree toujours romfs dedans. Il n'ajoute exefs\\subsdk9, exefs\\main.npdm copie depuis ton dump et sdmc\\config que si un dossier ExeFS est explicitement fourni pour les options ExLaunch/runtime."; en = "Generated mod folder. Example: ...\\output\\Sword. The tool always creates romfs there. It only adds exefs\\subsdk9, exefs\\main.npdm copied from your dump, and sdmc\\config when an ExeFS folder is explicitly provided for ExLaunch/runtime features." }
+    Register-ControlDescription -Control $sourceExefsBox -DetailsBox $detailsBox -Description @{ fr = "Dossier ExeFS original du dump utilisateur. Exemple: selectionne ...\\Epee\\exefs quand un flux runtime le demande. Le package ExLaunch fourni embarque maintenant son propre main.npdm compatible et son subsdk9 custom."; en = "Original ExeFS folder from the user's dump. Example: select ...\\Sword\\exefs when a runtime flow asks for it. The shipped ExLaunch package now includes its own compatible main.npdm and custom subsdk9." }
+    Register-ControlDescription -Control $outputBox -DetailsBox $detailsBox -Description @{ fr = "Dossier de sortie du mod. Exemple: ...\\output\\Epee. Le logiciel cree toujours romfs dedans. Il ajoute aussi exefs\\subsdk9, exefs\\main.npdm et sdmc\\config quand un flux ExLaunch/runtime est actif."; en = "Generated mod folder. Example: ...\\output\\Sword. The tool always creates romfs there. It also adds exefs\\subsdk9, exefs\\main.npdm, and sdmc\\config when an ExLaunch/runtime flow is active." }
     Register-ControlDescription -Control $controls.DisableExpShare -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.DisableExpShare; en = $uiDescEn.Descriptions.DisableExpShare }
     Register-ControlDescription -Control $controls.EarlyBike -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.EarlyBike; en = $uiDescEn.Descriptions.EarlyBike }
     Register-ControlDescription -Control $controls.RuntimePcControls -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.RuntimePcControls; en = $uiDescEn.Descriptions.RuntimePcControls }

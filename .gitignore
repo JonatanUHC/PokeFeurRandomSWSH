@@ -1,7 +1,6 @@
 # Generated mod outputs
 output/
 Installation/
-cache/
 tmp-*.png
 tmp-*.jpg
 tmp-*.jpeg
@@ -41,10 +40,16 @@ assets/*
 !assets/exlaunch/
 assets/exlaunch/*
 !assets/exlaunch/README.txt
+!assets/exlaunch/runtime/
+!assets/exlaunch/runtime/**
 !assets/exlaunch/0100ABF008968000/
 !assets/exlaunch/0100ABF008968000/subsdk9
+!assets/exlaunch/0100ABF008968000/subsdk9_stable
+!assets/exlaunch/0100ABF008968000/subsdk9_ryujinx
 !assets/exlaunch/01008DB008C2C000/
 !assets/exlaunch/01008DB008C2C000/subsdk9
+!assets/exlaunch/01008DB008C2C000/subsdk9_stable
+!assets/exlaunch/01008DB008C2C000/subsdk9_ryujinx
 
 # Local research outputs that can contain Nintendo binaries or generated artifacts
 research/

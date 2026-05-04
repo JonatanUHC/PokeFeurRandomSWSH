@@ -107,6 +107,7 @@ There are three modes:
 - Windows PowerShell 5.1 or newer.
 - Your own `romfs` dump from a Pokemon Sword or Pokemon Shield copy that you personally own.
 - Your own `exefs` dump only if you enable ExLaunch runtime options such as EXP Share control, level caps, PC runtime menu, or hidden overworld battles.
+- If you use ExLaunch runtime options, your game/update target must be **Pokemon Sword or Shield v1.3.2**. On emulators, make sure the `1.3.2` update is actually installed and selected.
 - Internet access the first time you use Smogon modes, because the tool builds a local cache from public Smogon pages and public Pokemon Showdown indexes.
 - Node.js only if you manually rebuild Smogon cache files from `tools/build-smogon-dex-cache.js`.
 
@@ -148,6 +149,7 @@ output/Sword/
 - `romfs/` contains modified files derived from your own `romfs`.
 - `exefs/` is created when runtime options need ExLaunch. `main.npdm` must come from your own `exefs`; `subsdk9` is the custom project module.
 - `sdmc/config/swsh-mods-exl/config.toml` stores runtime settings such as EXP Share state, EXP multiplier, level caps, and overworld battle behavior.
+- The repo ships emulator-specific ExLaunch payloads for stable Eden/Yuzu-style targets and for Ryujinx separately.
 
 The generated output can contain modified Nintendo data. Do not publish or share generated `romfs`, `exefs`, `sdmc`, or full `output` folders.
 

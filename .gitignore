@@ -36,6 +36,16 @@ keys.txt
 main
 subsdk*
 
+# Versioned custom ExLaunch payloads shipped with the project
+assets/*
+!assets/exlaunch/
+assets/exlaunch/*
+!assets/exlaunch/README.txt
+!assets/exlaunch/0100ABF008968000/
+!assets/exlaunch/0100ABF008968000/subsdk9
+!assets/exlaunch/01008DB008C2C000/
+!assets/exlaunch/01008DB008C2C000/subsdk9
+
 # Local research outputs that can contain Nintendo binaries or generated artifacts
 research/
 research/analysis_nso/

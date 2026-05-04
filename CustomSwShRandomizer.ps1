@@ -1346,7 +1346,17 @@ function Get-ExLaunchArtifactExefsRoot {
     } else {
         (Get-Location).Path
     }
-    return Join-Path $scriptRoot ("research\swsh-mods-exl\artifact\atmosphere\contents\" + $titleId + "\exefs")
+    $candidates = @(
+        (Join-Path $scriptRoot ("assets\exlaunch\" + $titleId)),
+        (Join-Path $scriptRoot ("research\swsh-mods-exl\artifact\atmosphere\contents\" + $titleId + "\exefs")),
+        (Join-Path $scriptRoot ("research\downloads\" + ($(if ($titleId -eq "01008DB008C2C000") { "SHIELD_artifact\SHIELD_artifact" } else { "SWORD_artifact\SWORD_artifact" })) + "\atmosphere\contents\" + $titleId + "\exefs"))
+    )
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath (Join-Path $candidate "subsdk9")) {
+            return $candidate
+        }
+    }
+    return $candidates[0]
 }
 
 function Get-ExLaunchArtifactRomfsRoot {
@@ -13723,7 +13733,7 @@ function Show-Gui {
     Register-ControlDescription -Control $validateBuildButton -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.ValidateBuild; en = $uiDescEn.Descriptions.ValidateBuild }
     Register-ControlDescription -Control $buildSummaryButton -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.BuildSummary; en = $uiDescEn.Descriptions.BuildSummary }
     Register-ControlDescription -Control $sourceBox -DetailsBox $detailsBox -Description @{ fr = "Dossier ROMFS original du dump utilisateur. Exemple: selectionne ...\\Epee\\romfs; le logiciel copie seulement les fichiers necessaires puis modifie les tables ROMFS en sortie."; en = "Original ROMFS folder from the user's dump. Example: select ...\\Sword\\romfs; the tool copies only needed files and edits ROMFS tables in the generated output." }
-    Register-ControlDescription -Control $sourceExefsBox -DetailsBox $detailsBox -Description @{ fr = "Dossier ExeFS original du dump utilisateur. Exemple: selectionne ...\\Epee\\exefs, le dossier qui contient main.npdm. Le logiciel copie ce main.npdm utilisateur et ajoute seulement son subsdk9 custom."; en = "Original ExeFS folder from the user's dump. Example: select ...\\Sword\\exefs, the folder containing main.npdm. The tool copies that user-provided main.npdm and only adds its custom subsdk9." }
+    Register-ControlDescription -Control $sourceExefsBox -DetailsBox $detailsBox -Description @{ fr = "Dossier ExeFS original du dump utilisateur. Exemple: selectionne ...\\Epee\\exefs, le dossier qui contient main.npdm. Le logiciel copie ce main.npdm utilisateur et ajoute seulement son subsdk9 custom fourni avec le projet."; en = "Original ExeFS folder from the user's dump. Example: select ...\\Sword\\exefs, the folder containing main.npdm. The tool copies that user-provided main.npdm and only adds its custom subsdk9 shipped with the project." }
     Register-ControlDescription -Control $outputBox -DetailsBox $detailsBox -Description @{ fr = "Dossier de sortie du mod. Exemple: ...\\output\\Epee. Le logiciel cree toujours romfs dedans. Il n'ajoute exefs\\subsdk9, exefs\\main.npdm copie depuis ton dump et sdmc\\config que si un dossier ExeFS est explicitement fourni pour les options ExLaunch/runtime."; en = "Generated mod folder. Example: ...\\output\\Sword. The tool always creates romfs there. It only adds exefs\\subsdk9, exefs\\main.npdm copied from your dump, and sdmc\\config when an ExeFS folder is explicitly provided for ExLaunch/runtime features." }
     Register-ControlDescription -Control $controls.DisableExpShare -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.DisableExpShare; en = $uiDescEn.Descriptions.DisableExpShare }
     Register-ControlDescription -Control $controls.EarlyBike -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.EarlyBike; en = $uiDescEn.Descriptions.EarlyBike }

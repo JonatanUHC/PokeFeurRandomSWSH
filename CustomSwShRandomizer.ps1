@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [string]$SourceRomfs,
     [string]$SourceExefs,
@@ -6,13 +6,7 @@ param(
     [string]$GameVersion = "Sword",
     [switch]$AutoInstallToEden,
     [string]$EdenModName = "Randomizer",
-    [bool]$InstallToEden = $true,
     [bool]$InstallToRyujinx = $true,
-    [bool]$InstallToYuzu = $true,
-    [bool]$InstallToSudachi = $true,
-    [bool]$InstallToCitron = $true,
-    [bool]$InstallToSuyu = $true,
-    [bool]$InstallToCitronNeo = $true,
     [long]$Seed = -1,
     [string]$TrainerSpeciesMode = "Random",
     [string]$TrainerMoveMode = "Random4",
@@ -34,10 +28,30 @@ param(
     [switch]$ForceTrainerFullyEvolved,
     [int]$TrainerFullyEvolvedLevel = 40,
     [switch]$MaxTrainerAI,
+    #   TrainerBagItemMode : Unchanged | None | Random
+    #     Unchanged  le sac du jeu, intact
+    #     None       sac vide : plus aucun dresseur ne soigne en combat
+    #     Random     des soins tires au hasard
+    #   Mesure du 2026-09-07 : 52 dresseurs sur 437 portent un objet, surtout
+    #   des Guerison et des Potions. Les vider change nettement la difficulte
+    #   des combats de boss.
+    [string]$TrainerBagItemMode = "Unchanged",
     [string]$TrainerDynamaxLevelMode = "Unchanged",
     [switch]$ForceTrainerCanDynamax,
     [switch]$ForceAllTeamsToSix,
     [switch]$AllowLegendaryTrainers,
+    # Regles speciales de dresseurs. Trois classes, comme dans le Universal
+    # Pokemon Randomizer : Boss (arenes, Conseil 4, Maitre), Important (rivaux,
+    # Team Yell/Macro Cosmos), Normal (tous les autres).
+    [int]$TrainerExtraPokemonBoss = 0,
+    [int]$TrainerExtraPokemonImportant = 0,
+    [int]$TrainerExtraPokemonRegular = 0,
+    [string]$TrainerSpecialRuleScope = "GymLeague",
+    [string]$TrainerLegendaryPolicy = "Unchanged",
+    [int]$TrainerMinBaseStatTotal = 0,
+    # Portee de la regle "pas deux fois le meme type dans une equipe".
+    # Off | GymLeague | AllBosses | Everyone
+    [string]$TrainerForceDiverseTypes = "Off",
     [string]$TypeMode = "Unchanged",
     [switch]$TypesMonotypeOnly,
     [string]$AbilityMode = "Unchanged",
@@ -59,8 +73,86 @@ param(
     [switch]$RandomizePickupItems,
     [switch]$RandomizeShopItems,
     [switch]$RandomizeTechnicalRecords,
+    # Multiplicateur applique au prix d'achat de tous les objets.
+    # "0" rend tout gratuit, "1" ne change rien.
+    [string]$ShopPriceMultiplier = "1",
+    #   ShopPriceMode : Vanilla | Multiplier | Random
+    #     Vanilla      les prix du jeu, intacts
+    #     Multiplier   les prix du jeu x ShopPriceMultiplier
+    #     Random       un prix tire entre ShopPriceMin et ShopPriceMax
+    #   Un objet invendable (prix 0) le reste dans les trois modes.
+    #   ShopItemMode : SamePocket (meme genre) | FullRandom (toutes les poches
+    #                  que cette boutique vend deja, jamais une poche etrangere)
+    #     SamePocket  une Poke Ball devient une Poke Ball, un soin un soin.
+    #                 C'est le defaut, et c'est ce qui a repare le plantage
+    #                 observe le 2026-09-07 : une CT mise en vente dans un
+    #                 marche ordinaire vidait la liste et plantait a l'achat.
+    #     FullRandom  n'importe quel objet, SAUF les machines (poche 5) et les
+    #                 objets cles (poche 8). Les machines sont la seule cause de
+    #                 plantage que j'aie identifiee ; les objets cles ne doivent
+    #                 jamais etre vendables. Le reste est ouvert.
+    [string]$ShopItemMode = "SamePocket",
+    [string]$ShopPriceMode = "Multiplier",
+    [int]$ShopPriceMin = 100,
+    [int]$ShopPriceMax = 20000,
+    # Objets ramassables du terrain : les Poke Balls posees au sol, et les
+    # objets invisibles. Les deux vivent dans placement.gfpak.
+    [switch]$RandomizeFieldItems,
+    [switch]$RandomizeHiddenItems,
+    [string]$FieldItemPoolMode = "Safe",
+    # Fonctionnalites de confort deja presentes dans le module ExLaunch et
+    # jusqu'ici non exposees. Toutes s'appliquent a l'execution.
+    [switch]$ModOverworldShiny,
+    [int]$OverworldShinyBoostPercent = 0,
+    [switch]$ModUnderworld,
+    [switch]$ModCameraTweaks,
+    [switch]$ModUncapLevel,
+    [switch]$ModFreecam,
+    [switch]$ModGlimwoodOverworld,
+    [int]$GlimwoodMaxSpawns = 5,
+    [switch]$ModSynchroMode,
+    [switch]$ModExtendedFollowing,
+    [switch]$ModFishingTweaks,
+    [switch]$ModDexAnimations,
+    # Transforme l'absence d'un fichier de donnees en erreur au lieu d'une
+    # degradation muette. Hors de ce mode, l'absence est signalee bruyamment
+    # mais la generation continue - le comportement historique est preserve.
+    [switch]$StrictDataFiles,
+    # Reglages appliques directement sur la table personal_total.bin.
+    [int]$MinimumCatchRate = 0,
+    [string]$ExpCurveMode = "Unchanged",
+    [string]$TmCompatibilityMode = "Unchanged",
+    # Qui peut apprendre quoi aupres des maitres de capacites de l'Ile solitaire
+    # de l'Armure. Meme mecanique que TmCompatibilityMode, autre champ de bits.
+    [string]$TutorCompatibilityMode = "Unchanged",
+    # Quelle ATTAQUE chaque CT/DT enseigne. A ne pas confondre avec
+    # TmCompatibilityMode, qui dit QUI peut l'apprendre.
+    [string]$TmMoveMode = "Unchanged",
+    # Les attaques apprises en montant de niveau. Les NIVEAUX sont conserves :
+    # seule l'attaque enseignee a chaque palier change.
+    [string]$LearnsetMoveMode = "Unchanged",
+    # Les objets offerts par les PNJ. Les objets CLES ne sont jamais touches :
+    # remplacer le Velo Rotom ou le Bracelet Dynamax bloquerait la partie.
+    [string]$NpcGiftItemMode = "Unchanged",
+    [switch]$RandomizeWildHeldItems,
     [string]$EvolutionMode = "Unchanged",
     [switch]$AllowLegendaryEvolutions,
+    # Contraintes sur les cibles d'evolution tirees au sort.
+    [switch]$EvolutionForceGrowth,
+    [switch]$EvolutionSameType,
+    # Gain minimal de statistiques de base exige de la cible d'evolution.
+    #   -1  aucune contrainte (defaut)
+    #    0  au moins equivalent - la cible ne peut pas etre plus faible
+    #   10  au moins 10 points de plus
+    # C'est un PLANCHER : avec +10 sur un Pokemon a 300 de total, un candidat a
+    # 600 reste valable. On ne vise pas 310, on exige 310 au minimum.
+    # EvolutionForceGrowth reste accepte et vaut un gain minimal de 1.
+    [int]$EvolutionMinBstGain = -1,
+    # Une evolution herite du tirage de sa forme de base.
+    [switch]$FollowEvolutionsForTypes,
+    [switch]$FollowEvolutionsForAbilities,
+    # Coupe les chaines d'evolution au-dela de trois stades.
+    [switch]$EvolutionLimitToThreeStages,
     [bool]$NormalizeFriendshipEvolutions = $false,
     [int]$FriendshipEvolutionLevel = 30,
     [bool]$NormalizeTradeEvolutions = $false,
@@ -73,6 +165,10 @@ param(
     [string]$Starter2 = "",
     [string]$Starter3 = "",
     [bool]$PatchStarterRelatedTrainers = $true,
+    # Bornes de statistiques totales pour les starters tires au sort. 0 = pas
+    # de borne.
+    [int]$StarterMinBaseStatTotal = 0,
+    [int]$StarterMaxBaseStatTotal = 0,
     [switch]$AllowLegendaryGifts,
     [string]$TradeMode = "Unchanged",
     [switch]$AllowLegendaryTrades,
@@ -82,9 +178,82 @@ param(
     [string]$GrassEncounterMode = "Unchanged",
     [switch]$AllowLegendaryGrassEncounters,
     [string]$GrassEncounterStableMapping = "Slot",
-    [string]$VisibleEncounterBehavior = "VanillaVisualBattleRandom",
+    [string]$VisibleEncounterBehavior = "MasqueFixe",
+    [string]$EncounterDrawMode = "SlotParEspece",
+    # Rencontres runtime : deux reglages independants, appliques par le module
+    # ExLaunch et non par les fichiers ROMFS.
+    #   LiveVisibleMode : Vanilla | Random | Zone | Global | Decouverte
+    #   LiveBattleMode  : Vanilla | Random | Zone | Global
+    [string]$LiveVisibleMode = "Vanilla",
+    [string]$LiveBattleMode = "Zone",
+    [switch]$AllowLegendaryLiveVisible,
+    [switch]$AllowLegendaryLiveBattle,
+    [string]$LiveGenerationFilter = "1,2,3,4,5,6,7,8",
+    # Quelles especes ont le droit d'apparaitre DEHORS.
+    #   All         : toutes les especes jouables (664 sur un dump Epee). DEFAUT.
+    #   Vanilla     : les 330 que le jeu utilise deja comme symboles.
+    #   UnusualOnly : UNIQUEMENT celles que le vanilla ne montre jamais.
+    #
+    # Le defaut a ete elargi apres verification EN JEU le 2026-09-09 : le
+    # mode UnusualOnly a fait apparaitre Persian (#53) et Muplodocus (#706),
+    # deux especes que Epee/Bouclier ne montrent JAMAIS dehors. Modele,
+    # echelle, collision et declenchement du combat : tout fonctionne. Le
+    # plafond de 330 etait un choix de contenu, pas une limite du moteur.
+    # UnusualOnly reste disponible pour refaire le test.
+    [string]$OverworldVisiblePoolMode = "All",
+    # Encombrement maximal tolere pour un Pokemon VISIBLE dehors, en rayon
+    # de collision lu dans symbol_encount_mons_param.bin. 0 = aucune limite.
+    # Mesure du 2026-09-09 sur un dump Epee, 664 especes : mediane 47,
+    # minimum 14, maximum 400 (Wailord et Onix). Reperes utiles :
+    #   > 250 exclut 4 especes, > 200 en exclut 7, > 150 en exclut 31.
+    # Ce filtre ne touche NI le reservoir de combat, NI les especes deja
+    # revelees en mode decouverte : un colosse affronte se promenera bien
+    # dans sa zone ensuite, c'est voulu.
+    [int]$OverworldVisibleMaxHitbox = 0,
+    # Pourcentage applique aux niveaux des Pokemon sauvages. 0 = inchange.
+    [int]$WildLevelPercent = 0,
     [string]$UndergroundMode = "Unchanged",
     [switch]$AllowLegendaryUnderground,
+    # Restreindre les rencontres fixes et le souterrain aux especes que le
+    # VANILLA fait deja apparaitre dehors (330, lues dans encount_symbol_*).
+    #
+    # CE N'EST PAS une contrainte technique, et j'ai d'abord cru le contraire.
+    # Mesure du 2026-09-07 : le romfs de base porte 575 archives de modele, dont
+    # 281 pour des especes qui ne sont jamais des symboles en vanilla. Et 36
+    # symboles vanilla n'ont aucune archive ici - leurs modeles sont dans les
+    # extensions. On ne peut donc pas deduire de ce dump quelles especes savent
+    # s'afficher ; les 330 sont un choix de Game Freak, pas une limite du jeu.
+    #
+    # Le mod « underworld » du module fait d'ailleurs exactement l'inverse : il
+    # detourne le generateur de symboles vers la table des herbes hautes pour
+    # faire apparaitre dehors des especes qui n'y sont jamais. Il fonctionne.
+    #
+    # L'option reste disponible pour qui veut rester pres du vanilla, mais elle
+    # est COUPEE par defaut : elle reduisait les rencontres fixes de 410 a 281
+    # especes sans benefice demontre.
+    [bool]$OverworldModelSafeEncounters = $false,
+    # Le dossier Installation est une COPIE DE CONFORT : 6210 fichiers dupliques
+    # pour sept emulateurs, alors que la ROM est deja complete dans la sortie.
+    # Les tests n'en ont aucun besoin, et le recopier a chaque generation
+    # laissait des poignees ouvertes : une suite de quarante generations finissait
+    # par voir des Remove-Item echouer en cascade et sortir en code 1 avec des
+    # ROMs pourtant justes. On peut donc le sauter.
+    [bool]$WriteInstallationPackage = $true,
+    # Un filtre de generation par CATEGORIE. Vide = « suivre le filtre global
+    # LiveGenerationFilter ». Format identique : "1,2,8".
+    #
+    #   Visible   ce que tu vois se promener dehors
+    #   Battle    ce que tu combats : hautes herbes, symboles, fixes, souterrain
+    #   Gifts     ce qu'on te donne : cadeaux, starters, echanges
+    #   Trainers  les equipes des dresseurs
+    #
+    # Exemple « joueur en generation 1, adversaires en tout » :
+    #   -GenerationFilterGifts "1" -GenerationFilterBattle "1"
+    #   et GenerationFilterTrainers laisse vide.
+    [string]$GenerationFilterVisible = "",
+    [string]$GenerationFilterBattle = "",
+    [string]$GenerationFilterGifts = "",
+    [string]$GenerationFilterTrainers = "",
     [switch]$ForceBossTeamsToSix,
     [string]$BossTeamsToSixScope = "MajorBosses",
     [switch]$DisableExpShare,
@@ -96,10 +265,9 @@ param(
     [switch]$GymLeagueStoryLevelCap,
     [switch]$StoryMajorBattleOrderLevelCap,
     [bool]$ExportJsonReport = $true,
-    [switch]$RaceMode,
     [bool]$ExportEncounterZoneReport = $true,
-    [string]$ReportLanguage = "fr",
-    [string]$UiLanguage = "fr",
+    [string]$ReportLanguage = "en",
+    [string]$UiLanguage = "en",
     [string]$GuiTheme = "Dark",
     [string]$JsonReportPath = "",
     [switch]$SkipInitialCopy,
@@ -108,6 +276,15 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+
+# La version du logiciel, ecrite A UN SEUL ENDROIT.
+#
+# Elle etait auparavant recopiee dans quinze chaines litterales, et elles
+# avaient derive : l'interface annoncait V4.17 tandis que quatre rapports
+# JSON ecrivaient V4.18. Un rapport qui ment sur sa propre version rend tout
+# diagnostic a posteriori impossible. Un test de la suite verifie qu'aucun
+# litteral de version ne reapparait ailleurs dans le fichier.
+$AppVersion = "V5.0"
 
 $PersonalRecordSize = 0xB0
 $PersonalBaseExpOffset = 0x22
@@ -150,6 +327,68 @@ $EnglishLanguageId = 9
 $DataRootCandidates = @(
     $PSScriptRoot
 )
+
+# Fichiers de donnees attendus, et ce que leur absence degrade EXACTEMENT.
+#
+# Pourquoi ce manifeste existe : chaque Get-*Data retombe silencieusement sur
+# une table vide quand son fichier manque. Aucune erreur, aucun avertissement,
+# et le resultat reste plausible - c'est le motif de defaut dominant du projet.
+# Mesure du 2026-09-05 : sans items.csv, Get-TrainerItemPool renvoie les memes
+# 139 objets de repli pour TOUS les modes, donc le reglage "pool d'objets des
+# dresseurs" de l'interface est totalement inerte et personne ne peut le voir.
+#
+# Une entree decrit le fichier, pas le code : ajouter un fichier ici ne change
+# aucun comportement, cela le rend seulement visible dans le diagnostic.
+$DataFileManifest = @(
+    [pscustomobject]@{
+        RelativePath = "pokemon_species_names.csv"
+        Purpose = "Noms des espèces (FR/EN) dans les rapports et l'interface."
+        Degradation = "Les rapports affichent 'Species <id>' au lieu du nom."
+        Severity = "moyenne"
+    },
+    [pscustomobject]@{
+        RelativePath = "item-id-map.csv"
+        Purpose = "Traduit les identifiants d'objets du cache Smogon vers ceux du jeu."
+        Degradation = "Le mode Smogon n'attribue plus d'objet stratégique et retombe sur le pool général."
+        Severity = "moyenne"
+    },
+    [pscustomobject]@{
+        RelativePath = "npc-gifts.csv"
+        Purpose = "Cadeaux d'objets des PNJ : fichier .amx, cellule, objet offert."
+        Degradation = "L'option « objets offerts par les PNJ » n'a AUCUN EFFET."
+        Severity = "moyenne"
+    },
+    [pscustomobject]@{
+        RelativePath = "items.csv"
+        Purpose = "Catalogue des objets et leurs catégories."
+        Degradation = "Le pool d'objets tenus retombe sur 139 objets codes en dur et le mode de pool choisi n'a PLUS AUCUN EFFET."
+        Severity = "haute"
+    },
+    [pscustomobject]@{
+        RelativePath = "item_names.csv"
+        Purpose = "Noms des objets (FR/EN)."
+        Degradation = "Les rapports affichent 'Item <id>' au lieu du nom."
+        Severity = "moyenne"
+    },
+    [pscustomobject]@{
+        RelativePath = "move_names.csv"
+        Purpose = "Noms des attaques (FR/EN)."
+        Degradation = "Les rapports affichent 'Move <id>' au lieu du nom."
+        Severity = "moyenne"
+    },
+    [pscustomobject]@{
+        RelativePath = "vanilla_exports\pokemon_sword_global_en.json"
+        Purpose = "Noms et classes de dresseurs en anglais."
+        Degradation = "Les dresseurs sont anonymes dans les rapports."
+        Severity = "moyenne"
+    },
+    [pscustomobject]@{
+        RelativePath = "vanilla_exports\pokemon_sword_global_fr.json"
+        Purpose = "Noms et classes de dresseurs en français."
+        Degradation = "Les dresseurs sont anonymes dans les rapports."
+        Severity = "moyenne"
+    }
+)
 $ExpShareDisablePatchDefinitions = @(
     [pscustomobject]@{
         Game = "Sword"
@@ -165,27 +404,75 @@ $ExpShareDisablePatchDefinitions = @(
     }
 )
 $GymLeagueStoryCapPatchSpeciesBase = 890
+# Cartes posees par Add-PfCardAround. Leur titre et leur sous-titre viennent
+# soit d'un libelle existant - qui est deja traduit, donc rien a maintenir en
+# double - soit d'un couple fr/en donne a l'appel.
+$script:PfCardRegistry = @()
+$script:PfNavRail = $null
+$script:PfTabs = $null
+$script:PfPageTitle = $null
+$script:DataFileDiagnostics = @()
+$script:TrainerItemPoolFallbackWarned = $false
 $script:ApplyingUiLanguage = $false
+# Changer la version de jeu remet les chemins ROMFS/ExeFS/sortie a leur valeur
+# par defaut. C'est voulu quand l'utilisateur bascule le menu lui-meme, mais pas
+# quand le changement vient d'un import de preset ou de la detection automatique
+# apres un Parcourir : dans ces deux cas le chemin vient d'etre choisi et
+# l'ecraser le perdait sans le moindre avertissement.
+$script:SuppressGameVersionPathReset = $false
 $script:ApplyingCompatibilityUi = $false
 $script:LastDetailsDescription = $null
 $script:SpeciesNameData = $null
 $script:ItemData = $null
+# Sous Set-StrictMode -Version Latest, lire une variable de portee script jamais
+# affectee leve une exception. Le cache doit donc etre declare ici, pas seulement
+# affecte dans la fonction qui le remplit.
+$script:ExistingItemIds = $null
+$script:NpcGiftCatalog = $null
+$script:SmogonItemIdMap = $null
+$script:MoveTypeTable = $null
+$script:PythonCommandProbed = $false
+$script:PythonCommand = $null
+$script:SymbolHitboxTable = $null
+$script:MachineMoveTable = $null
+$script:ItemPocketMap = $null
+$script:PlaceholderItemIds = $null
 $script:ItemNameData = $null
+# Correspondance hachage <-> identifiant d'objet, lue une seule fois depuis
+# bin\pml\item\item_hash_to_index.dat.
+$script:ItemHashLookup = $null
 $script:MoveNameData = $null
 $script:SmogonStrategicData = $null
 $script:SmogonStrategicLegacyData = $null
 $script:VanillaTrainerMetadata = $null
-$TrainerHeldItemAllowedCategoryIds = [System.Collections.Generic.HashSet[int]]::new()
-@(5, 6, 7, 12, 13, 15, 17, 19) | ForEach-Object { $null = $TrainerHeldItemAllowedCategoryIds.Add([int]$_) }
-$TrainerHeldItemExcludedIdentifiers = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
-@(
-    "smoke-ball",
-    "pass-orb",
-    "red-nectar",
-    "yellow-nectar",
-    "pink-nectar",
-    "purple-nectar"
-) | ForEach-Object { $null = $TrainerHeldItemExcludedIdentifiers.Add([string]$_) }
+# POCHES D'OBJETS - vocabulaire du JEU, pas d'un jeu de donnees externe.
+#
+# `items.csv` est desormais derive du dump par tools/build-items-csv.py, et sa
+# colonne `category_id` porte la poche telle que le jeu la stocke
+# (item.dat, enregistrement +0x11). Les anciennes valeurs 5/6/7/12/13/15/17/19
+# venaient d'une taxonomie externe et ne voulaient plus rien dire ici.
+#
+# Trois poches seulement sont utilisees, et chacune a son temoin :
+#
+#   5   machines     les 200 objets de la table CT/DT, EXACTEMENT - ni faux
+#                    positif ni oubli, verifie par build-items-csv.py qui
+#                    refuse d'ecrire si la concordance se perd
+#   8   objets cles  prix nul sur les 47
+#   33  Poke Balls   identifiants 1 a 16, prix nul
+#
+# Les huit autres poches ne sont PAS identifiees : sans table de noms, les
+# nommer serait deviner. On ne s'en sert donc que pour EXCLURE ce qui est
+# prouve, jamais pour inclure ce qui est suppose.
+$ItemPocketMachines = 5
+$ItemPocketKeyItems = 8
+$ItemPocketPokeBalls = 33
+# Un Pokemon ne tient utilement ni une CT, ni un objet cle, ni une Ball.
+$TrainerHeldItemExcludedPockets = [System.Collections.Generic.HashSet[int]]::new()
+@($ItemPocketMachines, $ItemPocketKeyItems, $ItemPocketPokeBalls) | ForEach-Object { $null = $TrainerHeldItemExcludedPockets.Add([int]$_) }
+# L'ancienne liste d'exclusions par nom (« smoke-ball », les nectars...) a ete
+# retiree : elle designait des objets par leur nom dans la taxonomie externe,
+# que le fichier derive du jeu ne porte pas. Elle n'aurait plus jamais rien
+# exclu, ce qui est pire qu'une exclusion absente : ca en donne l'illusion.
 $FallbackTrainerHeldItemPool = [int[]]@(
     136, 137, 138, 139, 140, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 186, 187, 190,
     191, 194, 196, 197, 198, 199, 207, 209, 210, 211, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 230, 231, 232, 242, 243, 244, 245,
@@ -234,38 +521,400 @@ function Get-NormalizedVisibleEncounterBehavior {
 
     $normalized = ([string]$Value).Trim().ToLowerInvariant()
     switch ($normalized) {
-        "vanillavisualbattlerandom" { return "VanillaVisualBattleRandom" }
-        "vanilla_visual_battle_random" { return "VanillaVisualBattleRandom" }
-        "vanilla" { return "VanillaVisualBattleRandom" }
-        "randomvisualbattlerandom" { return "RandomVisualBattleRandom" }
-        "random_visual_battle_random" { return "RandomVisualBattleRandom" }
-        "separate" { return "RandomVisualBattleRandom" }
+        "masquefixe" { return "MasqueFixe" }
+        "masque_fixe" { return "MasqueFixe" }
+        "fixedmask" { return "MasqueFixe" }
+        "fixed_mask" { return "MasqueFixe" }
+        "lock" { return "MasqueFixe" }
+        "locked" { return "MasqueFixe" }
+        "vanillavisualbattlelock" { return "MasqueFixe" }
+        "vanilla_visual_battle_lock" { return "MasqueFixe" }
+        "vanillalock" { return "MasqueFixe" }
+        "vanillalocked" { return "MasqueFixe" }
+        "randomvisualbattlelock" { return "MasqueFixe" }
+        "random_visual_battle_lock" { return "MasqueFixe" }
+        "randomlock" { return "MasqueFixe" }
+        "randomlocked" { return "MasqueFixe" }
+        "revelationpermanente" { return "RevelationPermanente" }
+        "revelation_permanente" { return "RevelationPermanente" }
+        "revelepermanent" { return "RevelationPermanente" }
+        "revele_stable" { return "RevelationPermanente" }
+        "revealedstable" { return "RevelationPermanente" }
+        "revealed_stable" { return "RevelationPermanente" }
+        "vanillavisualbattlerandom" { return "RevelationPermanente" }
+        "vanilla_visual_battle_random" { return "RevelationPermanente" }
+        "randomvisualbattlerandom" { return "RevelationPermanente" }
+        "random_visual_battle_random" { return "RevelationPermanente" }
+        "vanillavisualbattleloop" { return "RevelationPermanente" }
+        "vanilla_visual_battle_loop" { return "RevelationPermanente" }
+        "randomvisualbattleloop" { return "RevelationPermanente" }
+        "random_visual_battle_loop" { return "RevelationPermanente" }
         "romfsmatch" { return "RomfsMatch" }
         "romfs_match" { return "RomfsMatch" }
         "match" { return "RomfsMatch" }
-        default { return "RomfsMatch" }
+        default { return "MasqueFixe" }
+    }
+}
+
+function Get-NormalizedEncounterDrawMode {
+    param(
+        [string]$Value,
+        [string]$LegacyVisibleBehavior = ""
+    )
+
+    $normalized = ([string]$Value).Trim().ToLowerInvariant()
+    switch ($normalized) {
+        "slotparespece" { return "SlotParEspece" }
+        "slot_par_espece" { return "SlotParEspece" }
+        "slot_species" { return "SlotParEspece" }
+        "species" { return "SlotParEspece" }
+        "espece" { return "SlotParEspece" }
+        "espÃ¨ce" { return "SlotParEspece" }
+        "fullrandom" { return "FullRandom" }
+        "full_random" { return "FullRandom" }
+        "random" { return "FullRandom" }
+        "visiblefixetiragerandom" { return "VisibleFixeTirageRandom" }
+        "visible_fixe_tirage_random" { return "VisibleFixeTirageRandom" }
+        "fixed_visible_random_battle" { return "VisibleFixeTirageRandom" }
+    }
+
+    $legacy = ([string]$LegacyVisibleBehavior).Trim().ToLowerInvariant()
+    switch ($legacy) {
+        "randomvisualbattlerandom" { return "FullRandom" }
+        "random_visual_battle_random" { return "FullRandom" }
+        "randomvisualbattleloop" { return "FullRandom" }
+        "random_visual_battle_loop" { return "FullRandom" }
+        "randomloop" { return "FullRandom" }
+        "loop" { return "FullRandom" }
+        "separate" { return "FullRandom" }
+        default { return "SlotParEspece" }
     }
 }
 
 function Get-LiveEncounterRandomizerMode {
     $behavior = Get-NormalizedVisibleEncounterBehavior -Value $VisibleEncounterBehavior
+    $drawMode = Get-NormalizedEncounterDrawMode -Value $EncounterDrawMode -LegacyVisibleBehavior $VisibleEncounterBehavior
+    if ($behavior -eq "RomfsMatch") {
+        return "off"
+    }
+    if ($drawMode -eq "FullRandom") {
+        return "full_random"
+    }
+    if ($drawMode -eq "VisibleFixeTirageRandom") {
+        return "visible_fixe_tirage_random"
+    }
     switch ($behavior) {
-        # Live ExLaunch path: the visible Pokemon is randomized at spawn time
-        # and the battle Pokemon is randomized separately from the same slot.
-        "RandomVisualBattleRandom" { return "random_visual_battle_random" }
-        # Battle-only ExLaunch path: keep the overworld model vanilla and swap
-        # the species when the game copies the encounter object into battle data.
-        "VanillaVisualBattleRandom" { return "vanilla_visual_battle_random" }
+        "MasqueFixe" { return "slot_par_espece" }
+        "RevelationPermanente" { return "slot_par_espece" }
         default { return "off" }
     }
 }
 
+function Get-LiveEncounterVisibleBehaviorValue {
+    $behavior = Get-NormalizedVisibleEncounterBehavior -Value $VisibleEncounterBehavior
+    switch ($behavior) {
+        "MasqueFixe" { return "masque_fixe" }
+        "RevelationPermanente" { return "revelation_permanente" }
+        default { return "off" }
+    }
+}
+
+function Get-LiveEncounterDrawModeValue {
+    $drawMode = Get-NormalizedEncounterDrawMode -Value $EncounterDrawMode -LegacyVisibleBehavior $VisibleEncounterBehavior
+    switch ($drawMode) {
+        "FullRandom" { return "full_random" }
+        "VisibleFixeTirageRandom" { return "visible_fixe_tirage_random" }
+        default { return "slot_par_espece" }
+    }
+}
+
+function Get-LiveEncounterMappingValue {
+    $drawMode = Get-NormalizedEncounterDrawMode -Value $EncounterDrawMode -LegacyVisibleBehavior $VisibleEncounterBehavior
+    switch ($drawMode) {
+        "SlotParEspece" { return "species" }
+        "FullRandom" { return "random" }
+        "VisibleFixeTirageRandom" { return "random" }
+        default { return (Normalize-StableMappingMode -Value $GrassEncounterStableMapping).ToLowerInvariant() }
+    }
+}
+
+# ---------------------------------------------------------------------------
+# RENCONTRES RUNTIME â€” deux reglages independants
+#
+#   LiveVisibleMode : ce qui APPARAIT dans l'herbe
+#   LiveBattleMode  : ce qu'on AFFRONTE
+#
+# Les deux valeurs partent telles quelles dans config.toml et sont appliquees
+# par le module ExLaunch. Elles ne touchent AUCUN fichier ROMFS : c'est ce qui
+# permet de les changer sans regenerer une run complete.
+#
+# Les anciennes listes VisibleEncounterBehavior / EncounterDrawMode decrivaient
+# un seul mecanisme melange et restent presentes pour la compatibilite des
+# presets et des rapports ; elles ne pilotent plus le module.
+# ---------------------------------------------------------------------------
+
+$LiveGenerationRanges = @{
+    1 = @(1, 151)
+    2 = @(152, 251)
+    3 = @(252, 386)
+    4 = @(387, 493)
+    5 = @(494, 649)
+    6 = @(650, 721)
+    7 = @(722, 809)
+    8 = @(810, 898)
+}
+
+function Get-NormalizedLiveEncounterMode {
+    param(
+        [string]$Value,
+        [string]$Fallback = "vanilla",
+        [bool]$AllowDiscovery = $false
+    )
+
+    switch (([string]$Value).Trim().ToLowerInvariant()) {
+        "vanilla" { return "vanilla" }
+        "unchanged" { return "vanilla" }
+        "off" { return "vanilla" }
+        "random" { return "random" }
+        "zone" { return "zone" }
+        "area" { return "zone" }
+        "global" { return "global" }
+        "decouverte" { if ($AllowDiscovery) { return "decouverte" } else { return "zone" } }
+        "discovery" { if ($AllowDiscovery) { return "decouverte" } else { return "zone" } }
+        # Variante : meme revelation, mais l'herbe montre un leurre tire au
+        # sort tant que la zone n'a pas ete revelee.
+        "decouverterandom" { if ($AllowDiscovery) { return "decouverte_random" } else { return "zone" } }
+        "decouverte_random" { if ($AllowDiscovery) { return "decouverte_random" } else { return "zone" } }
+        "discoveryrandom" { if ($AllowDiscovery) { return "decouverte_random" } else { return "zone" } }
+        default { return $Fallback }
+    }
+}
+
+function Get-LiveVisibleModeValue {
+    return Get-NormalizedLiveEncounterMode -Value $LiveVisibleMode -Fallback "vanilla" -AllowDiscovery $true
+}
+
+function Get-LiveBattleModeValue {
+    return Get-NormalizedLiveEncounterMode -Value $LiveBattleMode -Fallback "vanilla" -AllowDiscovery $false
+}
+
+# Le mode decouverte a besoin du combat pour reveler : avec un combat "vanilla"
+# rien ne serait jamais revele et la zone ne se completerait jamais.
+function Get-EffectiveLiveBattleModeValue {
+    $battle = Get-LiveBattleModeValue
+    $visible = Get-LiveVisibleModeValue
+    if (($visible -eq "decouverte" -or $visible -eq "decouverte_random") -and $battle -eq "vanilla") {
+        return "zone"
+    }
+    return $battle
+}
+
+function Get-GenerationFilterSet {
+    <#
+        Lit un filtre de generation. Une valeur vide veut dire « suivre le
+        filtre global », et un filtre global vide veut dire « toutes ».
+    #>
+    param([string]$Filter = "")
+
+    $texte = if ([string]::IsNullOrWhiteSpace($Filter)) { [string]$LiveGenerationFilter } else { [string]$Filter }
+    $requested = New-Object System.Collections.Generic.List[int]
+    foreach ($piece in ($texte -split '[,;\s]+')) {
+        if ([string]::IsNullOrWhiteSpace($piece)) {
+            continue
+        }
+        $parsed = 0
+        if ([int]::TryParse($piece, [ref]$parsed) -and $parsed -ge 1 -and $parsed -le 8) {
+            $requested.Add($parsed)
+        }
+    }
+    if ($requested.Count -eq 0) {
+        return @(1, 2, 3, 4, 5, 6, 7, 8)
+    }
+    return @($requested | Sort-Object -Unique)
+}
+
+function Get-LiveGenerationFilterSet {
+    $requested = New-Object System.Collections.Generic.List[int]
+    foreach ($piece in (([string]$LiveGenerationFilter) -split '[,;\s]+')) {
+        if ([string]::IsNullOrWhiteSpace($piece)) {
+            continue
+        }
+        $parsed = 0
+        if ([int]::TryParse($piece, [ref]$parsed) -and $parsed -ge 1 -and $parsed -le 8) {
+            $requested.Add($parsed)
+        }
+    }
+    if ($requested.Count -eq 0) {
+        return @(1, 2, 3, 4, 5, 6, 7, 8)
+    }
+    return @($requested | Sort-Object -Unique)
+}
+
+function Select-SpeciesByGeneration {
+    param(
+        [int[]]$SpeciesIds,
+        [string]$Filter = ""
+    )
+
+    $generations = @(Get-GenerationFilterSet -Filter $Filter)
+    if ($generations.Count -ge 8 -or -not $SpeciesIds) {
+        return [int[]]$SpeciesIds
+    }
+
+    $kept = New-Object System.Collections.Generic.List[int]
+    foreach ($speciesId in $SpeciesIds) {
+        foreach ($generation in $generations) {
+            $range = $LiveGenerationRanges[$generation]
+            if ($speciesId -ge $range[0] -and $speciesId -le $range[1]) {
+                $kept.Add([int]$speciesId)
+                break
+            }
+        }
+    }
+
+    # Un filtre trop serre viderait le pool, et un pool vide fait retomber le
+    # module sur tout le pokedex : ce serait pire que de ne pas filtrer.
+    if ($kept.Count -lt 8) {
+        return [int[]]$SpeciesIds
+    }
+    return [int[]]$kept.ToArray()
+}
+
+function Get-NormalizedOverworldVisiblePoolMode {
+    param([string]$Value)
+
+    switch (([string]$Value).Trim().ToLowerInvariant()) {
+        "all" { return "All" }
+        "tous" { return "All" }
+        "toutes" { return "All" }
+        "unusualonly" { return "UnusualOnly" }
+        "unusual" { return "UnusualOnly" }
+        "nonprevues" { return "UnusualOnly" }
+        default { return "Vanilla" }
+    }
+}
+
+function Get-OverworldVisiblePoolForMode {
+    <#
+        Le reservoir des especes autorisees a s'afficher dehors, selon le mode
+        choisi. Deux endroits en dependent et doivent rester d'accord : la
+        couche runtime (visible_pool du config.toml) et les tables ROMFS des
+        symboles. Les faire diverger donnerait un jeu qui affiche une chose
+        dehors et une autre apres regeneration.
+    #>
+    param(
+        [string]$RomfsRoot,
+        [bool]$AllowLegendaries
+    )
+
+    $mode = Get-NormalizedOverworldVisiblePoolMode -Value $OverworldVisiblePoolMode
+    $symboles = @(Get-OverworldVisualSpeciesPool -RomfsRoot $RomfsRoot -AllowLegendaries $AllowLegendaries)
+
+    if ($mode -eq "Vanilla") {
+        $pool = $symboles
+    } elseif ($mode -eq "All") {
+        $pool = @(Get-BaseSpeciesPool -AllowLegendaries $AllowLegendaries -RomfsRoot $RomfsRoot)
+    } else {
+        $toutes = @(Get-BaseSpeciesPool -AllowLegendaries $AllowLegendaries -RomfsRoot $RomfsRoot)
+        $connues = [System.Collections.Generic.HashSet[int]]::new()
+        foreach ($espece in $symboles) { $null = $connues.Add([int]$espece) }
+        $restant = @($toutes | Where-Object { -not $connues.Contains([int]$_) })
+        # Un reservoir vide ferait retomber le module sur tout le pokedex, ce
+        # qui invaliderait silencieusement le mode de test.
+        $pool = if ((Get-ObjectArrayCount $restant) -lt 1) { $toutes } else { $restant }
+    }
+
+    # Le filtre d'encombrement s'applique APRES le choix du reservoir : les deux
+    # axes sont independants, y compris sur le reservoir vanilla (ou il retire
+    # Leviator, qui est un symbole du jeu de base et l'un des plus encombrants).
+    return [int[]](Select-SpeciesByOverworldHitbox -SpeciesIds ([int[]]$pool) -RomfsRoot $RomfsRoot -MaxHitbox $OverworldVisibleMaxHitbox)
+}
+
+function Get-LiveVisibleSpeciesPool {
+    <#
+        Quelles especes peuvent apparaitre DEHORS.
+
+        Le reservoir par defaut reste celui des symboles de rencontre du jeu de
+        base. Mesure du 2026-09-09 sur un dump Epee : 665 especes ont une
+        archive de modele et 664 ont une entree complete dans
+        symbol_encount_mons_param.bin (partie de modele, rayon de collision,
+        rayon de secouage de l'herbe) -- mais seules 330 servent de symboles.
+        Le plafond n'est donc pas technique, c'est un choix de contenu.
+
+        UnusualOnly sert a le VERIFIER en jeu : il ne garde QUE les especes que
+        le vanilla ne montre jamais. Rien dehors = le jeu les refuse. Quelque
+        chose dehors = le plafond peut sauter.
+    #>
+    $pool = @(Get-OverworldVisiblePoolForMode -RomfsRoot $SourceRomfs -AllowLegendaries ([bool]$AllowLegendaryLiveVisible))
+    return [int[]](Select-SpeciesByGeneration -SpeciesIds ([int[]]$pool) -Filter $GenerationFilterVisible)
+}
+
+function Get-LiveBattleSpeciesPool {
+    <#
+        Le Pokemon de COMBAT n'a pas besoin de modele overworld.
+
+        J'ai un temps croise ce reservoir avec les especes que le vanilla fait
+        apparaitre dehors, croyant qu'un Pingoleon observe en jeu venait de la.
+        C'etait faux deux fois : il venait des tables ROMFS, qui ignoraient le
+        filtre de generation ; et le croisement neutralisait l'option « faire
+        apparaitre dehors les Pokemon des hautes herbes », dont c'est justement
+        le but de sortir de ces especes-la.
+    #>
+    $pool = @(Get-BaseSpeciesPool -AllowLegendaries ([bool]$AllowLegendaryLiveBattle) -RomfsRoot $SourceRomfs)
+    return [int[]](Select-SpeciesByGeneration -SpeciesIds ([int[]]$pool) -Filter $GenerationFilterBattle)
+}
+
+function Get-EffectiveGrassEncounterStableMapping {
+    param(
+        [string]$DrawModeValue = $EncounterDrawMode,
+        [string]$LegacyVisibleBehavior = $VisibleEncounterBehavior,
+        [string]$FallbackStableMapping = $GrassEncounterStableMapping
+    )
+
+    # Get-NormalizedEncounterDrawMode ne rend QUE trois valeurs : sa propre
+    # branche par defaut retourne "SlotParEspece". Un switch qui traite ces
+    # trois cas puis lit le choix de l'utilisateur dans son "default" ne le lit
+    # donc jamais - c'est le defaut qui rendait cette liste inerte. On teste
+    # maintenant les deux modes aleatoires en premier, et le choix de
+    # l'utilisateur tranche dans le seul cas ou il a un sens.
+    $drawMode = Get-NormalizedEncounterDrawMode -Value $DrawModeValue -LegacyVisibleBehavior $LegacyVisibleBehavior
+    if ($drawMode -eq "FullRandom" -or $drawMode -eq "VisibleFixeTirageRandom") {
+        # Ces deux modes refont un tirage a chaque entree : aucune stabilite a
+        # respecter, quoi que dise la liste.
+        return "Random"
+    }
+
+    switch (Normalize-StableMappingMode -Value $FallbackStableMapping) {
+        "slot"   { return "Slot" }
+        "random" { return "Random" }
+        default  { return "Species" }
+    }
+}
+
 function Get-LiveEncounterRandomizerEnabled {
-    return ((Get-LiveEncounterRandomizerMode) -ne "off")
+    # Desormais pilote par les deux reglages independants, pas par l'ancien
+    # mode melange : sans ca, choisir Vanilla/Vanilla laisserait quand meme la
+    # couche runtime active.
+    return (((Get-LiveVisibleModeValue) -ne "vanilla") -or ((Get-EffectiveLiveBattleModeValue) -ne "vanilla"))
+}
+
+# Fonctionnalites de confort fournies par le module ExLaunch. Elles sont
+# appliquees a l'execution : aucun fichier ROMFS n'est reecrit pour elles.
+function Get-AnyComfortModEnabled {
+    return ([bool]$ModOverworldShiny -or
+            [bool]$ModUnderworld -or
+            [bool]$ModCameraTweaks -or
+            [bool]$ModUncapLevel -or
+            [bool]$ModFreecam -or
+            [bool]$ModGlimwoodOverworld -or
+            [bool]$ModSynchroMode -or
+            [bool]$ModExtendedFollowing -or
+            [bool]$ModFishingTweaks -or
+            [bool]$ModDexAnimations)
 }
 
 function Get-AnyExLaunchRuntimeFeatureEnabled {
-    return ((Get-RandomizerPcMenuEnabled) -or (Get-AnyExpLevelCapEnabled) -or (Get-RuntimeExpMultiplierEnabled) -or [bool]$DisableExpShare -or [bool]$EarlyBike -or (Get-LiveEncounterRandomizerEnabled))
+    return ((Get-RandomizerPcMenuEnabled) -or (Get-AnyExpLevelCapEnabled) -or (Get-RuntimeExpMultiplierEnabled) -or [bool]$DisableExpShare -or [bool]$EarlyBike -or (Get-LiveEncounterRandomizerEnabled) -or (Get-AnyComfortModEnabled))
 }
 
 function Get-BossLevelCapEnforcementMode {
@@ -296,7 +945,7 @@ function Get-NormalizedGameVersionSelection {
         "bouclier" { return "Shield" }
         "sword" { return "Sword" }
         "epee" { return "Sword" }
-        "épée" { return "Sword" }
+        "Ã©pÃ©e" { return "Sword" }
         default { return "Auto" }
     }
 }
@@ -385,7 +1034,7 @@ function Assert-PathIsUserDumpSource {
 
     foreach ($blockedRoot in $blockedRoots) {
         if ((Test-Path -LiteralPath $blockedRoot) -and (Test-PathInsideRoot -Path $Path -Root $blockedRoot)) {
-            throw "$Kind invalide: '$Path' pointe vers une sortie generee ou un dossier interne du randomizer. Selectionne le $Kind original extrait de ton propre dump du jeu."
+            throw "$Kind invalide: '$Path' pointe vers une sortie générée ou un dossier interne du randomizer. Sélectionne le $Kind original extrait de ton propre dump du jeu."
         }
     }
 }
@@ -429,6 +1078,12 @@ function Write-U32 {
     param([byte[]]$Data, [int]$Offset, [uint32]$Value)
     $bytes = [BitConverter]::GetBytes($Value)
     [Array]::Copy($bytes, 0, $Data, $Offset, 4)
+}
+
+function Write-U64 {
+    param([byte[]]$Data, [int]$Offset, [uint64]$Value)
+    $bytes = [BitConverter]::GetBytes($Value)
+    [Array]::Copy($bytes, 0, $Data, $Offset, 8)
 }
 
 function Ensure-Directory {
@@ -583,11 +1238,73 @@ function Get-OutputPackageRoot {
     return $fullPath
 }
 
+function Get-OutputReportsRoot {
+    param([string]$OutputRomfsRoot)
+
+    $packageRoot = Get-OutputPackageRoot -OutputRomfsRoot $OutputRomfsRoot
+    if ([string]::IsNullOrWhiteSpace($packageRoot)) {
+        return ""
+    }
+
+    return (Join-Path $packageRoot "reports")
+}
+
+function Get-OutputReportPath {
+    param(
+        [string]$OutputRomfsRoot,
+        [string]$FileName
+    )
+
+    return (Join-Path (Get-OutputReportsRoot -OutputRomfsRoot $OutputRomfsRoot) $FileName)
+}
+
+function Move-RootRomfsReportsToReports {
+    param([string]$OutputRomfsRoot)
+
+    if ([string]::IsNullOrWhiteSpace($OutputRomfsRoot) -or -not (Test-Path -LiteralPath $OutputRomfsRoot)) {
+        return 0
+    }
+
+    $reportNames = @(
+        "encounter-zones.json",
+        "item-changes.json",
+        "level-caps.json",
+        "race-summary.json",
+        "randomizer-report.json",
+        "seed-summary.json",
+        "spoiler-log.json",
+        "story-gym-league-caps.json",
+        "story-main-progression-soft-caps.json",
+        "story-major-battle-caps.json",
+        "trainer-changes.json",
+        "wild-changes.json"
+    )
+
+    $reportsRoot = Get-OutputReportsRoot -OutputRomfsRoot $OutputRomfsRoot
+    $moved = 0
+    foreach ($name in $reportNames) {
+        $sourcePath = Join-Path $OutputRomfsRoot $name
+        if (-not (Test-Path -LiteralPath $sourcePath)) {
+            continue
+        }
+
+        Ensure-Directory -Path $reportsRoot
+        $targetPath = Join-Path $reportsRoot $name
+        if (Test-Path -LiteralPath $targetPath) {
+            Remove-Item -LiteralPath $targetPath -Force
+        }
+        Move-Item -LiteralPath $sourcePath -Destination $targetPath
+        $moved++
+    }
+
+    return $moved
+}
+
 function Resolve-OutputRomfsRoot {
     param([string]$OutputPath)
 
     if ([string]::IsNullOrWhiteSpace($OutputPath)) {
-        throw "Dossier de sortie obligatoire: selectionne le dossier du mod genere."
+        throw "Dossier de sortie obligatoire: sélectionne le dossier du mod généré."
     }
 
     $fullPath = [IO.Path]::GetFullPath($OutputPath)
@@ -626,7 +1343,7 @@ function Resolve-SourceExefsRoot {
             }
         }
 
-        throw "Dossier ExeFS invalide: '$SourceExefsRoot'. Selectionne le dossier exefs de ton dump, celui qui contient main.npdm."
+        throw "Dossier ExeFS invalide: '$SourceExefsRoot'. Sélectionne le dossier exefs de ton dump, celui qui contient main.npdm."
     }
 
     if (-not [string]::IsNullOrWhiteSpace($SourceRomfsRoot)) {
@@ -661,12 +1378,12 @@ function Resolve-RequiredSourceRomfsRoot {
     param([string]$SourceRomfsRoot)
 
     if ([string]::IsNullOrWhiteSpace($SourceRomfsRoot)) {
-        throw "Dossier ROMFS obligatoire: selectionne le dossier romfs de ton dump utilisateur."
+        throw "Dossier ROMFS obligatoire: sélectionne le dossier romfs de ton dump utilisateur."
     }
 
     $resolvedRomfs = [IO.Path]::GetFullPath($SourceRomfsRoot)
     if (-not (Test-Path -LiteralPath $resolvedRomfs)) {
-        throw "Dossier ROMFS introuvable: '$SourceRomfsRoot'. Selectionne le dossier romfs de ton dump utilisateur."
+        throw "Dossier ROMFS introuvable: '$SourceRomfsRoot'. Sélectionne le dossier romfs de ton dump utilisateur."
     }
 
     if ((Split-Path -Leaf $resolvedRomfs) -ine "romfs") {
@@ -677,7 +1394,7 @@ function Resolve-RequiredSourceRomfsRoot {
     }
 
     if ((Split-Path -Leaf $resolvedRomfs) -ine "romfs") {
-        throw "Dossier ROMFS invalide: '$SourceRomfsRoot'. Selectionne le dossier romfs de ton dump utilisateur."
+        throw "Dossier ROMFS invalide: '$SourceRomfsRoot'. Sélectionne le dossier romfs de ton dump utilisateur."
     }
 
     Assert-PathIsUserDumpSource -Path $resolvedRomfs -Kind "ROMFS"
@@ -692,12 +1409,12 @@ function Resolve-RequiredSourceExefsRoot {
     )
 
     if ([string]::IsNullOrWhiteSpace($SourceExefsRoot)) {
-        throw "Dossier ExeFS obligatoire: selectionne le dossier exefs de ton dump utilisateur, celui qui contient main.npdm."
+        throw "Dossier ExeFS obligatoire: sélectionne le dossier exefs de ton dump utilisateur, celui qui contient main.npdm."
     }
 
     $resolvedExefs = Resolve-SourceExefsRoot -SourceRomfsRoot $SourceRomfsRoot -SourceExefsRoot $SourceExefsRoot -GameVersion $GameVersion
     if ([string]::IsNullOrWhiteSpace($resolvedExefs) -or (-not (Test-Path -LiteralPath (Join-Path $resolvedExefs "main.npdm")))) {
-        throw "Dossier ExeFS invalide: '$SourceExefsRoot'. Selectionne le dossier exefs de ton dump utilisateur, celui qui contient main.npdm."
+        throw "Dossier ExeFS invalide: '$SourceExefsRoot'. Sélectionne le dossier exefs de ton dump utilisateur, celui qui contient main.npdm."
     }
 
     Assert-PathIsUserDumpSource -Path $resolvedExefs -Kind "ExeFS"
@@ -722,33 +1439,6 @@ function Get-EmulatorSdmcRootForOutput {
     return ""
 }
 
-function Get-EdenRootPath {
-    $appDataPath = [Environment]::GetFolderPath([Environment+SpecialFolder]::ApplicationData)
-    if ([string]::IsNullOrWhiteSpace($appDataPath)) {
-        return ""
-    }
-
-    return (Join-Path $appDataPath "eden")
-}
-
-function Get-PreferredExistingPath {
-    param([string[]]$Candidates)
-
-    foreach ($candidate in @($Candidates)) {
-        if (-not [string]::IsNullOrWhiteSpace([string]$candidate) -and (Test-Path -LiteralPath $candidate)) {
-            return [string]$candidate
-        }
-    }
-
-    foreach ($candidate in @($Candidates)) {
-        if (-not [string]::IsNullOrWhiteSpace([string]$candidate)) {
-            return [string]$candidate
-        }
-    }
-
-    return ""
-}
-
 function Get-NormalizedModName {
     param([string]$ModName)
 
@@ -760,90 +1450,8 @@ function Get-NormalizedModName {
     return $trimmed
 }
 
-function Get-EdenModRoot {
-    param(
-        [string]$GameVersion,
-        [string]$ModName
-    )
-
-    $edenRoot = Get-EdenRootPath
-    if ([string]::IsNullOrWhiteSpace($edenRoot)) {
-        return ""
-    }
-
-    $titleId = Get-GameTitleId -GameVersion $GameVersion
-    $safeModName = Get-NormalizedModName -ModName $ModName
-    return (Join-Path $edenRoot ("load\" + $titleId + "\" + $safeModName))
-}
-
-function Get-YuzuRootPath {
-    $roamingRoot = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::ApplicationData)) "yuzu"
-    $localRoot = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)) "yuzu"
-    if (Test-Path -LiteralPath $roamingRoot) {
-        return $roamingRoot
-    }
-    if (Test-Path -LiteralPath $localRoot) {
-        return $localRoot
-    }
-    return $roamingRoot
-}
-
 function Get-RyujinxRootPath {
     return (Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::ApplicationData)) "Ryujinx")
-}
-
-function Get-SudachiRootPath {
-    $roamingRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::ApplicationData)
-    $localRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
-    return (Get-PreferredExistingPath -Candidates @(
-        (Join-Path $roamingRoot "sudachi"),
-        (Join-Path $roamingRoot "Sudachi"),
-        (Join-Path $localRoot "sudachi"),
-        (Join-Path $localRoot "Sudachi")
-    ))
-}
-
-function Get-CitronRootPath {
-    $roamingRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::ApplicationData)
-    $localRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
-    return (Get-PreferredExistingPath -Candidates @(
-        (Join-Path $roamingRoot "citron"),
-        (Join-Path $roamingRoot "Citron"),
-        (Join-Path $localRoot "citron"),
-        (Join-Path $localRoot "Citron")
-    ))
-}
-
-function Get-SuyuRootPath {
-    $roamingRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::ApplicationData)
-    $localRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
-    return (Get-PreferredExistingPath -Candidates @(
-        (Join-Path $roamingRoot "suyu"),
-        (Join-Path $roamingRoot "Suyu"),
-        (Join-Path $localRoot "suyu"),
-        (Join-Path $localRoot "Suyu")
-    ))
-}
-
-function Get-CitronNeoRootPath {
-    $roamingRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::ApplicationData)
-    $localRoot = [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData)
-    return (Get-PreferredExistingPath -Candidates @(
-        (Join-Path $roamingRoot "citron team"),
-        (Join-Path $roamingRoot "Citron Team"),
-        (Join-Path $roamingRoot "citron neo"),
-        (Join-Path $roamingRoot "Citron Neo"),
-        (Join-Path $roamingRoot "citron-neo"),
-        (Join-Path $roamingRoot "Citron-Neo"),
-        (Join-Path $roamingRoot "CitronNeo"),
-        (Join-Path $localRoot "citron team"),
-        (Join-Path $localRoot "Citron Team"),
-        (Join-Path $localRoot "citron neo"),
-        (Join-Path $localRoot "Citron Neo"),
-        (Join-Path $localRoot "citron-neo"),
-        (Join-Path $localRoot "Citron-Neo"),
-        (Join-Path $localRoot "CitronNeo")
-    ))
 }
 
 function Get-EmulatorInstallTargets {
@@ -861,76 +1469,16 @@ function Get-EmulatorInstallTargets {
 
     return @(
         [pscustomobject]@{
-            Key = "eden"
-            Name = "Eden"
-            RootPath = Get-EdenRootPath
-            RelativeModPath = ("load\" + $titleId + "\" + $safeModName)
-            RelativeSdmcPath = "sdmc"
-            LegacyRelativeModPaths = @()
-            TitleId = $titleId
-            ModName = $safeModName
-        },
-        [pscustomobject]@{
             Key = "ryujinx"
             Name = "Ryujinx"
             RootPath = Get-RyujinxRootPath
-            RelativeModPath = ("sdcard\atmosphere\contents\" + $titleId + "\" + $safeModName)
+            RelativeModPath = ("mods\contents\" + $titleId + "\" + $safeModName)
             RelativeSdmcPath = "sdcard"
             LegacyRelativeModPaths = @(
-                ("mods\contents\" + $titleId + "\" + $safeModName),
+                ("sdcard\atmosphere\contents\" + $titleId + "\" + $safeModName),
                 ("mods\exefs_patches\" + $titleId),
                 ("sdcard\atmosphere\exefs_patches\" + $titleId)
             )
-            TitleId = $titleId
-            ModName = $safeModName
-        },
-        [pscustomobject]@{
-            Key = "yuzu"
-            Name = "Yuzu"
-            RootPath = Get-YuzuRootPath
-            RelativeModPath = ("load\" + $titleId + "\" + $safeModName)
-            RelativeSdmcPath = "sdmc"
-            LegacyRelativeModPaths = @()
-            TitleId = $titleId
-            ModName = $safeModName
-        },
-        [pscustomobject]@{
-            Key = "sudachi"
-            Name = "Sudachi"
-            RootPath = Get-SudachiRootPath
-            RelativeModPath = ("load\" + $titleId + "\" + $safeModName)
-            RelativeSdmcPath = "sdmc"
-            LegacyRelativeModPaths = @()
-            TitleId = $titleId
-            ModName = $safeModName
-        },
-        [pscustomobject]@{
-            Key = "citron"
-            Name = "Citron"
-            RootPath = Get-CitronRootPath
-            RelativeModPath = ("load\" + $titleId + "\" + $safeModName)
-            RelativeSdmcPath = "sdmc"
-            LegacyRelativeModPaths = @()
-            TitleId = $titleId
-            ModName = $safeModName
-        },
-        [pscustomobject]@{
-            Key = "suyu"
-            Name = "Suyu"
-            RootPath = Get-SuyuRootPath
-            RelativeModPath = ("load\" + $titleId + "\" + $safeModName)
-            RelativeSdmcPath = "sdmc"
-            LegacyRelativeModPaths = @()
-            TitleId = $titleId
-            ModName = $safeModName
-        },
-        [pscustomobject]@{
-            Key = "citronneo"
-            Name = "Citron Neo"
-            RootPath = Get-CitronNeoRootPath
-            RelativeModPath = ("load\" + $titleId + "\" + $safeModName)
-            RelativeSdmcPath = "sdmc"
-            LegacyRelativeModPaths = @()
             TitleId = $titleId
             ModName = $safeModName
         }
@@ -969,13 +1517,7 @@ function Get-EmulatorInstallTargets {
 
 function Get-RequestedEmulatorKeys {
     $keys = New-Object System.Collections.Generic.List[string]
-    if ([bool]$InstallToEden) { $keys.Add("eden") }
     if ([bool]$InstallToRyujinx) { $keys.Add("ryujinx") }
-    if ([bool]$InstallToYuzu) { $keys.Add("yuzu") }
-    if ([bool]$InstallToSudachi) { $keys.Add("sudachi") }
-    if ([bool]$InstallToCitron) { $keys.Add("citron") }
-    if ([bool]$InstallToSuyu) { $keys.Add("suyu") }
-    if ([bool]$InstallToCitronNeo) { $keys.Add("citronneo") }
     return [string[]]$keys.ToArray()
 }
 
@@ -990,6 +1532,7 @@ function Install-PackageToEmulatorTarget {
     $sourceRomfsPath = Join-Path $packageRoot "romfs"
     $sourceExefsPath = Join-Path $packageRoot "exefs"
     $sourceSdmcPath = Join-Path $packageRoot "sdmc"
+    $sourceReportsPath = Join-Path $packageRoot "reports"
     $sourcePackageFullPath = [IO.Path]::GetFullPath($packageRoot)
     $targetModFullPath = if ([string]::IsNullOrWhiteSpace([string]$Target.ModRoot)) { "" } else { [IO.Path]::GetFullPath([string]$Target.ModRoot) }
     $alreadyAtTarget = (-not [string]::IsNullOrWhiteSpace($targetModFullPath)) -and
@@ -1018,6 +1561,7 @@ function Install-PackageToEmulatorTarget {
         CopiedRomfs = $false
         CopiedExefs = $false
         CopiedSdmc = $false
+        CopiedReports = $false
         Error = ""
     }
 
@@ -1027,7 +1571,7 @@ function Install-PackageToEmulatorTarget {
     }
 
     if (-not (Test-Path -LiteralPath $sourceRomfsPath)) {
-        $result.Error = "Le package genere ne contient pas de dossier romfs."
+        $result.Error = "Le package généré ne contient pas de dossier romfs."
         return $result
     }
 
@@ -1050,6 +1594,11 @@ function Install-PackageToEmulatorTarget {
             Copy-DirectoryChildren -SourcePath $sourceRomfsPath -DestinationPath (Join-Path $Target.ModRoot "romfs")
             $result.CopiedRomfs = $true
 
+            if (Test-Path -LiteralPath $sourceReportsPath) {
+                Copy-DirectoryChildren -SourcePath $sourceReportsPath -DestinationPath (Join-Path $Target.ModRoot "reports")
+                $result.CopiedReports = $true
+            }
+
             if (Test-Path -LiteralPath $sourceExefsPath) {
                 Copy-DirectoryChildren -SourcePath $sourceExefsPath -DestinationPath (Join-Path $Target.ModRoot "exefs")
                 $null = Sync-RyujinxSpecificSubsdk9 -DestinationExefsRoot (Join-Path $Target.ModRoot "exefs") -GameVersion $GameVersion -TargetKey ([string]$Target.Key)
@@ -1058,6 +1607,7 @@ function Install-PackageToEmulatorTarget {
         } else {
             $result.CopiedRomfs = $true
             $result.CopiedExefs = (Test-Path -LiteralPath $sourceExefsPath)
+            $result.CopiedReports = (Test-Path -LiteralPath $sourceReportsPath)
             if ($result.CopiedExefs) {
                 $null = Sync-RyujinxSpecificSubsdk9 -DestinationExefsRoot (Join-Path $Target.ModRoot "exefs") -GameVersion $GameVersion -TargetKey ([string]$Target.Key)
             }
@@ -1075,6 +1625,7 @@ function Install-PackageToEmulatorTarget {
 
         $result.RemovedExistingLegacyModPaths = @($removedExistingLegacyModPaths.ToArray())
         $result.RemovedExistingSdmcPaths = @($removedExistingSdmcPaths.ToArray())
+        $null = Sync-RyujinxModsJson -Target $Target
         $result.Installed = $true
         return $result
     } catch {
@@ -1129,7 +1680,7 @@ function Get-InstallationGuideText {
     $targets = @(Get-EmulatorInstallTargets -GameVersion $GameVersion -ModName $safeModName)
     $detectedLines = foreach ($target in $targets) {
         $status = if ($target.IsDetected) {
-            if ($lang -eq "en") { "detected" } else { "detecte" }
+            if ($lang -eq "en") { "detected" } else { "détecté" }
         } else {
             if ($lang -eq "en") { "not found" } else { "introuvable" }
         }
@@ -1195,6 +1746,43 @@ L'onglet Reset retire seulement ce dossier de mod et le fichier config swsh-mods
 "@
 }
 
+function Remove-DirectoryWithRetry {
+    <#
+        Supprime un dossier en reessayant : un verrou sur ces arborescences est
+        presque toujours passager (antivirus qui indexe les 6210 fichiers qu'on
+        vient d'ecrire, explorateur ouvert dessus).
+
+        Rend $true si le dossier n'existe plus, $false sinon. L'appelant decide
+        quoi faire de l'echec ; ici, il ne doit PAS faire echouer la generation,
+        parce que la ROM est deja complete quand on en arrive la.
+
+        Mesure du 2026-09-07 : trois generations sur trente-six d'une suite de
+        tests sont sorties en code 1 sur ce seul Remove-Item, alors que leur
+        ROM etait juste. Le test lisait donc un echec la ou il n'y en avait pas.
+    #>
+    param(
+        [string]$Path,
+        [int]$Tentatives = 5,
+        [int]$AttenteMs = 400
+    )
+
+    for ($essai = 1; $essai -le $Tentatives; $essai++) {
+        if (-not (Test-Path -LiteralPath $Path)) {
+            return $true
+        }
+        try {
+            Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
+            return $true
+        } catch {
+            if ($essai -eq $Tentatives) {
+                return $false
+            }
+            Start-Sleep -Milliseconds $AttenteMs
+        }
+    }
+    return (-not (Test-Path -LiteralPath $Path))
+}
+
 function Write-InstallationPackage {
     param(
         [string]$OutputRomfsRoot,
@@ -1206,13 +1794,20 @@ function Write-InstallationPackage {
     $sourceRomfsPath = Join-Path $packageRoot "romfs"
     $sourceExefsPath = Join-Path $packageRoot "exefs"
     $sourceSdmcPath = Join-Path $packageRoot "sdmc"
+    $sourceReportsPath = Join-Path $packageRoot "reports"
     $installRoot = Get-InstallationFolderRoot -OutputRomfsRoot $OutputRomfsRoot
     $legacyInstallRoot = Join-Path $packageRoot "Installation"
     if (($legacyInstallRoot -ne $installRoot) -and (Test-Path -LiteralPath $legacyInstallRoot)) {
-        Remove-Item -LiteralPath $legacyInstallRoot -Recurse -Force
+        $null = Remove-DirectoryWithRetry -Path $legacyInstallRoot
     }
-    if (Test-Path -LiteralPath $installRoot) {
-        Remove-Item -LiteralPath $installRoot -Recurse -Force
+    $dossierNeuf = Remove-DirectoryWithRetry -Path $installRoot
+    if (-not $dossierNeuf) {
+        # On NE fait PAS echouer la generation : la ROM (romfs, exefs, sdmc) est
+        # deja ecrite et juste. Mais on ne se tait pas non plus, parce que le
+        # dossier va garder des fichiers d'une generation precedente - c'est
+        # exactement ce piege qui a fait jouer une vieille ROM en croyant en
+        # lancer une neuve.
+        Write-Warning ("Le dossier Installation n'a pas pu être vidé ({0}) : il peut contenir des fichiers d'une génération précédente. La ROM elle-même est complète dans le dossier de sortie." -f $installRoot)
     }
     Ensure-Directory -Path $installRoot
 
@@ -1223,6 +1818,9 @@ function Write-InstallationPackage {
         $targetSdmcRoot = Join-Path $targetRoot ([string]$target.RelativeSdmcPath)
         Ensure-Directory -Path $targetModRoot
         Copy-DirectoryChildren -SourcePath $sourceRomfsPath -DestinationPath (Join-Path $targetModRoot "romfs")
+        if (Test-Path -LiteralPath $sourceReportsPath) {
+            Copy-DirectoryChildren -SourcePath $sourceReportsPath -DestinationPath (Join-Path $targetModRoot "reports")
+        }
         if (Test-Path -LiteralPath $sourceExefsPath) {
             Copy-DirectoryChildren -SourcePath $sourceExefsPath -DestinationPath (Join-Path $targetModRoot "exefs")
             $null = Sync-RyujinxSpecificSubsdk9 -DestinationExefsRoot (Join-Path $targetModRoot "exefs") -GameVersion $GameVersion -TargetKey ([string]$target.Key)
@@ -1325,58 +1923,6 @@ function Reset-SelectedEmulatorInstallations {
     return [object[]]$results.ToArray()
 }
 
-function Install-PackageToEden {
-    param(
-        [string]$OutputRomfsRoot,
-        [string]$GameVersion,
-        [string]$ModName
-    )
-
-    $target = @(Get-EmulatorInstallTargets -GameVersion $GameVersion -ModName $ModName | Where-Object { $_.Key -eq "eden" } | Select-Object -First 1)
-    if ($target.Count -lt 1) {
-        return [pscustomobject]@{
-            Requested = $true
-            Installed = $false
-            GameVersion = $GameVersion
-            TitleId = Get-GameTitleId -GameVersion $GameVersion
-            EdenRoot = Get-EdenRootPath
-            PackageRoot = Get-OutputPackageRoot -OutputRomfsRoot $OutputRomfsRoot
-            ModName = Get-NormalizedModName -ModName $ModName
-            ModRoot = ""
-            SdmcRoot = ""
-            SdmcConfigPath = ""
-            AlreadyAtTarget = $false
-            RemovedExistingMod = $false
-            RemovedExistingSdmcPaths = @()
-            CopiedRomfs = $false
-            CopiedExefs = $false
-            CopiedSdmc = $false
-            Error = "Target Eden introuvable."
-        }
-    }
-
-    $edenResult = Install-PackageToEmulatorTarget -OutputRomfsRoot $OutputRomfsRoot -GameVersion $GameVersion -Target $target[0]
-    return [pscustomobject]@{
-        Requested = $edenResult.Requested
-        Installed = $edenResult.Installed
-        GameVersion = $GameVersion
-        TitleId = $edenResult.TitleId
-        EdenRoot = $edenResult.RootPath
-        PackageRoot = $edenResult.PackageRoot
-        ModName = $edenResult.ModName
-        ModRoot = $edenResult.ModRoot
-        SdmcRoot = $edenResult.SdmcRoot
-        SdmcConfigPath = $edenResult.SdmcConfigPath
-        AlreadyAtTarget = $edenResult.AlreadyAtTarget
-        RemovedExistingMod = $edenResult.RemovedExistingMod
-        RemovedExistingSdmcPaths = @($edenResult.RemovedExistingSdmcPaths)
-        CopiedRomfs = $edenResult.CopiedRomfs
-        CopiedExefs = $edenResult.CopiedExefs
-        CopiedSdmc = $edenResult.CopiedSdmc
-        Error = $edenResult.Error
-    }
-}
-
 function Get-GameTitleId {
     param([string]$GameVersion)
 
@@ -1424,10 +1970,10 @@ function Get-ExpectedExLaunchSubsdk9Hash {
     $titleId = Get-GameTitleId -GameVersion $normalizedGameVersion
     $normalizedVariant = ([string]$Variant).Trim().ToLowerInvariant()
     switch ("$titleId|$normalizedVariant") {
-        "0100ABF008968000|stable" { return "3358B4547EAC17A009B9BEFCF2BAC72BA0A4E4124A66111C678BFFC620460973" }
-        "0100ABF008968000|ryujinx" { return "AE717A5C4240742C5394F7672641AE3A3A17EA14095E40FA9ACDA4EEE600C196" }
-        "01008DB008C2C000|stable" { return "6FFBBDE4BDFD3FF472CFBC3AA547A9C7EB95D0C10DD9A192E214B1D1FB01965D" }
-        "01008DB008C2C000|ryujinx" { return "B6E0DCFC12E9685483A29E7374E7556AD106BD25F91A2C6B87E043D6C4F7C0D5" }
+        "0100ABF008968000|stable" { return "AB13EC3B8693EF475E5FD81221095D6862D3C34E179399E6B25F351FD7563331" }
+        "0100ABF008968000|ryujinx" { return "AB13EC3B8693EF475E5FD81221095D6862D3C34E179399E6B25F351FD7563331" }
+        "01008DB008C2C000|stable" { return "C3969FC0E35339295AE46E88BE915372019A60C12B674B61A21D67AFC08B8B14" }
+        "01008DB008C2C000|ryujinx" { return "C3969FC0E35339295AE46E88BE915372019A60C12B674B61A21D67AFC08B8B14" }
         default { return "" }
     }
 }
@@ -1633,6 +2179,85 @@ function Sync-RyujinxSpecificSubsdk9 {
     Ensure-Directory -Path $DestinationExefsRoot
     Copy-Item -LiteralPath $sourcePath -Destination $destinationPath -Force
     Copy-Item -LiteralPath $mainNpdmSourcePath -Destination $mainNpdmDestinationPath -Force
+    return $true
+}
+
+function Sync-RyujinxModsJson {
+    param(
+        [pscustomobject]$Target
+    )
+
+    if (([string]$Target.Key).ToLowerInvariant() -ne "ryujinx") {
+        return $false
+    }
+    if ([string]::IsNullOrWhiteSpace([string]$Target.RootPath) -or
+        [string]::IsNullOrWhiteSpace([string]$Target.TitleId) -or
+        [string]::IsNullOrWhiteSpace([string]$Target.ModName) -or
+        [string]::IsNullOrWhiteSpace([string]$Target.ModRoot)) {
+        return $false
+    }
+
+    $gameConfigRoot = Join-Path (Join-Path ([string]$Target.RootPath) "games") ([string]$Target.TitleId).ToLowerInvariant()
+    $modsJsonPath = Join-Path $gameConfigRoot "mods.json"
+    $titleModsRoot = Join-Path (Join-Path ([string]$Target.RootPath) "mods\contents") ([string]$Target.TitleId)
+    $titleModsRootFullPath = ([IO.Path]::GetFullPath($titleModsRoot).TrimEnd('\') + '\')
+    $targetModFullPath = ([IO.Path]::GetFullPath([string]$Target.ModRoot).TrimEnd('\') + '\')
+    Ensure-Directory -Path $gameConfigRoot
+
+    $mods = @()
+    if (Test-Path -LiteralPath $modsJsonPath) {
+        try {
+            $existing = Get-Content -LiteralPath $modsJsonPath -Raw | ConvertFrom-Json
+            if ($existing -and ($existing.PSObject.Properties.Name -contains "mods")) {
+                $mods = @($existing.mods)
+            }
+        } catch {
+            $mods = @()
+        }
+    }
+
+    $updated = New-Object System.Collections.Generic.List[object]
+    foreach ($mod in $mods) {
+        $entryName = [string]$mod.name
+        $entryPath = [string]$mod.path
+        $entryFullPath = ""
+        if (-not [string]::IsNullOrWhiteSpace($entryPath)) {
+            try {
+                $entryFullPath = ([IO.Path]::GetFullPath($entryPath).TrimEnd('\') + '\')
+            } catch {
+                $entryFullPath = ""
+            }
+        }
+
+        if (($entryName -ieq ([string]$Target.ModName)) -or ($entryFullPath -ieq $targetModFullPath)) {
+            continue
+        }
+
+        $entry = [ordered]@{}
+        foreach ($property in $mod.PSObject.Properties) {
+            $entry[$property.Name] = $property.Value
+        }
+
+        $entryLeaf = if ([string]::IsNullOrWhiteSpace($entryPath)) { "" } else { Split-Path -Leaf $entryPath }
+        $isGeneratedRandomizerSibling = (-not [string]::IsNullOrWhiteSpace($entryFullPath)) -and
+            $entryFullPath.StartsWith($titleModsRootFullPath, [StringComparison]::OrdinalIgnoreCase) -and
+            (($entryName -match '^Randomizer') -or ($entryLeaf -match '^Randomizer'))
+        if ($isGeneratedRandomizerSibling) {
+            $entry["enabled"] = $false
+        }
+
+        $updated.Add([pscustomobject]$entry)
+    }
+    $updated.Add([pscustomobject]@{
+        name = [string]$Target.ModName
+        path = [IO.Path]::GetFullPath([string]$Target.ModRoot)
+        enabled = $true
+    })
+
+    $payload = [ordered]@{
+        mods = @($updated.ToArray())
+    } | ConvertTo-Json -Depth 6
+    [IO.File]::WriteAllText($modsJsonPath, $payload, [Text.UTF8Encoding]::new($false))
     return $true
 }
 
@@ -1856,19 +2481,28 @@ public static class PokeFeurScriptRecordCodec
         return bytes.ToArray();
     }
 
-    public static byte[] Patch(byte[] data, bool runtimePcControls)
+    public static byte[] Patch(byte[] data, bool runtimePcControls, bool earlyBikeEnabled, bool dexAnimationsEnabled)
     {
         List<Entry> entries = Parse(data);
         if (entries.Count == 0) throw new ArgumentException("script_id_record.bin is empty or invalid.");
 
-        Upsert(entries, Fnv1a64("custom_message"), "bin/script/amx/custom_message.amx", "script/script_dummy.dat");
-        Upsert(entries, Fnv1a64("dex_dialog"), "bin/script/amx/dex_animations.amx", "script/script_dummy.dat");
-        Upsert(entries, Fnv1a64("grant_early_bike"), "bin/script/amx/early_bike.amx", "script/script_dummy.dat");
-        Upsert(entries, Fnv1a64("randomizer_pc_menu"), "bin/script/amx/randomizer_pc_menu.amx", "script/script_dummy.dat");
+        if (earlyBikeEnabled)
+        {
+            Upsert(entries, Fnv1a64("grant_early_bike"), "bin/script/amx/early_bike.amx", "script/script_dummy.dat");
+        }
 
         if (runtimePcControls)
         {
+            Upsert(entries, Fnv1a64("randomizer_pc_menu"), "bin/script/amx/randomizer_pc_menu.amx", "script/script_dummy.dat");
             Upsert(entries, 13435777772824609090UL, "bin/script/amx/randomizer_pc_menu.amx", "script/pokemoncenter.dat");
+        }
+
+        if (dexAnimationsEnabled)
+        {
+            // Le module fait apparaitre un objet de terrain dont le nom de script est
+            // getFNV1aHashedString("dex_dialog") (patches/dex_animations.hpp). Sans cette
+            // entree l'objet apparait mais l'interaction ne lance aucun script.
+            Upsert(entries, Fnv1a64("dex_dialog"), "bin/script/amx/dex_animations.amx", "script/script_dummy.dat");
         }
 
         return Build(entries);
@@ -1880,7 +2514,9 @@ public static class PokeFeurScriptRecordCodec
 function Update-UserScriptRecordForExLaunch {
     param(
         [string]$OutputRomfsRoot,
-        [bool]$RuntimePcControlsEnabled = $false
+        [bool]$RuntimePcControlsEnabled = $false,
+        [bool]$EarlyBikeEnabled = $false,
+        [bool]$DexAnimationsEnabled = $false
     )
 
     $scriptRecordPath = Join-Path $OutputRomfsRoot "bin\script\param\script_id\script_id_record.bin"
@@ -1890,7 +2526,7 @@ function Update-UserScriptRecordForExLaunch {
 
     Initialize-ScriptRecordCodec
     $data = [IO.File]::ReadAllBytes($scriptRecordPath)
-    $patched = [PokeFeurScriptRecordCodec]::Patch($data, $RuntimePcControlsEnabled)
+    $patched = [PokeFeurScriptRecordCodec]::Patch($data, $RuntimePcControlsEnabled, $EarlyBikeEnabled, $DexAnimationsEnabled)
     [IO.File]::WriteAllBytes($scriptRecordPath, $patched)
     return $RuntimePcControlsEnabled
 }
@@ -1900,11 +2536,13 @@ function Copy-ExLaunchCustomRomfsFiles {
         [string]$SourceRomfsRoot,
         [string]$OutputRomfsRoot,
         [string]$GameVersion,
-        [bool]$RuntimePcControlsEnabled = $false
+        [bool]$RuntimePcControlsEnabled = $false,
+        [bool]$EarlyBikeEnabled = $false,
+        [bool]$DexAnimationsEnabled = $false
     )
 
     $artifactRomfsRoot = Get-ExLaunchArtifactRomfsRoot -GameVersion $GameVersion
-    $relativeFiles = @(
+    $allRuntimeFiles = @(
         "bin\message\English\script\string_format.dat",
         "bin\message\English\script\string_format.tbl",
         "bin\script\amx\custom_message.amx",
@@ -1912,6 +2550,16 @@ function Copy-ExLaunchCustomRomfsFiles {
         "bin\script\amx\early_bike.amx",
         "bin\script\amx\randomizer_pc_menu.amx"
     )
+    $relativeFiles = New-Object System.Collections.Generic.List[string]
+    if ($EarlyBikeEnabled) {
+        $relativeFiles.Add("bin\script\amx\early_bike.amx")
+    }
+    if ($RuntimePcControlsEnabled) {
+        $relativeFiles.Add("bin\script\amx\randomizer_pc_menu.amx")
+    }
+    if ($DexAnimationsEnabled) {
+        $relativeFiles.Add("bin\script\amx\dex_animations.amx")
+    }
 
     $missingFiles = New-Object System.Collections.Generic.List[string]
     foreach ($relativePath in $relativeFiles) {
@@ -1933,12 +2581,30 @@ function Copy-ExLaunchCustomRomfsFiles {
 
     $sourceScriptRecordPath = Join-Path $SourceRomfsRoot "bin\script\param\script_id\script_id_record.bin"
     $targetScriptRecordPath = Join-Path $OutputRomfsRoot "bin\script\param\script_id\script_id_record.bin"
-    if (Test-Path -LiteralPath $sourceScriptRecordPath) {
+    $needsScriptRecordPatch = $RuntimePcControlsEnabled -or $EarlyBikeEnabled -or $DexAnimationsEnabled
+    if ($needsScriptRecordPatch -and (Test-Path -LiteralPath $sourceScriptRecordPath)) {
         Ensure-ParentDirectory -Path $targetScriptRecordPath
         Copy-Item -LiteralPath $sourceScriptRecordPath -Destination $targetScriptRecordPath -Force
+    } elseif (-not $needsScriptRecordPatch -and (Test-Path -LiteralPath $targetScriptRecordPath)) {
+        Remove-Item -LiteralPath $targetScriptRecordPath -Force
     }
 
-    return (Update-UserScriptRecordForExLaunch -OutputRomfsRoot $OutputRomfsRoot -RuntimePcControlsEnabled $RuntimePcControlsEnabled)
+    foreach ($relativePath in $allRuntimeFiles) {
+        if ($relativeFiles.Contains($relativePath)) {
+            continue
+        }
+
+        $stalePath = Join-Path $OutputRomfsRoot $relativePath
+        if (Test-Path -LiteralPath $stalePath) {
+            Remove-Item -LiteralPath $stalePath -Force
+        }
+    }
+
+    if (-not $needsScriptRecordPatch) {
+        return $false
+    }
+
+    return (Update-UserScriptRecordForExLaunch -OutputRomfsRoot $OutputRomfsRoot -RuntimePcControlsEnabled $RuntimePcControlsEnabled -EarlyBikeEnabled $EarlyBikeEnabled -DexAnimationsEnabled $DexAnimationsEnabled)
 }
 
 function Deploy-ExLaunchModule {
@@ -1947,7 +2613,9 @@ function Deploy-ExLaunchModule {
         [string]$SourceExefsRoot,
         [string]$OutputRomfsRoot,
         [string]$GameVersion,
-        [bool]$RuntimePcControlsEnabled = $false
+        [bool]$RuntimePcControlsEnabled = $false,
+        [bool]$EarlyBikeEnabled = $false,
+        [bool]$DexAnimationsEnabled = $false
     )
 
     $normalizedGameVersion = Get-NormalizedGameVersionSelection -Value $GameVersion
@@ -1997,7 +2665,7 @@ function Deploy-ExLaunchModule {
     if (-not (Test-ExLaunchSubsdk9Hash -Path $subsdkTargetPath -GameVersion $normalizedGameVersion -Variant "stable")) {
         throw ("subsdk9 stable hash mismatch for {0} at {1}" -f $normalizedGameVersion, $subsdkTargetPath)
     }
-    $pcScriptApplied = Copy-ExLaunchCustomRomfsFiles -SourceRomfsRoot $SourceRomfsRoot -OutputRomfsRoot $OutputRomfsRoot -GameVersion $normalizedGameVersion -RuntimePcControlsEnabled $RuntimePcControlsEnabled
+    $pcScriptApplied = Copy-ExLaunchCustomRomfsFiles -SourceRomfsRoot $SourceRomfsRoot -OutputRomfsRoot $OutputRomfsRoot -GameVersion $normalizedGameVersion -RuntimePcControlsEnabled $RuntimePcControlsEnabled -EarlyBikeEnabled $EarlyBikeEnabled -DexAnimationsEnabled $DexAnimationsEnabled
     $variantManifestPath = Write-ExLaunchVariantManifest -OutputRomfsRoot $OutputRomfsRoot -GameVersion $normalizedGameVersion
 
     return [pscustomobject]@{
@@ -2239,6 +2907,7 @@ function Write-ExpLevelCapExLaunchConfig {
 
     $packageRoot = Get-OutputPackageRoot -OutputRomfsRoot $OutputRomfsRoot
     $packageConfigPath = Join-Path $packageRoot "sdmc\config\swsh-mods-exl\config.toml"
+    $romfsFallbackConfigRoot = Join-Path $packageRoot "romfs\config\swsh-mods-exl"
     $romfsFallbackConfigPath = Join-Path $packageRoot "romfs\config\swsh-mods-exl\config.toml"
     $emulatorSdmcRoot = Get-EmulatorSdmcRootForOutput -OutputRomfsRoot $OutputRomfsRoot
     $configPath = if ([string]::IsNullOrWhiteSpace($emulatorSdmcRoot)) {
@@ -2255,27 +2924,97 @@ function Write-ExpLevelCapExLaunchConfig {
     $earlyBikeActiveText = if ([bool]$EarlyBike) { "true" } else { "false" }
     $runtimePcActiveText = if (Get-RandomizerPcMenuEnabled) { "true" } else { "false" }
     $liveEncounterMode = Get-LiveEncounterRandomizerMode
-    $liveEncounterActiveText = if ($liveEncounterMode -ne "off") { "true" } else { "false" }
-    $liveEncounterMapping = (Normalize-StableMappingMode -Value $GrassEncounterStableMapping).ToLowerInvariant()
+    $liveEncounterActiveText = if (Get-LiveEncounterRandomizerEnabled) { "true" } else { "false" }
+    $liveVisibleModeText = Get-LiveVisibleModeValue
+    $liveBattleModeText = Get-EffectiveLiveBattleModeValue
+    $liveVisiblePoolText = (@(Get-LiveVisibleSpeciesPool) | ForEach-Object { [string][int]$_ }) -join ", "
+    $liveBattlePoolText = (@(Get-LiveBattleSpeciesPool) | ForEach-Object { [string][int]$_ }) -join ", "
+
+    $boolText = { param([bool]$Value) if ($Value) { "true" } else { "false" } }
+    $overworldShinyActiveText = & $boolText ([bool]$ModOverworldShiny)
+    $overworldShinyBoostText = [string][Math]::Max(0, [Math]::Min(100, [int]$OverworldShinyBoostPercent))
+    $underworldActiveText = & $boolText ([bool]$ModUnderworld)
+    $cameraTweaksActiveText = & $boolText ([bool]$ModCameraTweaks)
+    $uncapLevelActiveText = & $boolText ([bool]$ModUncapLevel)
+    $freecamActiveText = & $boolText ([bool]$ModFreecam)
+    $glimwoodActiveText = & $boolText ([bool]$ModGlimwoodOverworld)
+    $glimwoodMaxSpawnsText = [string][Math]::Max(1, [Math]::Min(20, [int]$GlimwoodMaxSpawns))
+    $synchroActiveText = & $boolText ([bool]$ModSynchroMode)
+    $extendedFollowingActiveText = & $boolText ([bool]$ModExtendedFollowing)
+    $fishingTweaksActiveText = & $boolText ([bool]$ModFishingTweaks)
+    $dexAnimationsActiveText = & $boolText ([bool]$ModDexAnimations)
+    $liveEncounterMapping = Get-LiveEncounterMappingValue
+    $liveEncounterVisibleBehavior = Get-LiveEncounterVisibleBehaviorValue
+    $liveEncounterDrawMode = Get-LiveEncounterDrawModeValue
     $liveEncounterSeedText = ([UInt64](Resolve-SeedValue -SeedValue $Seed)).ToString([Globalization.CultureInfo]::InvariantCulture)
-    $runtimeMultiplierText = ([double]$ExpYieldMultiplier).ToString("0.###", [Globalization.CultureInfo]::InvariantCulture)
+    $liveEncounterVisualSpeciesPool = Get-OverworldVisualSpeciesPool -RomfsRoot $SourceRomfs -AllowLegendaries ([bool]$AllowLegendaryGrassEncounters)
+    $liveEncounterVisualSpeciesText = (@($liveEncounterVisualSpeciesPool) | ForEach-Object { [string][int]$_ }) -join ", "
+    # Toujours emettre un flottant TOML (ex: 2.0) : le module lit multiplier en float,
+    # un entier TOML ne se convertit pas et retomberait sur la valeur par defaut 1.0.
+    $runtimeMultiplierText = ([double]$ExpYieldMultiplier).ToString("0.0##", [Globalization.CultureInfo]::InvariantCulture)
     $content = @"
 # Generated by PokeFeurRandomSWSH.
 # Managed-by: PokeFeurRandomSWSH
 # Requested-exp-cap-mode: $requestedMode
 # ExLaunch-exp-cap-mode: $mode
-# Install this under Eden/Ryujinx/Yuzu sdmc-or-sdcard config/swsh-mods-exl/config.toml
+# Install this under the Ryujinx sdcard config/swsh-mods-exl/config.toml
 # together with the built swsh-mods-exl ExLaunch module.
 
 [overworld_shiny]
-active = false
-boosted_percentage = 0
+active = $overworldShinyActiveText
+boosted_percentage = $overworldShinyBoostText
+# La boite de message demande des fichiers ROMFS supplementaires et peut faire
+# croire a un chargement infini au retour d'un combat : on la laisse coupee.
+show_message_box = false
+
+[underworld]
+active = $underworldActiveText
+
+[camera_tweaks]
+active = $cameraTweaksActiveText
+
+[uncap_level]
+active = $uncapLevelActiveText
+fully = true
+
+[freecam]
+active = $freecamActiveText
+
+[glimwood_overworld]
+active = $glimwoodActiveText
+maximum_spawns = $glimwoodMaxSpawnsText
+
+[synchro_mode]
+active = $synchroActiveText
+
+[extended_following]
+active = $extendedFollowingActiveText
+
+[fishing_tweaks]
+active = $fishingTweaksActiveText
+keep_chain_after_brilliant = true
+
+[dex_animations]
+active = $dexAnimationsActiveText
 
 [randomizer]
 active = $liveEncounterActiveText
+# Deux reglages independants : ce qui apparait, ce qu'on affronte.
+# vanilla | random | zone | global (+ decouverte pour le visible uniquement)
+visible_mode = "$liveVisibleModeText"
+battle_mode = "$liveBattleModeText"
+# Especes autorisees au tirage, deja filtrees (legendaires, generations).
+# Une liste vide veut dire "tout le pokedex national".
+visible_pool = [$liveVisiblePoolText]
+battle_pool = [$liveBattlePoolText]
+reset_discoveries = false
+# Anciennes cles, conservees pour les configs generees avant la refonte.
 mode = "$liveEncounterMode"
 mapping = "$liveEncounterMapping"
+visible_behavior = "$liveEncounterVisibleBehavior"
+draw_mode = "$liveEncounterDrawMode"
 seed = $liveEncounterSeedText
+visual_species = [$liveEncounterVisualSpeciesText]
 
 [exp_level_cap]
 active = $capActiveText
@@ -2305,8 +3044,16 @@ active = $earlyBikeActiveText
     Ensure-ParentDirectory -Path $configPath
     [IO.File]::WriteAllText($configPath, $content, [Text.UTF8Encoding]::new($false))
 
-    Ensure-ParentDirectory -Path $romfsFallbackConfigPath
-    [IO.File]::WriteAllText($romfsFallbackConfigPath, $content, [Text.UTF8Encoding]::new($false))
+    if (Test-Path -LiteralPath $romfsFallbackConfigPath) {
+        Remove-Item -LiteralPath $romfsFallbackConfigPath -Force
+    }
+    if ((Test-Path -LiteralPath $romfsFallbackConfigRoot) -and -not (Get-ChildItem -LiteralPath $romfsFallbackConfigRoot -Force | Select-Object -First 1)) {
+        Remove-Item -LiteralPath $romfsFallbackConfigRoot -Force
+        $romfsConfigRoot = Split-Path -Parent $romfsFallbackConfigRoot
+        if ((Test-Path -LiteralPath $romfsConfigRoot) -and -not (Get-ChildItem -LiteralPath $romfsConfigRoot -Force | Select-Object -First 1)) {
+            Remove-Item -LiteralPath $romfsConfigRoot -Force
+        }
+    }
     return $configPath
 }
 
@@ -2344,6 +3091,53 @@ function Sync-SourceDirToOutput {
     foreach ($entry in Get-ChildItem -LiteralPath $sourceDir -Force) {
         Copy-Item -LiteralPath $entry.FullName -Destination $outputDir -Recurse -Force
     }
+}
+
+# Multiplicateur de prix, lu comme un nombre a virgule independant de la langue
+# du systeme : sur un Windows francais, [double]"0.5" echoue et donnerait 5.
+function Get-ShopPriceModeValue {
+    switch (Normalize-Mode $ShopPriceMode) {
+        "vanilla" { return "vanilla" }
+        "unchanged" { return "vanilla" }
+        "inchange" { return "vanilla" }
+        "random" { return "random" }
+        "aleatoire" { return "random" }
+        default { return "multiplier" }
+    }
+}
+
+function Get-ShopPriceBounds {
+    <#
+        Les deux bornes du mode aleatoire, remises dans l'ordre et bridees sur
+        ce qu'un prix peut valoir dans le jeu (u32, plafonne a 999999 comme la
+        mise a l'echelle).
+    #>
+    $min = [int]$ShopPriceMin
+    $max = [int]$ShopPriceMax
+    if ($min -lt 1) { $min = 1 }
+    if ($max -lt 1) { $max = 1 }
+    if ($min -gt 999999) { $min = 999999 }
+    if ($max -gt 999999) { $max = 999999 }
+    if ($min -gt $max) {
+        $echange = $min
+        $min = $max
+        $max = $echange
+    }
+    return @{ Min = $min; Max = $max }
+}
+
+function Get-ShopPriceMultiplierValue {
+    $text = ([string]$ShopPriceMultiplier).Trim().Replace(",", ".")
+    if ([string]::IsNullOrWhiteSpace($text)) {
+        return 1.0
+    }
+    $parsed = 0.0
+    if (-not [double]::TryParse($text, [Globalization.NumberStyles]::Float, [Globalization.CultureInfo]::InvariantCulture, [ref]$parsed)) {
+        return 1.0
+    }
+    if ($parsed -lt 0.0) { return 0.0 }
+    if ($parsed -gt 100.0) { return 100.0 }
+    return $parsed
 }
 
 function Get-RequiredRomfsAssets {
@@ -2395,6 +3189,24 @@ function Get-RequiredRomfsAssets {
         $null = $files.Add("bin\pml\personal\personal_total.bin")
     }
 
+    # La table des machines vit dans item.dat : sans copie, il n'y a rien a
+    # reecrire dans la sortie.
+    if ((Normalize-Mode $TmMoveMode) -ne "unchanged") {
+        $null = $files.Add("bin\pml\item\item.dat")
+    }
+
+    if ((Normalize-Mode $LearnsetMoveMode) -ne "unchanged") {
+        $null = $files.Add("bin\pml\waza_oboe\wazaoboe_total.bin")
+    }
+
+    # Un script non copie ne peut pas etre reecrit : on ajoute exactement les
+    # modules que le catalogue designe, pas le dossier entier (953 fichiers).
+    if ((Normalize-Mode $NpcGiftItemMode) -ne "unchanged") {
+        foreach ($g in @(Get-NpcGiftCatalog)) {
+            $null = $files.Add((Join-Path "bin\script\amx" $g.Amx))
+        }
+    }
+
     if ($needsTrainer) {
         $null = $dirs.Add("bin\trainer\trainer_data")
         $null = $dirs.Add("bin\trainer\trainer_poke")
@@ -2423,6 +3235,20 @@ function Get-RequiredRomfsAssets {
         }
     }
 
+    # Le mode aleatoire reecrit les prix sans passer par le multiplicateur :
+    # tester le seul multiplicateur laissait item.dat hors de la copie, et la
+    # passe des prix ne trouvait plus son fichier.
+    if ((Get-ShopPriceModeValue) -eq "random" -or (Get-ShopPriceMultiplierValue) -ne 1.0) {
+        $null = $files.Add("bin\pml\item\item.dat")
+    }
+
+    if ($RandomizeFieldItems.IsPresent -or $RandomizeHiddenItems.IsPresent) {
+        $null = $files.Add("bin\archive\field\resident\placement.gfpak")
+        # La table de correspondance hachage <-> identifiant est indispensable
+        # pour ecrire un objet dans le terrain.
+        $null = $files.Add("bin\pml\item\item_hash_to_index.dat")
+    }
+
     if ((Normalize-Mode $EvolutionMode) -ne "unchanged" -or $NormalizeFriendshipEvolutions -or $NormalizeTradeEvolutions -or $NormalizeSpecialEvolutions -or $ForceTrainerFullyEvolved.IsPresent) {
         $null = $dirs.Add("bin\pml\evolution")
     }
@@ -2439,7 +3265,7 @@ function Get-RequiredRomfsAssets {
         $null = $files.Add("bin\script_event_data\event_encount_data.bin")
     }
 
-    if ((Normalize-Mode $GrassEncounterMode) -ne "unchanged") {
+    if ((Normalize-Mode $GrassEncounterMode) -ne "unchanged" -or ([int]$WildLevelPercent -ne 0)) {
         $null = $files.Add("bin\archive\field\resident\data_table.gfpak")
     }
 
@@ -2486,7 +3312,8 @@ function Assert-ValidSourceRomfsForRandomizer {
     if (Test-Path -LiteralPath $personalPath -PathType Leaf) {
         $personalSize = (Get-Item -LiteralPath $personalPath).Length
         if ($personalSize -lt ($PersonalRecordSize * 899) -or (($personalSize % $PersonalRecordSize) -ne 0)) {
-            $missing.Add("bin\pml\personal\personal_total.bin (taille inattendue pour Sword/Shield)")
+            $minimumSize = $PersonalRecordSize * 899
+            $missing.Add(("bin\pml\personal\personal_total.bin (taille {0} octets; attendu: au moins {1} octets et un multiple de {2})" -f $personalSize, $minimumSize, $PersonalRecordSize))
         }
     }
 
@@ -2517,7 +3344,7 @@ function Assert-ValidSourceRomfsForRandomizer {
         if ($missing.Count -gt 12) {
             $summary += (" ... (+{0})" -f ($missing.Count - 12))
         }
-        throw "ROMFS invalide ou incomplet: $summary. Selectionne le dossier romfs original complet de ton dump Sword/Shield."
+        throw "ROMFS invalide ou incomplet: $summary. Sélectionne le dossier romfs original complet de ton dump Sword/Shield."
     }
 }
 
@@ -2630,6 +3457,179 @@ function Find-DataFile {
     return $null
 }
 
+function Get-PythonCommand {
+    <#
+        Cherche un interpreteur Python 3 utilisable.
+
+        On teste dans l'ordre : le lanceur Windows "py -3", puis "python", puis
+        "python3". Chaque candidat est VALIDE en lui demandant sa version : sur
+        Windows, "python3" est tres souvent un leurre du Microsoft Store qui
+        ouvre une page au lieu de s'executer, et le detecter avec Get-Command
+        seul suffirait a le prendre pour un interpreteur.
+
+        Renvoie $null si rien d'utilisable.
+    #>
+    if ($script:PythonCommandProbed) {
+        return $script:PythonCommand
+    }
+    $script:PythonCommandProbed = $true
+
+    foreach ($candidat in @(
+        [pscustomobject]@{ Exe = "py"; Prefix = @("-3") },
+        [pscustomobject]@{ Exe = "python"; Prefix = @() },
+        [pscustomobject]@{ Exe = "python3"; Prefix = @() }
+    )) {
+        $commande = Get-Command $candidat.Exe -ErrorAction SilentlyContinue
+        if (-not $commande) {
+            continue
+        }
+        try {
+            $arguments = @($candidat.Prefix) + @("--version")
+            $version = & $commande.Source @arguments 2>&1 | Select-Object -First 1
+            if ("$version" -match "Python\s+3\.") {
+                $script:PythonCommand = [pscustomobject]@{
+                    Exe = $commande.Source
+                    Prefix = @($candidat.Prefix)
+                    Version = ("$version").Trim()
+                }
+                return $script:PythonCommand
+            }
+        } catch {
+        }
+    }
+
+    return $null
+}
+
+function Restore-DataFilesFromDump {
+    <#
+        Reconstruit depuis le dump de l'utilisateur les tables que le depot ne
+        redistribue pas.
+
+        Ces fichiers sont DERIVES DU JEU : les versionner reviendrait a
+        redistribuer du contenu Nintendo. Mais sans eux le logiciel est ampute
+        - sans items.csv notamment, le reglage du pool d'objets tenus n'a plus
+        aucun effet. La sortie propre est donc de les fabriquer ici, chez
+        l'utilisateur, depuis SA copie.
+
+        Les outils sont ceux de tools/, deja ecrits et deja mesures. On ne
+        lance que ceux dont un fichier manque, et on n'echoue jamais : sans
+        Python, la generation continue en mode degrade et Assert-DataFilesAvailable
+        dira exactement ce qui manque.
+    #>
+    param(
+        [string]$RomfsRoot,
+        [scriptblock]$ProgressCallback = $null
+    )
+
+    $manquants = @(Get-DataFileDiagnostics | Where-Object { -not $_.Present } | ForEach-Object { [string]$_.RelativePath })
+    if ($manquants.Count -lt 1) {
+        return
+    }
+
+    # Chaque outil et les fichiers qu'il produit. vanilla_exports n'a PAS
+    # d'outil : ces deux JSON ne se regenerent pas, et leur absence laisse les
+    # dresseurs anonymes dans les rapports.
+    $outils = @(
+        [pscustomobject]@{ Script = "build-name-tables.py"; Romfs = $true;  Produit = @("pokemon_species_names.csv", "item_names.csv", "move_names.csv", "ability_names.csv") },
+        [pscustomobject]@{ Script = "build-items-csv.py";   Romfs = $true;  Produit = @("items.csv") },
+        [pscustomobject]@{ Script = "build-npc-gifts.py";   Romfs = $true;  Produit = @("npc-gifts.csv") },
+        # Celui-ci ne lit PAS le dump : il croise le dex du visualiseur avec
+        # item_names.csv, donc il passe en dernier, une fois ce CSV ecrit.
+        [pscustomobject]@{ Script = "build-item-id-map.py"; Romfs = $false; Produit = @("item-id-map.csv") }
+    )
+
+    $aFaire = @($outils | Where-Object {
+        $courant = $_
+        @($courant.Produit | Where-Object { $manquants -contains $_ }).Count -gt 0
+    })
+    if ($aFaire.Count -lt 1) {
+        return
+    }
+
+    $python = Get-PythonCommand
+    if (-not $python) {
+        Write-RandomizerProgress -Message ("[Donnees] {0} fichier(s) manquant(s) et aucun Python 3 trouve. Installe Python 3 (python.org) puis relance : les tables se construiront toutes seules depuis ton dump." -f $manquants.Count) -ProgressCallback $ProgressCallback
+        return
+    }
+
+    Write-RandomizerProgress -Message ("[Donnees] {0} fichier(s) manquant(s), reconstruction depuis le dump avec {1}" -f $manquants.Count, $python.Version) -ProgressCallback $ProgressCallback
+
+    foreach ($outil in $aFaire) {
+        $chemin = Join-Path $PSScriptRoot (Join-Path "tools" $outil.Script)
+        if (-not (Test-Path -LiteralPath $chemin)) {
+            Write-RandomizerProgress -Message ("[Donnees] outil introuvable : {0}" -f $outil.Script) -ProgressCallback $ProgressCallback
+            continue
+        }
+        try {
+            $arguments = if ($outil.Romfs) { @($python.Prefix) + @($chemin, $RomfsRoot) } else { @($python.Prefix) + @($chemin) }
+            $sortie = & $python.Exe @arguments 2>&1
+            if ($LASTEXITCODE -eq 0) {
+                Write-RandomizerProgress -Message ("[Donnees] {0} : ok" -f $outil.Script) -ProgressCallback $ProgressCallback
+            } else {
+                $derniere = @($sortie | Select-Object -Last 1) -join " "
+                Write-RandomizerProgress -Message ("[Donnees] {0} a echoue ({1}) : {2}" -f $outil.Script, $LASTEXITCODE, $derniere) -ProgressCallback $ProgressCallback
+            }
+        } catch {
+            Write-RandomizerProgress -Message ("[Donnees] {0} a echoue : {1}" -f $outil.Script, $_.Exception.Message) -ProgressCallback $ProgressCallback
+        }
+    }
+}
+
+function Get-DataFileDiagnostics {
+    <#
+      Confronte le manifeste au disque. Ne lit aucun fichier, ne modifie rien :
+      c'est une mesure, pas une correction.
+    #>
+    $entries = @()
+    foreach ($declared in $DataFileManifest) {
+        $resolved = Find-DataFile -RelativePath $declared.RelativePath
+        $entries += [pscustomobject]@{
+            RelativePath = $declared.RelativePath
+            Purpose = $declared.Purpose
+            Degradation = $declared.Degradation
+            Severity = $declared.Severity
+            Present = [bool]$resolved
+            ResolvedPath = if ($resolved) { $resolved } else { "" }
+        }
+    }
+    return $entries
+}
+
+function Assert-DataFilesAvailable {
+    <#
+      Signale bruyamment ce qui manque. Avec -StrictDataFiles, echoue au lieu
+      de degrader en silence. Renvoie le diagnostic pour que les rapports
+      puissent le consigner.
+    #>
+    param([scriptblock]$ProgressCallback = $null)
+
+    $diagnostics = @(Get-DataFileDiagnostics)
+    $missing = @($diagnostics | Where-Object { -not $_.Present })
+    if ($missing.Count -eq 0) {
+        return $diagnostics
+    }
+
+    $lines = New-Object System.Collections.Generic.List[string]
+    $lines.Add(("[Données] {0} fichier(s) de données sur {1} absent(s) : la génération va être degradee." -f $missing.Count, $diagnostics.Count))
+    foreach ($entry in $missing) {
+        $lines.Add(("[Donnees]   - {0} (gravite {1}) : {2}" -f $entry.RelativePath, $entry.Severity, $entry.Degradation))
+    }
+    $lines.Add(("[Donnees] Racines cherchees : {0}" -f (@($DataRootCandidates | Where-Object { $_ }) -join ", ")))
+
+    if ($StrictDataFiles.IsPresent) {
+        throw (($lines -join [Environment]::NewLine) + [Environment]::NewLine +
+               "Arrêt demande par -StrictDataFiles. Restaure les fichiers ou relance sans ce commutateur.")
+    }
+
+    foreach ($line in $lines) {
+        Write-RandomizerProgress -Message $line -ProgressCallback $ProgressCallback
+    }
+    Write-RandomizerProgress -Message "[Données] Relance avec -StrictDataFiles pour transformer cet avertissement en erreur." -ProgressCallback $ProgressCallback
+
+    return $diagnostics
+}
+
 function Get-DynamicPropertyValue {
     param(
         [object]$Object,
@@ -2697,7 +3697,7 @@ function Get-RemoteTextSafely {
         $response = Invoke-WebRequest -UseBasicParsing -Uri $Url -TimeoutSec 30
         return [string]$response.Content
     } catch {
-        throw ("Impossible de telecharger {0}: {1}" -f $Url, $_.Exception.Message)
+        throw ("Impossible de télécharger {0}: {1}" -f $Url, $_.Exception.Message)
     }
 }
 
@@ -3021,10 +4021,10 @@ function New-SmogonStrategicDataFromWeb {
     }
 
     if (-not (Test-Path -LiteralPath $strategicPath)) {
-        throw "Le generateur Smogon n'a pas produit le cache attendu: $strategicPath"
+        throw "Le générateur Smogon n'a pas produit le cache attendu: $strategicPath"
     }
     if (-not (Test-Path -LiteralPath $legacyStrategicPath)) {
-        throw "Le generateur Smogon n'a pas produit le cache historique attendu: $legacyStrategicPath"
+        throw "Le générateur Smogon n'a pas produit le cache historique attendu: $legacyStrategicPath"
     }
 
     return (Get-Content -LiteralPath $strategicPath -Raw | ConvertFrom-Json)
@@ -3044,7 +4044,7 @@ function Get-SmogonStrategicData {
                 $script:SmogonStrategicData = $cachedData
                 return $script:SmogonStrategicData
             }
-            Write-Warning "Cache Smogon ancien detecte, regeneration depuis les pages Strategy Dex Sword/Shield."
+            Write-Warning "Cache Smogon ancien détecté, régénération depuis les pages Strategy Dex Sword/Shield."
         } catch {
             Write-Warning ("Cache Smogon illisible, nouveau telechargement tente: {0}" -f $_.Exception.Message)
         }
@@ -3059,7 +4059,7 @@ function Get-SmogonStrategicData {
         Write-JsonFile -Value $data -Path $cachePath -Depth 12
         $script:SmogonStrategicData = Get-Content -LiteralPath $cachePath -Raw | ConvertFrom-Json
     } catch {
-        Write-Warning ("Donnees strategiques Smogon indisponibles, les fallbacks seront utilises: {0}" -f $_.Exception.Message)
+        Write-Warning ("Données strategiques Smogon indisponibles, les fallbacks seront utilises: {0}" -f $_.Exception.Message)
         $script:SmogonStrategicData = [pscustomobject]@{
             version = 1
             unavailable = $true
@@ -3085,7 +4085,7 @@ function Get-SmogonStrategicLegacyData {
                 $script:SmogonStrategicLegacyData = $cachedData
                 return $script:SmogonStrategicLegacyData
             }
-            Write-Warning "Cache Smogon historique ancien detecte, regeneration depuis les pages Strategy Dex."
+            Write-Warning "Cache Smogon historique ancien détecté, régénération depuis les pages Strategy Dex."
         } catch {
             Write-Warning ("Cache Smogon historique illisible, nouveau telechargement tente: {0}" -f $_.Exception.Message)
         }
@@ -3099,7 +4099,7 @@ function Get-SmogonStrategicLegacyData {
             throw "Cache historique absent apres generation: $cachePath"
         }
     } catch {
-        Write-Warning ("Donnees strategiques Smogon historiques indisponibles, les fallbacks seront utilises: {0}" -f $_.Exception.Message)
+        Write-Warning ("Données strategiques Smogon historiques indisponibles, les fallbacks seront utilises: {0}" -f $_.Exception.Message)
         $script:SmogonStrategicLegacyData = [pscustomobject]@{
             version = 1
             unavailable = $true
@@ -3318,13 +4318,56 @@ function Add-SmogonSetMoveChoices {
     }
 }
 
+function Get-SmogonItemIdMap {
+    <#
+        Traduit les identifiants d'objets du cache Smogon vers ceux du JEU.
+
+        Le cache resout ses noms d'objets via le dex du visualiseur (voir
+        tools/build-smogon-dex-cache.js ligne 267), dont la numerotation N'EST
+        PAS celle du jeu. Mesure par comparaison des noms anglais :
+
+            attaques : 808/808 identifiants portent le meme nom  (100 %)
+            talents  : 267/267                                    (100 %)
+            objets   : 116/1556                                   (  7 %)
+
+        Les attaques et les talents concordent, les objets non. Sans cette
+        table, le Kabuto cense tenir un Eviolite recevait l'objet 581 du jeu,
+        qui est tout autre chose - et le controle d'existence ne pouvait pas le
+        voir, puisque 581 existe. Sur les 157 objets du cache, UN SEUL portait
+        deja le bon identifiant.
+
+        La table est produite par tools/build-item-id-map.py, qui refuse de
+        l'ecrire si ses temoins ne tombent pas.
+    #>
+    if ($null -ne $script:SmogonItemIdMap) {
+        return $script:SmogonItemIdMap
+    }
+    $table = @{}
+    $path = Find-DataFile -RelativePath "item-id-map.csv"
+    if ($path) {
+        foreach ($r in (Import-Csv -LiteralPath $path -Encoding UTF8)) {
+            $table[[int]$r.dex_item_id] = [int]$r.game_item_id
+        }
+    }
+    $script:SmogonItemIdMap = $table
+    return $table
+}
+
 function Get-SmogonStrategicSetItems {
     param([object]$StrategicSet)
 
     if ($null -eq $StrategicSet) {
         return [int[]]@()
     }
-    return [int[]](Convert-ToIntArraySafe -Value (Get-DynamicPropertyValue -Object $StrategicSet -Name "items" -DefaultValue @()))
+    $bruts = [int[]](Convert-ToIntArraySafe -Value (Get-DynamicPropertyValue -Object $StrategicSet -Name "items" -DefaultValue @()))
+    $table = Get-SmogonItemIdMap
+    if ($table.Count -eq 0) {
+        # Sans la table, mieux vaut ne RIEN proposer que de proposer le mauvais
+        # objet : l'appelant se rabat alors sur le pool general, qui lui est
+        # exprime dans les identifiants du jeu.
+        return [int[]]@()
+    }
+    return [int[]]@($bruts | ForEach-Object { if ($table.ContainsKey([int]$_)) { $table[[int]$_] } } | Where-Object { $_ })
 }
 
 function Get-SmogonStrategicSetAbilities {
@@ -3404,6 +4447,52 @@ function Get-SpeciesNameData {
         ByKey = $byKey
     }
     return $script:SpeciesNameData
+}
+
+function Get-ExistingItemIds {
+    <#
+        Les identifiants d'objet qui existent REELLEMENT dans cette version.
+
+        Mesure du 2026-09-06 sur le dump Epee 1.3.2 : sur les 1607 identifiants
+        possibles, 964 seulement portent un enregistrement ; les 643 autres
+        pointent sur l'enregistrement 0, c'est-a-dire « cet objet n'est pas dans
+        ce jeu ». Ce sont des objets d'autres generations.
+
+        Ce que ca a permis de trouver, en confrontant les listes codees en dur :
+
+          liste des objets tenus  : 45 des 139 n'existent pas (32 %)
+          pool objets au sol      : 35 des 454 n'existent pas (7 %)
+          pool CT/DT              : 0 sur 200 - celui-la etait deja derive du jeu
+
+        Un identifiant fantome ecrit dans un fichier du jeu donne au mieux un
+        emplacement vide, et rien ne le signale.
+    #>
+    if ($null -ne $script:ExistingItemIds) {
+        return $script:ExistingItemIds
+    }
+    $ids = [System.Collections.Generic.HashSet[int]]::new()
+    foreach ($entry in @((Get-ItemData).Rows)) {
+        if ($null -ne $entry -and [int]$entry.id -gt 0) {
+            $null = $ids.Add([int]$entry.id)
+        }
+    }
+    $script:ExistingItemIds = $ids
+    return $ids
+}
+
+function Select-ExistingItemIds {
+    <#
+        Filtre une liste d'identifiants sur ce qui existe. Sans items.csv, la
+        liste passe telle quelle : on ne peut pas filtrer sur une mesure qu'on
+        n'a pas, et retourner une liste vide serait bien pire.
+    #>
+    param([int[]]$Ids)
+
+    $existants = Get-ExistingItemIds
+    if ($existants.Count -eq 0) {
+        return [int[]]$Ids
+    }
+    return [int[]]@($Ids | Where-Object { $existants.Contains([int]$_) })
 }
 
 function Get-ItemData {
@@ -3598,14 +4687,96 @@ function Get-GeneralRandomItemPool {
     Add-ItemIdRange -List $pool -Start 1105 -End 1129
     Add-ItemIdRange -List $pool -Start 1231 -End 1264
     Add-ItemIdRange -List $pool -Start 1279 -End 1326
-    return [int[]]$pool.ToArray()
+
+    # Les plages ci-dessus ont ete ecrites a la main, et 35 des 454 identifiants
+    # qu'elles couvrent ne correspondent a aucun objet de cette version. Deux
+    # autres sont des objets CLES, qu'on ne veut ni au sol ni en boutique : un
+    # objet cle duplique ou perdu peut bloquer la progression.
+    $filtre = Select-ExistingItemIds -Ids ([int[]]$pool.ToArray())
+    $existants = Get-ExistingItemIds
+    if ($existants.Count -eq 0) {
+        return [int[]]$filtre
+    }
+    $poches = @{}
+    foreach ($entry in @((Get-ItemData).Rows)) {
+        if ($null -ne $entry) { $poches[[int]$entry.id] = [int]$entry.categoryId }
+    }
+    $sansNom = Get-PlaceholderItemIds
+    return [int[]]@($filtre | Where-Object {
+        -not ($poches.ContainsKey([int]$_) -and $poches[[int]$_] -eq $ItemPocketKeyItems) -and
+        -not $sansNom.Contains([int]$_)
+    })
+}
+
+function Get-ItemPocketMap {
+    <#
+        La poche de chaque objet, telle que le JEU la stocke : items.csv est
+        derive de item.dat par tools/build-items-csv.py, et sa colonne
+        category_id porte l'octet +0x11 de l'enregistrement.
+    #>
+    if ($null -ne $script:ItemPocketMap) {
+        return $script:ItemPocketMap
+    }
+    $map = @{}
+    foreach ($entry in @((Get-ItemData).Rows)) {
+        if ($null -ne $entry) { $map[[int]$entry.id] = [int]$entry.categoryId }
+    }
+    $script:ItemPocketMap = $map
+    return $map
+}
+
+function Test-PlaceholderItemName {
+    <#
+        Un nom d'objet que le joueur ne peut pas lire : vide, ou commencant par
+        une etoile pleine ou creuse. Ce sont les noms de debogage laisses dans
+        la table itemname du jeu.
+    #>
+    param([string]$Name)
+
+    if ([string]::IsNullOrWhiteSpace($Name)) { return $true }
+    $premier = $Name[0]
+    return ($premier -eq [char]0x2605 -or $premier -eq [char]0x2606)
+}
+
+function Get-PlaceholderItemIds {
+    <#
+        Les objets dont le jeu lui-meme ne donne pas de nom lisible.
+
+        Mesure du 2026-09-07 sur le dump Epee 1.3.2 : 300 des 1608 entrees de
+        itemname portent un nom de debogage (« ★And390 », « ★Sgr6879 »). Ils
+        FONCTIONNENT - l'un d'eux, ramasse au sol pendant les essais, affichait
+        bien sa description d'Eclat Souhait - mais leur nom est illisible.
+
+        Sur les 454 identifiants du pool general, 48 sont dans ce cas, et ce
+        sont exactement les 48 de la plage 1279-1326. Aucun autre.
+
+        Sans item_names.csv le filtre ne peut pas s'appliquer : on rend alors
+        un ensemble vide plutot que de deviner une plage codee en dur, ce qui
+        est precisement l'erreur qui a mis ces objets dans le pool.
+    #>
+    if ($null -ne $script:PlaceholderItemIds) {
+        return $script:PlaceholderItemIds
+    }
+    $ids = [System.Collections.Generic.HashSet[int]]::new()
+    $noms = (Get-ItemNameData).ById
+    foreach ($cle in @($noms.Keys)) {
+        $entree = $noms[$cle]
+        if ((Test-PlaceholderItemName -Name ([string]$entree.fr)) -and
+            (Test-PlaceholderItemName -Name ([string]$entree.en))) {
+            $null = $ids.Add([int]$cle)
+        }
+    }
+    $script:PlaceholderItemIds = $ids
+    return $ids
 }
 
 function Get-RandomItemReplacement {
     param(
         [int]$CurrentItemId,
         [System.Random]$Rng,
-        [switch]$PreferTechnicalRecord
+        [switch]$PreferTechnicalRecord,
+        [switch]$SamePocket,
+        [int[]]$ShopPockets = @()
     )
 
     $pool = if ($PreferTechnicalRecord.IsPresent -or (Test-TechnicalRecordItemId -ItemId $CurrentItemId)) {
@@ -3618,6 +4789,67 @@ function Get-RandomItemReplacement {
 
     if (-not $pool -or $pool.Count -eq 0) {
         return $CurrentItemId
+    }
+
+    # Une machine se remplace par une machine : son reservoir est deja homogene
+    # et vaut exactement la poche de l'emplacement. Lui appliquer en plus le
+    # filtre des poches de la boutique viderait le reservoir - les machines
+    # etant justement exclues de ce filtre - et plus aucune CT ne changerait.
+    if ($ShopPockets -and $ShopPockets.Count -gt 0 -and -not $PreferTechnicalRecord.IsPresent) {
+        # Tirage dans l'UNION des poches que cette boutique vend deja.
+        #
+        # Mesure du 2026-09-08 : l'ancien mode « n'importe quel objet » changeait
+        # la poche de 17 emplacements sur 21 et transformait le marche de depart,
+        # qui vend des Balls (33) et des soins (32), en poches [4, 7, 33]. C'est
+        # exactement ce qui vidait la liste et faisait planter le jeu a l'achat.
+        #
+        # L'union est plus large que « meme genre » sans jamais sortir de ce que
+        # l'interface sait afficher : le marche de depart peut echanger un soin
+        # contre une Ball, la boutique 165 puise dans ses quatre poches.
+        $pochesTirage = Get-ItemPocketMap
+        if (-not $pochesTirage.ContainsKey($CurrentItemId)) {
+            # Poche inconnue : emplacement pointant sur l'enregistrement 0 de
+            # item.dat. On n'ecrit pas dans ce qu'on ne sait pas relire.
+            return $CurrentItemId
+        }
+        $autorisees = New-Object System.Collections.Generic.HashSet[int]
+        foreach ($p in $ShopPockets) {
+            $pi = [int]$p
+            if ($pi -ne $ItemPocketMachines -and $pi -ne $ItemPocketKeyItems) { $null = $autorisees.Add($pi) }
+        }
+        $restreint = [int[]]@($pool | Where-Object {
+            $pochesTirage.ContainsKey([int]$_) -and $autorisees.Contains([int]$pochesTirage[[int]$_])
+        })
+        if ($restreint.Count -lt 2) {
+            return $CurrentItemId
+        }
+        $pool = $restreint
+    } elseif ($SamePocket.IsPresent) {
+        # Une boutique n'affiche que ce qu'elle sait vendre. Mesure du
+        # 2026-09-07 : le marche de depart, qui vendait des Poke Ball (poche 33)
+        # et des soins (poche 32), s'est retrouve avec une CT (poche 5) ; la
+        # liste s'affichait vide et le jeu plantait a l'achat. On remplace donc
+        # une Poke Ball par une Poke Ball et une potion par une potion.
+        $pochesTirage = Get-ItemPocketMap
+        if (-not $pochesTirage.ContainsKey($CurrentItemId)) {
+            # Poche inconnue : l'objet d'origine n'a pas d'enregistrement dans
+            # item.dat, il n'existe donc pas dans cette version. Mesure du
+            # 2026-09-07 : les deux boutiques du second vecteur racine de
+            # shop_data.bin listent sept objets de ce genre (Vieux Bijou, Orbe
+            # Vert, Fossile Griffe...), tous a l'enregistrement 0, prix 0.
+            # On n'ecrit pas dans un emplacement qu'on ne sait pas relire.
+            return $CurrentItemId
+        }
+        $pocheCible = [int]$pochesTirage[$CurrentItemId]
+        $restreint = [int[]]@($pool | Where-Object {
+            $pochesTirage.ContainsKey([int]$_) -and [int]$pochesTirage[[int]$_] -eq $pocheCible
+        })
+        if ($restreint.Count -lt 2) {
+            # Rien a tirer dans cette poche : garder l'objet d'origine vaut
+            # mieux qu'ecrire un objet que la boutique ne sait pas vendre.
+            return $CurrentItemId
+        }
+        $pool = $restreint
     }
 
     if ($pool.Count -eq 1) {
@@ -3704,7 +4936,7 @@ function Resolve-SpeciesToken {
         if ($numeric -ge 1 -and $numeric -le $BaseSpeciesMax) {
             return $numeric
         }
-        throw "ID de Pokemon invalide: $text"
+        throw "ID de Pokémon invalide: $text"
     }
 
     $data = Get-SpeciesNameData
@@ -3732,7 +4964,7 @@ function Resolve-SpeciesToken {
 
     if ($prefixMatches.Count -gt 1) {
         $examples = @($prefixMatches | Sort-Object | Select-Object -First 6 | ForEach-Object { Get-SpeciesDisplayName -SpeciesId $_ -Language "fr" })
-        throw ("Pokemon ambigu pour '{0}'. Precise le nom. Exemples: {1}" -f $text, ($examples -join ", "))
+        throw ("Pokémon ambigu pour '{0}'. Précise le nom. Exemples: {1}" -f $text, ($examples -join ", "))
     }
 
     throw "Pokemon introuvable: '$text'"
@@ -3789,7 +5021,7 @@ function Get-ConfiguredStarterSpeciesIds {
 
     $unique = @($resolved | Select-Object -Unique)
     if ($unique.Count -ne 3) {
-        throw "Les 3 starters manuels doivent etre differents."
+        throw "Les 3 starters manuels doivent être différents."
     }
 
     return [int[]]$resolved
@@ -4140,8 +5372,8 @@ function Get-BossTrainerUniqueNamesText {
         $title = if ($scopeValue -eq "GymLeague") { "Gym + league targets" } else { "Major boss targets" }
         return $title + " (unique names):`r`n" + $listText + "`r`n`r`nExact trainer IDs are exported in JSON."
     }
-    $title = if ($scopeValue -eq "GymLeague") { "Cibles arenes + ligue" } else { "Cibles boss importants" }
-    return $title + " (noms uniques):`r`n" + $listText + "`r`n`r`nLes IDs exacts sont exportes dans le JSON."
+    $title = if ($scopeValue -eq "GymLeague") { "Cibles arènes + ligue" } else { "Cibles boss importants" }
+    return $title + " (noms uniques) :`r`n" + $listText + "`r`n`r`nLes identifiants exacts sont exportés dans le rapport JSON."
 }
 
 function Get-BossLevelCapEntries {
@@ -4283,11 +5515,11 @@ function Get-GymLeagueStoryProgressionSpecs {
     $isShield = ([string]$GameVersion).ToLowerInvariant() -eq "shield"
     $gym4TrainerId = if ($isShield) { 78 } else { 77 }
     $gym4Key = if ($isShield) { "gym4Allister" } else { "gym4Bea" }
-    $gym4LabelFr = if ($isShield) { "4e arene - Alistair" } else { "4e arene - Faiza" }
+    $gym4LabelFr = if ($isShield) { "4e arene - Alistair" } else { "4e arène - Faiza" }
     $gym4LabelEn = if ($isShield) { "Gym 4 - Allister" } else { "Gym 4 - Bea" }
     $gym6TrainerId = if ($isShield) { 136 } else { 135 }
     $gym6Key = if ($isShield) { "gym6Melony" } else { "gym6Gordie" }
-    $gym6LabelFr = if ($isShield) { "6e arene - Melony" } else { "6e arene - Gordon" }
+    $gym6LabelFr = if ($isShield) { "6e arene - Melony" } else { "6e arène - Gordon" }
     $gym6LabelEn = if ($isShield) { "Gym 6 - Melony" } else { "Gym 6 - Gordie" }
 
     return @(
@@ -4403,15 +5635,15 @@ function Get-StoryMajorBattleProgressionSpecs {
     $isShield = ([string]$GameVersion).ToLowerInvariant() -eq "shield"
     $gym4TrainerIds = if ($isShield) { @(78) } else { @(77) }
     $gym4Key = if ($isShield) { "gym4Allister" } else { "gym4Bea" }
-    $gym4LabelFr = if ($isShield) { "4e arene - Alistair" } else { "4e arene - Faiza" }
+    $gym4LabelFr = if ($isShield) { "4e arene - Alistair" } else { "4e arène - Faiza" }
     $gym4LabelEn = if ($isShield) { "Gym 4 - Allister" } else { "Gym 4 - Bea" }
     $gym6TrainerIds = if ($isShield) { @(136) } else { @(135) }
     $gym6Key = if ($isShield) { "gym6Melony" } else { "gym6Gordie" }
-    $gym6LabelFr = if ($isShield) { "6e arene - Melony" } else { "6e arene - Gordon" }
+    $gym6LabelFr = if ($isShield) { "6e arene - Melony" } else { "6e arène - Gordon" }
     $gym6LabelEn = if ($isShield) { "Gym 6 - Melony" } else { "Gym 6 - Gordie" }
 
     return @(
-        [ordered]@{ stageIndex = 1; stageKey = "hopStarterChoice"; trainerIds = @(4, 5, 6); stageLabelFr = "Debut - Nabil choix du starter"; stageLabelEn = "Opening - Hop starter choice"; category = "rival"; variantKind = "starterChoice" }
+        [ordered]@{ stageIndex = 1; stageKey = "hopStarterChoice"; trainerIds = @(4, 5, 6); stageLabelFr = "Début - Nabil choix du starter"; stageLabelEn = "Opening - Hop starter choice"; category = "rival"; variantKind = "starterChoice" }
         [ordered]@{ stageIndex = 2; stageKey = "hopEarlyRoute"; trainerIds = @(7, 8, 9); stageLabelFr = "Debut - Nabil route 2"; stageLabelEn = "Early route - Hop"; category = "rival"; variantKind = "starterChoice" }
         [ordered]@{ stageIndex = 3; stageKey = "hopPreGym1Motostoke"; trainerIds = @(197, 198, 199); stageLabelFr = "Avant arene 1 - Nabil Motostoke"; stageLabelEn = "Before Gym 1 - Hop in Motostoke"; category = "rival"; variantKind = "starterChoice" }
         [ordered]@{ stageIndex = 4; stageKey = "hopPreGym1Bridge"; trainerIds = @(191, 192, 193); stageLabelFr = "Avant arene 1 - Nabil route"; stageLabelEn = "Before Gym 1 - Hop on route"; category = "rival"; variantKind = "starterChoice" }
@@ -4522,7 +5754,7 @@ function Get-MainStorySoftStageLabels {
     param([int]$BadgeCount)
 
     switch ($BadgeCount) {
-        0 { return [ordered]@{ fr = "Progression principale souple - avant la 1ere arene"; en = "Soft main-story progression - before Gym 1" } }
+        0 { return [ordered]@{ fr = "Progression principale souple - avant la 1ere arène"; en = "Soft main-story progression - before Gym 1" } }
         1 { return [ordered]@{ fr = "Progression principale souple - apres 1 badge"; en = "Soft main-story progression - after 1 badge" } }
         2 { return [ordered]@{ fr = "Progression principale souple - apres 2 badges"; en = "Soft main-story progression - after 2 badges" } }
         3 { return [ordered]@{ fr = "Progression principale souple - apres 3 badges"; en = "Soft main-story progression - after 3 badges" } }
@@ -4530,7 +5762,7 @@ function Get-MainStorySoftStageLabels {
         5 { return [ordered]@{ fr = "Progression principale souple - apres 5 badges"; en = "Soft main-story progression - after 5 badges" } }
         6 { return [ordered]@{ fr = "Progression principale souple - apres 6 badges"; en = "Soft main-story progression - after 6 badges" } }
         7 { return [ordered]@{ fr = "Progression principale souple - apres 7 badges"; en = "Soft main-story progression - after 7 badges" } }
-        default { return [ordered]@{ fr = "Progression principale souple - apres 8 badges / fin du jeu"; en = "Soft main-story progression - after 8 badges / endgame" } }
+        default { return [ordered]@{ fr = "Progression principale souple - après 8 badges / fin du jeu"; en = "Soft main-story progression - after 8 badges / endgame" } }
     }
 }
 
@@ -4595,6 +5827,7 @@ function Get-MainStorySoftCapEntries {
         $referenceBattles = New-Object System.Collections.Generic.List[object]
         $primaryBattle = $null
         $capLevel = 0
+        $primaryCategory = ""
 
         foreach ($battle in (Convert-ToObjectArray $bucket.referenceBattles)) {
             foreach ($trainerId in @($battle.trainerIds)) {
@@ -4624,6 +5857,7 @@ function Get-MainStorySoftCapEntries {
                 if ((-not $primaryBattle) -or ([int]$battleEntry.capLevel -gt $capLevel)) {
                     $primaryBattle = $battleEntry
                     $capLevel = [int]$battleEntry.capLevel
+                    $primaryCategory = [string]$battle.category
                 }
             }
         }
@@ -4645,10 +5879,16 @@ function Get-MainStorySoftCapEntries {
                 en = [string]$bucket.stageLabelEn
             }
             capLevel = [int]$capLevel
+            primaryCategory = [string]$primaryCategory
             teamSize = [int]$primaryBattle.teamSize
             party = @($primaryBattle.party)
             sourceBattleCount = Get-ObjectArrayCount $referenceBattleArray
-            sourceCategories = @($referenceBattleArray | Select-Object -ExpandProperty category -Unique)
+            # Pas Select-Object -ExpandProperty : les elements sont des
+            # [ordered]@{...}, et ExpandProperty passe par la table de proprietes
+            # PSObject, ou une cle de dictionnaire n'apparait pas. Il levait
+            # « la propriete category est introuvable » et emportait toute la
+            # suite - y compris le deploiement du module, donc config.toml.
+            sourceCategories = @($referenceBattleArray | ForEach-Object { [string]$_.category } | Select-Object -Unique)
             primaryBattle = [ordered]@{
                 trainerId = [int]$primaryBattle.trainerId
                 names = $primaryBattle.names
@@ -4662,7 +5902,26 @@ function Get-MainStorySoftCapEntries {
         })
     }
 
-    return [object[]]$entries.ToArray()
+    $resultatEntries = [object[]]$entries.ToArray()
+
+    # Dire si le mode souple retombe sur le cap arenes/ligue.
+    #
+    # Le module n'applique qu'une table de neuf caps indexee par le nombre de
+    # badges (exp_level_cap.hpp, GetCurrentCap). Le mode souple prend le niveau
+    # MAXIMAL des gros combats de chaque fenetre. Mesure du 2026-09-07 sur les
+    # 50 combats majeurs d'Epee : le champion d'arene est le plus fort de sa
+    # fenetre a chaque fois, les rivaux etant 1 a 4 niveaux en dessous (Nabil 33
+    # et Travis 35 contre Faiza 36). Les neuf paliers tombent donc sur les memes
+    # valeurs que le cap arenes/ligue.
+    #
+    # On ne le suppose pas : on regarde quelle categorie a gagne chaque palier.
+    $paliersArene = @($resultatEntries | Where-Object { [int]$_.badgeCount -le 7 -and [string]$_.primaryCategory -eq "gym" })
+    if ((Get-ObjectArrayCount $paliersArene) -eq 8) {
+        $valeurs = @($resultatEntries | ForEach-Object { [int]$_.capLevel })
+        Write-Warning ("Cap « progression principale souple » : les huit premiers paliers sont remportés par le champion d'arène, donc les neuf valeurs ({0}) sont identiques à celles du cap arènes/ligue. Les deux options donnent le même résultat en jeu." -f ($valeurs -join ", "))
+    }
+
+    return $resultatEntries
 }
 
 function Get-Rng {
@@ -4699,7 +5958,7 @@ function Copy-RomfsTree {
     Ensure-Directory -Path $Destination
     $null = & robocopy $Source $Destination /MIR /NFL /NDL /NJH /NJS /NP /R:1 /W:1
     if ($LASTEXITCODE -gt 7) {
-        throw "Robocopy a echoue avec le code $LASTEXITCODE."
+        throw "Robocopy a échoue avec le code $LASTEXITCODE."
     }
 }
 
@@ -4753,6 +6012,96 @@ function Get-FieldResidentDataTablePath {
     return Join-Path $RomfsRoot "bin\archive\field\resident\data_table.gfpak"
 }
 
+function Get-SymbolEncountMonsParamPath {
+    param([string]$RomfsRoot)
+    return Join-Path $RomfsRoot "bin\field\param\symbol_encount_mons_param\symbol_encount_mons_param.bin"
+}
+
+function Get-SymbolHitboxTable {
+    <#
+        Rayon de collision de chaque espece en tant que symbole overworld, lu
+        dans symbol_encount_mons_param.bin. C'est la mesure du jeu lui-meme :
+        combien de place le Pokemon occupe une fois pose dans le decor.
+
+        Indices FlatBuffer verifies sur un dump Epee (774 entrees, 664 especes) :
+        champ 6 = rayon de collision (float), champ 13 = espece. Une espece a
+        parfois plusieurs entrees (formes) : on garde la plus encombrante.
+
+        C'est un meilleur critere que la taille du Pokedex : Rayquaza est
+        enroule et ne fait que 70, alors que Leviator en fait 220.
+    #>
+    param([string]$RomfsRoot)
+
+    if ($null -ne $script:SymbolHitboxTable) {
+        return $script:SymbolHitboxTable
+    }
+
+    $table = @{}
+    $path = Get-SymbolEncountMonsParamPath -RomfsRoot $RomfsRoot
+    if ([string]::IsNullOrWhiteSpace($RomfsRoot) -or (-not (Test-Path -LiteralPath $path))) {
+        # Table absente : on ne filtre rien plutot que de tout filtrer.
+        $script:SymbolHitboxTable = $table
+        return $table
+    }
+
+    try {
+        $data = [IO.File]::ReadAllBytes($path)
+        $root = Get-FlatBufferRootTablePosition -Data $data
+        $entrees = @(Get-FlatBufferTableVectorEntries -Data $data -TablePos $root -FieldIndex 0)
+        if ($entrees.Count -eq 0) {
+            $entrees = @(Get-FlatBufferTableVectorEntries -Data $data -TablePos $root -FieldIndex 1)
+        }
+        foreach ($entree in $entrees) {
+            $adresseEspece = Get-FlatBufferFieldAddress -Data $data -TablePos $entree -FieldIndex 13
+            $adresseRayon = Get-FlatBufferFieldAddress -Data $data -TablePos $entree -FieldIndex 6
+            if ($adresseEspece -lt 0 -or $adresseRayon -lt 0) {
+                continue
+            }
+            $espece = [int](Read-U32 -Data $data -Offset $adresseEspece)
+            if ($espece -le 0 -or $espece -gt $BaseSpeciesMax) {
+                continue
+            }
+            $rayon = [double][BitConverter]::ToSingle($data, $adresseRayon)
+            if ((-not $table.ContainsKey($espece)) -or $rayon -gt $table[$espece]) {
+                $table[$espece] = $rayon
+            }
+        }
+    } catch {
+        $table = @{}
+    }
+
+    $script:SymbolHitboxTable = $table
+    return $table
+}
+
+function Select-SpeciesByOverworldHitbox {
+    param(
+        [int[]]$SpeciesIds,
+        [string]$RomfsRoot,
+        [int]$MaxHitbox
+    )
+
+    if ($MaxHitbox -le 0) {
+        return [int[]]$SpeciesIds
+    }
+
+    $table = Get-SymbolHitboxTable -RomfsRoot $RomfsRoot
+    if ($table.Count -lt 1) {
+        return [int[]]$SpeciesIds
+    }
+
+    # Une espece sans rayon connu est GARDEE : mieux vaut laisser passer un
+    # inconnu que vider le reservoir sur une table incomplete.
+    $retenu = @($SpeciesIds | Where-Object {
+        (-not $table.ContainsKey([int]$_)) -or ($table[[int]$_] -le $MaxHitbox)
+    })
+
+    if ((Get-ObjectArrayCount $retenu) -lt 8) {
+        return [int[]]$SpeciesIds
+    }
+    return [int[]]$retenu
+}
+
 function Get-UndergroundExplorationPokePath {
     param([string]$RomfsRoot)
     return Join-Path $RomfsRoot "bin\appli\chika\data_table\underground_exploration_poke.bin"
@@ -4764,8 +6113,18 @@ function Normalize-Mode {
 }
 
 function Test-TrainerModeUsesSmogon {
+    <#
+        « smogon » tout court est accepte comme alias de « smogonstrategic ».
+
+        L'interface n'envoie que "SmogonStrategic", mais en ligne de commande
+        la valeur evidente est "Smogon" - et elle etait rejetee en silence :
+        aucune branche ne s'executait, les attaques restaient celles du Pokemon
+        remplace, et rien ne le signalait. Mesure du 2026-09-07 : 0 attaque
+        modifiee sur 1223 avec -TrainerMoveMode 'Smogon', contre 100 % avec
+        'SmogonStrategic'.
+    #>
     param([string]$Mode)
-    return ((Normalize-Mode $Mode) -in @("smogonstrategic", "smogonlegacy", "smogonhistory", "smogonhistorical", "smogonancien", "smogonanciennegen", "smogonanciennesgens"))
+    return ((Normalize-Mode $Mode) -in @("smogon", "smogonstrategic", "smogonlegacy", "smogonhistory", "smogonhistorical", "smogonancien", "smogonanciennegen", "smogonanciennesgens"))
 }
 
 function Test-TrainerModeUsesSmogonLegacy {
@@ -4798,14 +6157,14 @@ function Get-EffectiveTrainerNatureMode {
         "randomnature" { return "random" }
         "randomnatures" { return "random" }
         "aleatoire" { return "random" }
-        "aléatoire" { return "random" }
+        "alÃ©atoire" { return "random" }
         "smogon" { return "smogonstrategic" }
         "smogonstrategic" { return "smogonstrategic" }
         "strategicsmogon" { return "smogonstrategic" }
         "strategique" { return "smogonstrategic" }
         "strategiquesmogon" { return "smogonstrategic" }
-        "stratégique" { return "smogonstrategic" }
-        "stratégiquesmogon" { return "smogonstrategic" }
+        "stratÃ©gique" { return "smogonstrategic" }
+        "stratÃ©giquesmogon" { return "smogonstrategic" }
         "smogonlegacy" { return "smogonlegacy" }
         "smogonhistory" { return "smogonlegacy" }
         "smogonhistorical" { return "smogonlegacy" }
@@ -4835,7 +6194,7 @@ function Normalize-StableMappingMode {
         "unstable" { return "random" }
         "species" { return "species" }
         "espece" { return "species" }
-        "espèce" { return "species" }
+        "espÃ¨ce" { return "species" }
         "slot" { return "slot" }
         default { return "slot" }
     }
@@ -4948,11 +6307,42 @@ function Get-LearnsetBytes {
     return [IO.File]::ReadAllBytes($path)
 }
 
+# Une entree d'attaque dont l'enregistrement fait 64 octets ou moins est un
+# CROUPION : la structure y est tronquee, l'attaque n'existe pas vraiment dans
+# ce jeu. Sur Epee 1.3.2 il y en a 39, dont le bloc contigu 622-657 - les
+# attaques Z, presentes en donnees mais retirees en 8e generation.
+#
+# Le seuil n'est pas devine, il est MESURE. En croisant la taille de chaque
+# enregistrement avec l'usage reel du jeu - learnsets, equipes de dresseurs,
+# table CT/DT - la coupure tombe exactement la :
+#
+#     <= 64 octets : 39 fichiers,   0 utilise par le jeu
+#     >= 68 octets : 788 fichiers, l'usage commence
+#
+# Sans ce filtre, Get-MovePool rendait 1..826 en aveugle et le mode
+# « 4 attaques aleatoires » distribuait ces croupions : 218 des 2622
+# emplacements d'une generation chaos, soit 8 %. Trouve en relisant les sorties
+# avec le dex du visualiseur de l'utilisateur, qui ne savait pas les nommer.
+$MoveStubRecordMaxSize = 64
+
 function Get-MovePool {
     param([string]$RomfsRoot)
     $moveDir = Get-MoveDir -RomfsRoot $RomfsRoot
-    $count = (Get-ChildItem -LiteralPath $moveDir -Filter "*.wazabin" -File).Count
-    return 1..($count - 1)
+    $fichiers = @(Get-ChildItem -LiteralPath $moveDir -Filter "*.wazabin" -File)
+    $pool = New-Object System.Collections.Generic.List[int]
+    foreach ($f in $fichiers) {
+        if ($f.BaseName -notmatch '(\d+)\s*$') { continue }
+        $id = [int]$Matches[1]
+        if ($id -le 0) { continue }
+        if ($f.Length -le $MoveStubRecordMaxSize) { continue }
+        $pool.Add($id)
+    }
+    if ($pool.Count -lt 1) {
+        # Repli sur l'ancien comportement plutot que de rendre un pool vide,
+        # qui rendrait le mode « 4 attaques aleatoires » silencieusement inerte.
+        return 1..([Math]::Max(1, $fichiers.Count - 1))
+    }
+    return [int[]]($pool.ToArray() | Sort-Object)
 }
 
 function Get-BaseSpeciesPool {
@@ -4982,6 +6372,103 @@ function Get-BaseSpeciesPool {
     return @($pool | Where-Object { -not (Test-IsLegendarySpecies $_) })
 }
 
+function Get-SymbolEncounterSpeciesPool {
+    param(
+        [string]$RomfsRoot,
+        [bool]$AllowLegendaries
+    )
+
+    $speciesIds = [System.Collections.Generic.HashSet[int]]::new()
+    if ([string]::IsNullOrWhiteSpace($RomfsRoot)) {
+        return @()
+    }
+
+    $path = Get-FieldResidentDataTablePath -RomfsRoot $RomfsRoot
+    if (-not (Test-Path -LiteralPath $path)) {
+        return @()
+    }
+
+    try {
+        $pack = Read-Gfpak -Path $path
+        foreach ($internalFile in @("encount_symbol_k.bin", "encount_symbol_t.bin")) {
+            $archiveData = Get-GfpakDataFileName -Pack $pack -Name $internalFile
+            if ($null -eq $archiveData) {
+                continue
+            }
+
+            $root = Get-FlatBufferRootTablePosition -Data $archiveData
+            foreach ($tablePos in @(Get-FlatBufferTableVectorEntries -Data $archiveData -TablePos $root -FieldIndex 1)) {
+                foreach ($subTablePos in @(Get-FlatBufferTableVectorEntries -Data $archiveData -TablePos $tablePos -FieldIndex 1)) {
+                    foreach ($slotPos in @(Get-FlatBufferTableVectorEntries -Data $archiveData -TablePos $subTablePos -FieldIndex 2)) {
+                        $speciesAddress = Get-FlatBufferFieldAddress -Data $archiveData -TablePos $slotPos -FieldIndex 1
+                        if ($speciesAddress -lt 0) {
+                            continue
+                        }
+
+                        $speciesId = [int](Read-U32 -Data $archiveData -Offset $speciesAddress)
+                        if ($speciesId -gt 0 -and $speciesId -le $BaseSpeciesMax) {
+                            $null = $speciesIds.Add($speciesId)
+                        }
+                    }
+                }
+            }
+        }
+    } catch {
+        return @()
+    }
+
+    $pool = @($speciesIds | Sort-Object)
+    if (-not $AllowLegendaries) {
+        $pool = @($pool | Where-Object { -not (Test-IsLegendarySpecies $_) })
+    }
+    return [int[]]$pool
+}
+
+function Get-OverworldVisualSpeciesPool {
+    param(
+        [string]$RomfsRoot,
+        [bool]$AllowLegendaries
+    )
+
+    $symbolPool = @(Get-SymbolEncounterSpeciesPool -RomfsRoot $RomfsRoot -AllowLegendaries $AllowLegendaries)
+    if ($symbolPool.Count -gt 0) {
+        return [int[]]$symbolPool
+    }
+
+    $speciesIds = [System.Collections.Generic.HashSet[int]]::new()
+    if (-not [string]::IsNullOrWhiteSpace($RomfsRoot) -and (Test-Path -LiteralPath $RomfsRoot)) {
+        $roots = @(
+            (Join-Path $RomfsRoot "bin\pokemon"),
+            (Join-Path $RomfsRoot "bin\archive\pokemon"),
+            (Join-Path $RomfsRoot "bin\field\pokemon"),
+            (Join-Path $RomfsRoot "bin\archive\field")
+        )
+        foreach ($root in $roots) {
+            if (-not (Test-Path -LiteralPath $root)) {
+                continue
+            }
+            Get-ChildItem -LiteralPath $root -Recurse -ErrorAction SilentlyContinue | ForEach-Object {
+                if ($_.Name -match 'pm(\d{4})_(\d{2})') {
+                    $id = [int]$Matches[1]
+                    if ($id -gt 0 -and $id -le $BaseSpeciesMax) {
+                        $null = $speciesIds.Add($id)
+                    }
+                }
+            }
+        }
+    }
+
+    if ($speciesIds.Count -eq 0) {
+        return @()
+    }
+
+    $pool = @($speciesIds | Sort-Object)
+    if (-not $AllowLegendaries) {
+        $pool = @($pool | Where-Object { -not (Test-IsLegendarySpecies $_) })
+    }
+    return [int[]]$pool
+}
+
 function Assert-PlayableSpeciesIds {
     param(
         [string]$RomfsRoot,
@@ -4996,7 +6483,7 @@ function Assert-PlayableSpeciesIds {
     $entries = Get-PersonalEntries -RomfsRoot $RomfsRoot
     foreach ($speciesId in $SpeciesIds) {
         if ($speciesId -le 0 -or $speciesId -ge $entries.Count -or -not $entries[$speciesId].IsInGame) {
-            throw ("{0}: {1} ({2}) n'est pas marque jouable dans les donnees Sword/Shield. Choisis une espece presente dans le jeu pour eviter les oeufs/modeles invalides." -f $Context, (Get-SpeciesDisplayName -SpeciesId $speciesId -Language "fr"), $speciesId)
+            throw ("{0}: {1} ({2}) n'est pas marque jouable dans les données Sword/Shield. Choisis une espèce présente dans le jeu pour éviter les oeufs/modeles invalides." -f $Context, (Get-SpeciesDisplayName -SpeciesId $speciesId -Language "fr"), $speciesId)
         }
     }
 }
@@ -5028,36 +6515,50 @@ function Get-TrainerItemPool {
 
     $poolModeValue = (Normalize-Mode $PoolMode)
     $itemData = Get-ItemData
+    $estComplet = $poolModeValue -in @("full", "fullrandom", "all", "any", "complete", "complet")
+
+    # Les deux modes different par leur SOURCE, pas par un filtre de categorie :
+    #
+    #   Complet  tout ce qui existe dans le jeu, sauf ce qu'un Pokemon ne peut
+    #            pas tenir utilement (machines, objets cles, Balls)
+    #   Combat   la liste curee d'objets a effet en combat, PURGEE de ce qui
+    #            n'existe pas dans cette version
+    #
+    # Avant items.csv, les deux rendaient la meme liste de 139 identifiants dont
+    # 45 designaient des objets absents du jeu. Le mode etait donc a la fois
+    # inoperant et faux.
     $heldItems = New-Object System.Collections.Generic.HashSet[int]
+    $poches = @{}
     foreach ($entry in @($itemData.Rows)) {
-        if ($null -eq $entry) {
-            continue
-        }
-
+        if ($null -eq $entry) { continue }
         $itemId = [int]$entry.id
-        $categoryId = [int]$entry.categoryId
-        $identifier = [string]$entry.identifier
-        if ($itemId -le 0) {
-            continue
-        }
-        if ($TrainerHeldItemExcludedIdentifiers.Contains($identifier)) {
-            continue
-        }
+        if ($itemId -le 0) { continue }
+        $poches[$itemId] = [int]$entry.categoryId
+    }
 
-        if ($poolModeValue -in @("full", "fullrandom", "all", "any", "complete", "complet")) {
-            if ($categoryId -in @(20, 21, 22, 23, 40, 41, 46)) {
-                continue
-            }
-        } elseif (-not $TrainerHeldItemAllowedCategoryIds.Contains($categoryId)) {
+    $candidats = if ($estComplet) { [int[]]@($poches.Keys) } else { Select-ExistingItemIds -Ids $FallbackTrainerHeldItemPool }
+    # 300 des 964 objets du jeu portent un nom de debogage (« ★And390 ») : le
+    # mode « complet » les prenait tous. Ils sont tous en poche 4.
+    $sansNomTenus = Get-PlaceholderItemIds
+    foreach ($itemId in $candidats) {
+        if ($sansNomTenus.Contains([int]$itemId)) { continue }
+        if ($poches.ContainsKey($itemId) -and $TrainerHeldItemExcludedPockets.Contains($poches[$itemId])) {
             continue
         }
-
-        $null = $heldItems.Add($itemId)
+        $null = $heldItems.Add([int]$itemId)
     }
 
     $pool = @($heldItems | Sort-Object)
     if ($pool.Count -gt 0) {
         return $pool
+    }
+
+    # Repli. Il ne depend pas de $PoolMode : le mode demande est donc ignore.
+    # On le dit une fois par execution plutot que de laisser croire que le
+    # reglage a ete pris en compte.
+    if (-not $script:TrainerItemPoolFallbackWarned) {
+        $script:TrainerItemPoolFallbackWarned = $true
+        Write-Host ("[Données] Pool d'objets tenus construit a partir du repli code en dur ({0} objets) : items.csv est absent, donc le mode '{1}' est sans effet." -f (Get-ObjectArrayCount $FallbackTrainerHeldItemPool), $PoolMode)
     }
 
     if ((Get-ObjectArrayCount $FallbackTrainerHeldItemPool) -gt 0) {
@@ -5091,6 +6592,248 @@ function Get-RandomTrainerHeldItem {
         $null = $UsedItemIds.Add($itemId)
     }
     return $itemId
+}
+
+# ---------------------------------------------------------------------------
+# REGLES SPECIALES DE DRESSEURS
+#
+# Trois classes, reprises de la terminologie du Universal Pokemon Randomizer :
+#   Boss      : champions d'arene, Conseil 4, Maitre
+#   Important : rivaux, admins et chefs d'equipe
+#   Normal    : tous les autres
+#
+# Les regles (legendaires, total de statistiques minimum) se traduisent par un
+# simple filtrage du reservoir d'especes. C'est volontairement le meme
+# mecanisme que les equipes mono-type : on remplace le pool et le reste du code
+# n'a pas besoin de savoir qu'une regle est active.
+# ---------------------------------------------------------------------------
+
+function Get-TrainerRulePoolContext {
+    param(
+        [int[]]$SourcePool,
+        [int[]]$FallbackSourcePool = @(),
+        [hashtable]$SpeciesEntries,
+        [string]$LegendaryPolicy = "unchanged",
+        [int]$MinBaseStatTotal = 0
+    )
+
+    $policy = Normalize-Mode $LegendaryPolicy
+    $applyPool = {
+        param([int[]]$Candidates)
+
+        $pool = @($Candidates)
+        if ($pool.Count -lt 1) {
+            return @()
+        }
+
+        if ($policy -eq "all") {
+            $pool = @($pool | Where-Object { Test-IsLegendarySpecies ([int]$_) })
+        } elseif ($policy -eq "none") {
+            $pool = @($pool | Where-Object { -not (Test-IsLegendarySpecies ([int]$_)) })
+        }
+        if ($pool.Count -lt 1) {
+            return @()
+        }
+
+        if ($MinBaseStatTotal -gt 0) {
+            $strong = @($pool | Where-Object {
+                $entry = $SpeciesEntries[[int]$_]
+                $entry -and ([int]$entry.BST) -ge $MinBaseStatTotal
+            })
+            # Un seuil trop haut viderait le reservoir. Plutot que de ne rien
+            # pouvoir choisir, on garde les especes les plus fortes disponibles.
+            if ($strong.Count -lt 3) {
+                $strong = @($pool |
+                    Sort-Object { - [int]$SpeciesEntries[[int]$_].BST } |
+                    Select-Object -First 12)
+            }
+            $pool = $strong
+        }
+
+        return @($pool)
+    }
+
+    $result = @(& $applyPool ([int[]]$SourcePool))
+
+    # Exiger des legendaires alors que le reservoir courant les exclut (case
+    # "legendaires autorises" decochee, ou equipe mono-type) ne doit pas donner
+    # un pool vide : on repart alors du reservoir complet.
+    if ($result.Count -lt 1 -and $FallbackSourcePool -and $FallbackSourcePool.Count -gt 0) {
+        $result = @(& $applyPool ([int[]]$FallbackSourcePool))
+    }
+
+    if ($result.Count -lt 1) {
+        return $null
+    }
+
+    return @{
+        BaseSpeciesPool = [int[]]$result
+        BaseSpeciesEntries = $SpeciesEntries
+        SimilarBstCache = @{}
+    }
+}
+
+# Reservoir restreint aux especes dont AUCUN type n'est deja pris dans
+# l'equipe. Rend $null quand plus rien ne convient : on cesse alors d'imposer
+# la contrainte pour les emplacements restants, plutot que de ne rien pouvoir
+# placer. Une equipe de six ne peut de toute facon pas couvrir douze types
+# distincts sans finir par manquer de candidats.
+function Get-DiverseTypeContext {
+    param(
+        [hashtable]$Context,
+        [System.Collections.Generic.HashSet[int]]$UsedTypeIds
+    )
+
+    if ($null -eq $UsedTypeIds -or $UsedTypeIds.Count -lt 1) {
+        return $null
+    }
+
+    $pool = @($Context.BaseSpeciesPool | Where-Object {
+        $entry = $Context.BaseSpeciesEntries[[int]$_]
+        $entry -and
+            (-not $UsedTypeIds.Contains([int]$entry.Type1)) -and
+            (-not $UsedTypeIds.Contains([int]$entry.Type2))
+    })
+    if ($pool.Count -lt 1) {
+        return $null
+    }
+
+    return @{
+        BaseSpeciesPool = [int[]]$pool
+        BaseSpeciesEntries = $Context.BaseSpeciesEntries
+        SimilarBstCache = @{}
+    }
+}
+
+function Normalize-TrainerSpecialRuleScope {
+    param([string]$Scope)
+
+    switch (Normalize-Mode $Scope) {
+        "everyone" { return "Everyone" }
+        "all" { return "Everyone" }
+        "alltrainers" { return "Everyone" }
+        "allbosses" { return "AllBosses" }
+        "majorbosses" { return "AllBosses" }
+        default { return "GymLeague" }
+    }
+}
+
+function Normalize-TrainerLegendaryPolicy {
+    param([string]$Policy)
+
+    switch (Normalize-Mode $Policy) {
+        "none" { return "none" }
+        "nolegendaries" { return "none" }
+        "oneeach" { return "oneeach" }
+        "one" { return "oneeach" }
+        "all" { return "all" }
+        "alllegendaries" { return "all" }
+        default { return "unchanged" }
+    }
+}
+
+# Contraintes appliquees aux cibles d'evolution : le remplacant doit etre plus
+# fort que la forme de base, et/ou partager un de ses types.
+#
+# Le reservoir filtre est mis en cache par espece source : sans cela on
+# refiltrerait 800 especes pour chacun des 1192 fichiers d'evolution.
+#
+# Si une contrainte ne laisse aucun candidat, on rend le reservoir d'origine
+# plutot qu'un pool vide : mieux vaut une evolution non contrainte qu'une
+# evolution impossible.
+function Get-EvolutionConstrainedContext {
+    <#
+        Les regles d'evolution se CUMULENT : meme type, et gain minimal de
+        statistiques. Un gain minimal de 0 veut dire « au moins equivalent ».
+
+        Le repli est PROGRESSIF, et c'est important : si aucun Pokemon ne
+        satisfait les deux regles a la fois, on relache la moins structurante
+        (le seuil de statistiques) avant d'abandonner le type, puis seulement en
+        dernier recours on rend le reservoir complet. Rendre tout de suite le
+        reservoir complet - ce que faisait la version precedente - jetait la
+        contrainte de type alors qu'elle etait souvent tenable seule.
+
+        On ne boucle jamais : chaque etape est un filtre, pas un tirage repete.
+    #>
+    param(
+        [hashtable]$Context,
+        [int]$SourceSpeciesId,
+        [bool]$ForceGrowth,
+        [bool]$SameType,
+        [int]$MinBstGain = -1,
+        [hashtable]$Cache
+    )
+
+    # ForceGrowth est l'ancienne forme de « strictement mieux » : un gain de 1.
+    $gainMinimal = if ($MinBstGain -ge 0) { [int]$MinBstGain } elseif ($ForceGrowth) { 1 } else { -1 }
+    if ($gainMinimal -lt 0 -and -not $SameType) {
+        return $Context
+    }
+    if ($Cache.ContainsKey($SourceSpeciesId)) {
+        return $Cache[$SourceSpeciesId]
+    }
+
+    $source = $Context.BaseSpeciesEntries[$SourceSpeciesId]
+    if (-not $source) {
+        $Cache[$SourceSpeciesId] = $Context
+        return $Context
+    }
+
+    $entrees = $Context.BaseSpeciesEntries
+    $sourceBst = [int]$source.BST
+    $t1 = [int]$source.Type1
+    $t2 = [int]$source.Type2
+
+    $filtreBst = {
+        param($liste)
+        if ($gainMinimal -lt 0) { return @($liste) }
+        return @($liste | Where-Object {
+            $entry = $entrees[[int]$_]
+            $entry -and ([int]$entry.BST -ge ($sourceBst + $gainMinimal))
+        })
+    }
+    $filtreType = {
+        param($liste)
+        if (-not $SameType) { return @($liste) }
+        return @($liste | Where-Object {
+            $entry = $entrees[[int]$_]
+            $entry -and (
+                ([int]$entry.Type1 -eq $t1) -or ([int]$entry.Type1 -eq $t2) -or
+                ([int]$entry.Type2 -eq $t1) -or ([int]$entry.Type2 -eq $t2)
+            )
+        })
+    }
+
+    $complet = @($Context.BaseSpeciesPool)
+    # Du plus contraint au moins contraint. Le type passe avant le seuil parce
+    # qu'un Pikachu qui devient electrique reste lisible meme un peu plus faible,
+    # alors qu'un Pikachu devenu Magicarpe casse la regle qu'on a demandee.
+    $tentatives = @(
+        @(& $filtreType (& $filtreBst $complet)),
+        @(& $filtreType $complet),
+        @(& $filtreBst $complet),
+        $complet
+    )
+
+    $pool = $complet
+    foreach ($tentative in $tentatives) {
+        if ((Get-ObjectArrayCount $tentative) -ge 1) {
+            $pool = @($tentative)
+            break
+        }
+    }
+
+    $result = if ($pool.Count -lt 1) {
+        $Context
+    } else {
+        @{
+            BaseSpeciesPool = [int[]]$pool
+            BaseSpeciesEntries = $Context.BaseSpeciesEntries
+            SimilarBstCache = @{}
+        }
+    }
+    $Cache[$SourceSpeciesId] = $result
+    return $result
 }
 
 function Get-SpeciesReplacementPool {
@@ -5631,7 +7374,21 @@ function Get-UniqueTrainerSpeciesCandidate {
         }
     }
 
-    throw "Impossible de trouver une espece unique pour l'equipe dresseur avec le pool actuel."
+    # Aucun candidat unique. On NE LEVE PAS : l'unicite est une preference, une
+    # generation avortee est un echec dur. Trouve par la campagne de tirage
+    # aleatoire, sur la combinaison « equipes a theme de type + aucun doublon +
+    # boss forces a 6 » : un type rare n'a pas six especes disponibles au niveau
+    # voulu, et toute la generation s'arretait sur un throw.
+    #
+    # On rend donc un doublon plutot que rien, en preferant le premier pool
+    # non vide - c'est le plus contraint, donc le plus proche de ce que
+    # l'utilisateur a demande.
+    foreach ($pool in $candidatePools) {
+        if ((Get-ObjectArrayCount $pool) -gt 0) {
+            return Random-FromPool -Rng $Rng -Pool $pool
+        }
+    }
+    return $CurrentSpeciesId
 }
 
 function Get-ApproximateTrainerFillLevel {
@@ -5674,6 +7431,51 @@ function Get-ApproximateTrainerFillLevel {
     return [int]$candidate
 }
 
+function Set-TrainerMovesRandomDistinct {
+    <#
+        Quatre attaques tirees au hasard, toutes DIFFERENTES, ecrites depuis la
+        premiere case.
+
+        Deux endroits du generateur ecrivaient ces quatre cases avec quatre
+        tirages independants : la boucle principale des dresseurs et la passe
+        qui rattrape les dresseurs lies aux starters. Le vanilla ne compte
+        aucun doublon sur ses 1223 Pokemon de dresseur ; les lots generes en
+        comptaient jusqu'a 23. Le code vit donc ici, une seule fois.
+
+        Si le reservoir est trop petit pour quatre attaques distinctes, les
+        cases restantes sont laissees vides plutot que remplies d'un doublon.
+    #>
+    param(
+        [byte[]]$Data,
+        [int]$Offset,
+        [int[]]$MovePool,
+        [System.Random]$Rng
+    )
+
+    if ((Get-ObjectArrayCount $MovePool) -lt 1) {
+        return $false
+    }
+
+    $choisies = New-Object System.Collections.Generic.List[int]
+    $essais = 0
+    while ($choisies.Count -lt 4 -and $essais -lt 64) {
+        $essais++
+        $candidat = [int](Random-FromPool -Rng $Rng -Pool $MovePool)
+        if ($candidat -gt 0 -and -not $choisies.Contains($candidat)) {
+            $null = $choisies.Add($candidat)
+        }
+    }
+    if ($choisies.Count -lt 1) {
+        return $false
+    }
+
+    for ($index = 0; $index -lt 4; $index++) {
+        $valeur = if ($index -lt $choisies.Count) { [int]$choisies[$index] } else { 0 }
+        Write-U16 -Data $Data -Offset ($Offset + 0x12 + ($index * 2)) -Value $valeur
+    }
+    return $true
+}
+
 function Set-TrainerMovesFromSpeciesLevel {
     param(
         [byte[]]$Data,
@@ -5702,10 +7504,27 @@ function Set-TrainerMovesFromSpeciesLevel {
         return $false
     }
 
+    # Une espece peut reapprendre la meme attaque a deux paliers : sans ce
+    # filtre, le Pokemon la portait deux fois. Mesure du 2026-09-07 : un cas
+    # par lot, alors que le vanilla n'en a aucun.
+    $moveUniques = New-Object System.Collections.Generic.List[int]
+    foreach ($moveId in $moves) {
+        $valeur = [int]$moveId
+        if ($valeur -gt 0 -and -not $moveUniques.Contains($valeur)) {
+            $null = $moveUniques.Add($valeur)
+        }
+    }
+    if ($moveUniques.Count -lt 1) {
+        return $false
+    }
+
+    # Remplissage depuis la PREMIERE case. L'alignement a droite laissait un
+    # trou devant les attaques quand l'espece en connaissait moins de quatre :
+    # 49 Pokemon par lot, contre zero dans le vanilla.
     $filled = @(0, 0, 0, 0)
-    $start = [Math]::Max(0, 4 - $moves.Count)
-    for ($i = 0; $i -lt $moves.Count; $i++) {
-        $filled[$start + $i] = $moves[$i]
+    $count = [Math]::Min(4, $moveUniques.Count)
+    for ($i = 0; $i -lt $count; $i++) {
+        $filled[$i] = [int]$moveUniques[$i]
     }
 
     foreach ($index in 0..3) {
@@ -5820,11 +7639,14 @@ function Set-TrainerMovesSmogonStrategic {
         return $false
     }
 
+    # On remplit depuis la PREMIERE case. L'alignement a droite laissait une
+    # case vide devant les attaques quand il y en avait moins de quatre :
+    # mesure du 2026-09-07, six Pokemon par lot avec un trou, alors que le
+    # vanilla remplit toujours depuis le debut - zero trou sur 1223 Pokemon.
     $filled = @(0, 0, 0, 0)
     $count = [Math]::Min(4, $selectedMoves.Count)
-    $start = [Math]::Max(0, 4 - $count)
     for ($i = 0; $i -lt $count; $i++) {
-        $filled[$start + $i] = [int]$selectedMoves[$i]
+        $filled[$i] = [int]$selectedMoves[$i]
     }
 
     foreach ($index in 0..3) {
@@ -5869,6 +7691,32 @@ function Get-SmogonStrategicHeldItem {
                 continue
             }
             $candidateItems += $itemId
+        }
+    }
+
+    # $AllowedItemIds etait declare, passe par les DEUX appelants, et jamais lu.
+    # Un parametre qui a l'air de contraindre et qui est inerte : exactement le
+    # defaut du COMBAT-CACHE §15. Mesure sur un lot de sorties relues avec le
+    # decodage du visualiseur : 227 des 1222 emplacements de dresseurs (19 %)
+    # portaient un objet ABSENT d'Epee - les identifiants viennent d'un jeu de
+    # donnees Smogon qui couvre toutes les generations. En jeu, le Pokemon ne
+    # tient rien, et rien ne le signale.
+    #
+    # Deux filtres, dans cet ordre. L'EXISTENCE d'abord, parce que c'est une
+    # invariante : un objet absent du jeu n'est jamais acceptable. La liste
+    # autorisee ensuite, et seulement si elle laisse quelque chose - sinon le
+    # mode strategique se replierait systematiquement sur le tirage general et
+    # perdrait tout son interet.
+    if ($candidateItems.Count -gt 0) {
+        $existants = Get-ExistingItemIds
+        if ($existants.Count -gt 0) {
+            $candidateItems = @($candidateItems | Where-Object { $existants.Contains([int]$_) })
+        }
+    }
+    if ($candidateItems.Count -gt 0 -and $AllowedItemIds -and $AllowedItemIds.Count -gt 0) {
+        $retenus = @($candidateItems | Where-Object { $AllowedItemIds.Contains([int]$_) })
+        if ($retenus.Count -gt 0) {
+            $candidateItems = $retenus
         }
     }
 
@@ -6429,6 +8277,170 @@ function Get-OrCreate-TrainerRecordBytes {
     }
 
     Write-Output -NoEnumerate $Bytes
+}
+
+function Test-FlatBufferTablePosition {
+    <#
+        Une position se relit-elle comme une table FlatBuffers ? Sert a refuser
+        un champ racine qui n'est pas un vecteur de tables, plutot que d'ecrire
+        a l'aveugle dans un fichier mal interprete.
+    #>
+    param([byte[]]$Data, [int]$TablePos)
+
+    if ($TablePos -le 0 -or ($TablePos + 4) -gt $Data.Length) { return $false }
+    $vtablePos = $TablePos - [int](Read-I32 -Data $Data -Offset $TablePos)
+    if ($vtablePos -lt 0 -or ($vtablePos + 4) -gt $Data.Length) { return $false }
+    $vtableLength = [int](Read-U16 -Data $Data -Offset $vtablePos)
+    if ($vtableLength -lt 4 -or ($vtableLength % 2) -ne 0) { return $false }
+    if (($vtablePos + $vtableLength) -gt $Data.Length) { return $false }
+    return $true
+}
+
+function Get-ShopInventorySlotAddresses {
+    <#
+        Structure REELLE de shop_data.bin, etablie le 2026-09-08 en relisant les
+        faits de structure du lecteur de KM-Editor puis en les verifiant sur le
+        dump :
+
+            boutique.champ0 = hash u64
+            boutique.champ1 -> table Inventory              (vecteur racine 0)
+            boutique.champ1 -> vecteur de tables Inventory  (vecteur racine 1)
+            Inventory.champ0 -> vecteur d'entiers = LES OBJETS
+
+        Il y a donc UN niveau d'indirection de plus que ce que le generateur
+        lisait. En s'arretant au champ 1 de la boutique, il prenait la table
+        Inventory pour le vecteur d'objets. Consequences mesurees :
+
+          - il ne voyait que 3 boutiques et 24 emplacements la ou il y en a
+            165 et 1347 ;
+          - il croyait 162 tables vides alors qu'elles contiennent des CT ;
+          - et surtout il ECRIVAIT dans la structure du FlatBuffer au lieu des
+            objets, ce qui vidait la liste d'une boutique et faisait planter le
+            jeu a l'achat.
+
+        Le champ 1 est lu des deux facons, en essayant d'abord la table
+        Inventory : c'est la donnee qui tranche, pas une hypothese sur le
+        vecteur racine d'origine.
+    #>
+    param([byte[]]$Data)
+
+    $lireVecteur = {
+        param([int]$Adresse)
+        if ($Adresse -lt 0 -or ($Adresse + 4) -gt $Data.Length) { return $null }
+        $brut = [uint32](Read-U32 -Data $Data -Offset $Adresse)
+        if ($brut -gt [uint32][int]::MaxValue) { return $null }
+        $pos = $Adresse + [int]$brut
+        if ($pos -lt 0 -or ($pos + 4) -gt $Data.Length) { return $null }
+        $compte = [uint32](Read-U32 -Data $Data -Offset $pos)
+        if ($compte -gt 5000 -or ($pos + 4 + ([int]$compte * 4)) -gt $Data.Length) { return $null }
+        return [pscustomobject]@{ Pos = $pos; Compte = [int]$compte }
+    }
+
+    $slotsInventaire = {
+        param([int]$TablePos)
+        if ($TablePos -lt 0 -or ($TablePos + 4) -gt $Data.Length) { return $null }
+        $champ = Get-FlatBufferFieldAddress -Data $Data -TablePos $TablePos -FieldIndex 0
+        if ($champ -lt 0) { return $null }
+        $vec = & $lireVecteur $champ
+        if (-not $vec -or $vec.Compte -le 0) { return $null }
+        $liste = New-Object System.Collections.Generic.List[int]
+        for ($j = 0; $j -lt $vec.Compte; $j++) { $null = $liste.Add($vec.Pos + 4 + ($j * 4)) }
+        return $liste
+    }
+
+    $sortie = New-Object System.Collections.Generic.List[object]
+    $indexBoutique = 0
+    foreach ($tablePos in Get-FlatBufferRootTableEntries -Data $Data) {
+        $indexBoutique++
+        $champUn = Get-FlatBufferFieldAddress -Data $Data -TablePos $tablePos -FieldIndex 1
+        if ($champUn -lt 0 -or ($champUn + 4) -gt $Data.Length) { continue }
+        $brut = [uint32](Read-U32 -Data $Data -Offset $champUn)
+        if ($brut -gt [uint32][int]::MaxValue) { continue }
+        $cible = $champUn + [int]$brut
+
+        $direct = & $slotsInventaire $cible
+        if ($direct -and $direct.Count -gt 0) {
+            $null = $sortie.Add([pscustomobject]@{
+                ShopIndex = $indexBoutique
+                InventoryIndex = 0
+                Addresses = $direct
+            })
+            continue
+        }
+
+        $vec = & $lireVecteur $champUn
+        if (-not $vec) { continue }
+        for ($k = 0; $k -lt $vec.Compte; $k++) {
+            $element = $vec.Pos + 4 + ($k * 4)
+            if (($element + 4) -gt $Data.Length) { break }
+            $brutInv = [uint32](Read-U32 -Data $Data -Offset $element)
+            if ($brutInv -gt [uint32][int]::MaxValue) { continue }
+            $slots = & $slotsInventaire ($element + [int]$brutInv)
+            if ($slots -and $slots.Count -gt 0) {
+                $null = $sortie.Add([pscustomobject]@{
+                    ShopIndex = $indexBoutique
+                    InventoryIndex = $k
+                    Addresses = $slots
+                })
+            }
+        }
+    }
+
+    return $sortie
+}
+
+function Get-FlatBufferRootTableEntries {
+    <#
+        Toutes les tables atteignables depuis la racine, en visitant CHAQUE
+        champ de la table racine.
+
+        Get-FlatBufferTableVectorPositions ne lit que le premier champ
+        ($root + 4). shop_data.bin range ses boutiques dans deux vecteurs
+        distincts : le champ 0 en porte 163 (une seule garnie, 6 emplacements)
+        et le champ 1 en porte 2, garnies toutes les deux, 18 emplacements.
+        Sur les 24 emplacements du fichier, 18 n'etaient donc jamais tires.
+
+        Un champ dont les entrees ne se relisent pas toutes comme des tables
+        valides est ignore en entier.
+    #>
+    param([byte[]]$Data)
+
+    $positions = New-Object System.Collections.Generic.List[int]
+    $root = [int](Read-U32 -Data $Data -Offset 0)
+    if (-not (Test-FlatBufferTablePosition -Data $Data -TablePos $root)) {
+        return @()
+    }
+    $vtablePos = $root - [int](Read-I32 -Data $Data -Offset $root)
+    $vtableLength = [int](Read-U16 -Data $Data -Offset $vtablePos)
+    $fieldCount = [int](($vtableLength - 4) / 2)
+
+    for ($field = 0; $field -lt $fieldCount; $field++) {
+        $fieldAddress = Get-FlatBufferFieldAddress -Data $Data -TablePos $root -FieldIndex $field
+        if ($fieldAddress -lt 0 -or ($fieldAddress + 4) -gt $Data.Length) { continue }
+        $vectorPos = $fieldAddress + [int](Read-U32 -Data $Data -Offset $fieldAddress)
+        if ($vectorPos -le 0 -or ($vectorPos + 4) -gt $Data.Length) { continue }
+        $rawCount = [uint32](Read-U32 -Data $Data -Offset $vectorPos)
+        if ($rawCount -eq 0 -or $rawCount -gt 10000) { continue }
+        $count = [int]$rawCount
+        if (($vectorPos + 4 + ($count * 4)) -gt $Data.Length) { continue }
+
+        $entrees = New-Object System.Collections.Generic.List[int]
+        $valide = $true
+        for ($index = 0; $index -lt $count; $index++) {
+            $entryOffsetPos = $vectorPos + 4 + ($index * 4)
+            $entryPos = $entryOffsetPos + [int](Read-U32 -Data $Data -Offset $entryOffsetPos)
+            if (-not (Test-FlatBufferTablePosition -Data $Data -TablePos $entryPos)) {
+                $valide = $false
+                break
+            }
+            $entrees.Add($entryPos)
+        }
+        if ($valide) {
+            foreach ($p in $entrees) { $positions.Add($p) }
+        }
+    }
+
+    return $positions
 }
 
 function Get-FlatBufferTableVectorPositions {
@@ -7008,7 +9020,10 @@ function Invoke-EncounterArchiveGrassRandomization {
         [bool]$AllowLegendarySpecies,
         [string]$InternalFileName,
         [string]$StableMappingMode = "Slot",
-        [hashtable]$StableMap = $null
+        [hashtable]$StableMap = $null,
+        [int[]]$VisualSpeciesPool = @(),
+        [int[]]$RestrictToSpeciesPool = @(),
+        [int[]]$RestrictVisibleToSpeciesPool = @()
     )
 
     $mode = Normalize-Mode $ModeValue
@@ -7040,6 +9055,50 @@ function Invoke-EncounterArchiveGrassRandomization {
     }
     $root = Get-FlatBufferRootTablePosition -Data $Data
     $encounterTables = @(Get-FlatBufferTableVectorEntries -Data $Data -TablePos $root -FieldIndex 1)
+
+    if ($isSymbolEncounterTable) {
+        $visualPool = @($VisualSpeciesPool)
+        if ($visualPool.Count -eq 0) {
+            $symbolSpecies = [System.Collections.Generic.HashSet[int]]::new()
+            foreach ($tablePosForPool in $encounterTables) {
+                foreach ($subTablePosForPool in @(Get-FlatBufferTableVectorEntries -Data $Data -TablePos $tablePosForPool -FieldIndex 1)) {
+                    foreach ($slotPosForPool in @(Get-FlatBufferTableVectorEntries -Data $Data -TablePos $subTablePosForPool -FieldIndex 2)) {
+                        $speciesAddressForPool = Get-FlatBufferFieldAddress -Data $Data -TablePos $slotPosForPool -FieldIndex 1
+                        if ($speciesAddressForPool -ge 0) {
+                            $speciesForPool = [int](Read-U32 -Data $Data -Offset $speciesAddressForPool)
+                            if ($speciesForPool -gt 0 -and $speciesForPool -le $BaseSpeciesMax) {
+                                $null = $symbolSpecies.Add($speciesForPool)
+                            }
+                        }
+                    }
+                }
+            }
+            $visualPool = @($symbolSpecies | Sort-Object)
+        }
+        if ($visualPool.Count -gt 0) {
+            $context.BaseSpeciesPool = [int[]]@($visualPool)
+        }
+    }
+
+    # La table des SYMBOLES suit le filtre « visibles dehors », celle des herbes
+    # hautes le filtre « affrontes ». Ce sont deux reglages independants : voir
+    # un Pangoleon dehors ne doit rien dire de ce qu'on affrontera.
+    $restrictionActive = if ($isSymbolEncounterTable -and (Get-ObjectArrayCount $RestrictVisibleToSpeciesPool) -gt 0) {
+        [int[]]$RestrictVisibleToSpeciesPool
+    } else {
+        [int[]]$RestrictToSpeciesPool
+    }
+    if ((Get-ObjectArrayCount $restrictionActive) -gt 0) {
+        $autoriseesHerbe = [System.Collections.Generic.HashSet[int]]::new()
+        foreach ($espece in $restrictionActive) { $null = $autoriseesHerbe.Add([int]$espece) }
+        $poolHerbe = @($context.BaseSpeciesPool | Where-Object { $autoriseesHerbe.Contains([int]$_) })
+        # Une intersection vide viderait le tirage : on garde alors le reservoir
+        # d'origine plutot que de ne rien pouvoir ecrire.
+        if ($poolHerbe.Count -gt 0) {
+            $context.BaseSpeciesPool = [int[]]$poolHerbe
+        }
+    }
+
     for ($tableIndex = 0; $tableIndex -lt $encounterTables.Count; $tableIndex++) {
         $tablePos = $encounterTables[$tableIndex]
         $zoneAddress = Get-FlatBufferFieldAddress -Data $Data -TablePos $tablePos -FieldIndex 0
@@ -7070,20 +9129,19 @@ function Invoke-EncounterArchiveGrassRandomization {
                     continue
                 }
 
+                $probabilityAddress = Get-FlatBufferFieldAddress -Data $Data -TablePos $slotPos -FieldIndex 0
+                $formAddress = Get-FlatBufferFieldAddress -Data $Data -TablePos $slotPos -FieldIndex 2
+                $probability = if ($probabilityAddress -ge 0) { [int]$Data[$probabilityAddress] } else { 0 }
+                $formBefore = if ($formAddress -ge 0) { [int]$Data[$formAddress] } else { 0 }
                 $stableKey = switch ($stableMode) {
-                    "species" { "species:$speciesId" }
+                    "species" { "$InternalFileName|$tableIndex|$zoneId|species:$speciesId|form:$formBefore" }
                     "random" { "" }
-                    default { "$InternalFileName|$tableIndex|$zoneId|$subTableIndex|$slotIndex|$speciesId" }
+                    default { "$InternalFileName|$tableIndex|$zoneId|$subTableIndex|$slotIndex|$speciesId|$formBefore" }
                 }
                 $replacement = Get-StableSpeciesReplacement -Rng $Rng -CurrentSpeciesId $speciesId -Mode $mode -Context $context -StableMap $StableMap -StableKey $stableKey
                 if ($replacement -eq $speciesId) {
                     continue
                 }
-
-                $probabilityAddress = Get-FlatBufferFieldAddress -Data $Data -TablePos $slotPos -FieldIndex 0
-                $formAddress = Get-FlatBufferFieldAddress -Data $Data -TablePos $slotPos -FieldIndex 2
-                $probability = if ($probabilityAddress -ge 0) { [int]$Data[$probabilityAddress] } else { 0 }
-                $formBefore = if ($formAddress -ge 0) { [int]$Data[$formAddress] } else { 0 }
 
                 Write-U32 -Data $Data -Offset $speciesAddress -Value ([uint32]$replacement)
                 if ($formAddress -ge 0) {
@@ -7129,6 +9187,91 @@ function Invoke-EncounterArchiveGrassRandomization {
     }
 }
 
+# ---------------------------------------------------------------------------
+# NIVEAUX DES POKEMON SAUVAGES
+#
+# Meme archive que les tables de rencontres :
+#   bin\archive\field\resident\data_table.gfpak
+#
+# Structure verifiee (celle qu'utilise deja la randomisation des rencontres) :
+#   racine     champ 1  vector<table de rencontres>
+#   table      champ 1  vector<sous-tables>
+#   sous-table champ 0  u8  niveau minimum
+#              champ 1  u8  niveau maximum
+#              champ 2  vector<emplacements>
+#
+# Les deux niveaux sont mis a l'echelle par le meme facteur, donc l'ordre
+# minimum <= maximum est preserve. Bornes du jeu : 1 a 100.
+# ---------------------------------------------------------------------------
+function Invoke-WildLevelAdjustment {
+    param(
+        [string]$RomfsRoot,
+        [int]$Percent
+    )
+
+    $result = [pscustomobject]@{ Edited = 0; Skipped = "" }
+    if ($Percent -eq 0) {
+        return $result
+    }
+
+    $path = Get-FieldResidentDataTablePath -RomfsRoot $RomfsRoot
+    if (-not (Test-Path -LiteralPath $path)) {
+        $result.Skipped = "data_table.gfpak absent"
+        return $result
+    }
+
+    $factor = 1.0 + ([double]$Percent / 100.0)
+    $pack = Read-Gfpak -Path $path
+    $edited = 0
+
+    foreach ($internalFile in @("encount_k.bin", "encount_t.bin", "encount_symbol_k.bin", "encount_symbol_t.bin")) {
+        $data = Get-GfpakDataFileName -Pack $pack -Name $internalFile
+        if ($null -eq $data) {
+            continue
+        }
+
+        $fileEdited = 0
+        $root = Get-FlatBufferRootTablePosition -Data $data
+        if ($root -le 0 -or $root -ge $data.Length) {
+            continue
+        }
+
+        foreach ($tablePos in (Get-FlatBufferTableVectorEntries -Data $data -TablePos $root -FieldIndex 1)) {
+            foreach ($subTablePos in (Get-FlatBufferTableVectorEntries -Data $data -TablePos $tablePos -FieldIndex 1)) {
+                foreach ($levelFieldIndex in @(0, 1)) {
+                    $address = Get-FlatBufferFieldAddress -Data $data -TablePos $subTablePos -FieldIndex $levelFieldIndex
+                    if ($address -lt 0 -or $address -ge $data.Length) {
+                        continue
+                    }
+                    $level = [int]$data[$address]
+                    if ($level -le 0 -or $level -gt 100) {
+                        continue
+                    }
+                    $scaled = [int][Math]::Round($level * $factor)
+                    if ($scaled -lt 1) { $scaled = 1 }
+                    if ($scaled -gt 100) { $scaled = 100 }
+                    if ($scaled -eq $level) {
+                        continue
+                    }
+                    $data[$address] = [byte]$scaled
+                    $fileEdited++
+                }
+            }
+        }
+
+        if ($fileEdited -gt 0) {
+            Set-GfpakDataFileName -Pack $pack -Name $internalFile -Data $data
+            $edited += $fileEdited
+        }
+    }
+
+    if ($edited -gt 0) {
+        Write-Gfpak -Pack $pack -Path $path
+    }
+    $result.Edited = $edited
+    return $result
+}
+
 function Invoke-GrassEncounterRandomization {
     param(
         [string]$RomfsRoot,
@@ -7137,7 +9280,10 @@ function Invoke-GrassEncounterRandomization {
         [bool]$AllowLegendarySpecies,
         [string]$StableMappingMode = "Slot",
         [bool]$IncludeVisibleSymbols = $true,
-        [hashtable]$StableMap = $null
+        [hashtable]$StableMap = $null,
+        [int[]]$VisualSpeciesPool = @(),
+        [int[]]$RestrictToSpeciesPool = @(),
+        [int[]]$RestrictVisibleToSpeciesPool = @()
     )
 
     $mode = Normalize-Mode $ModeValue
@@ -7173,7 +9319,10 @@ function Invoke-GrassEncounterRandomization {
             -AllowLegendarySpecies $AllowLegendarySpecies `
             -InternalFileName $internalFile `
             -StableMappingMode $StableMappingMode `
-            -StableMap $StableMap
+            -StableMap $StableMap `
+            -VisualSpeciesPool $VisualSpeciesPool `
+            -RestrictToSpeciesPool $RestrictToSpeciesPool `
+            -RestrictVisibleToSpeciesPool $RestrictVisibleToSpeciesPool
 
         if ($archiveResult.Edited -gt 0) {
             Set-GfpakDataFileName -Pack $pack -Name $internalFile -Data $archiveResult.Data
@@ -7204,7 +9353,8 @@ function Invoke-FlatBufferSpeciesFieldRandomization {
         [bool]$AllowLegendarySpecies,
         [string]$BlockName = "",
         [string]$StableMappingMode = "Slot",
-        [hashtable]$StableMap = $null
+        [hashtable]$StableMap = $null,
+        [int[]]$RestrictToSpeciesPool = @()
     )
 
     $mode = Normalize-Mode $ModeValue
@@ -7226,6 +9376,16 @@ function Invoke-FlatBufferSpeciesFieldRandomization {
         $entries = Get-PersonalEntries -RomfsRoot $RomfsRoot
         for ($i = 1; $i -le $BaseSpeciesMax; $i++) {
             $context.BaseSpeciesEntries[$i] = $entries[$i]
+        }
+        if ((Get-ObjectArrayCount $RestrictToSpeciesPool) -gt 0) {
+            $autorisees = [System.Collections.Generic.HashSet[int]]::new()
+            foreach ($espece in $RestrictToSpeciesPool) { $null = $autorisees.Add([int]$espece) }
+            $poolRestreint = @($context.BaseSpeciesPool | Where-Object { $autorisees.Contains([int]$_) })
+            # Une intersection vide voudrait dire « plus rien a tirer » : on
+            # garde alors le reservoir complet plutot que de ne rien changer.
+            if ($poolRestreint.Count -gt 0) {
+                $context.BaseSpeciesPool = [int[]]$poolRestreint
+            }
         }
     }
 
@@ -7328,6 +9488,1403 @@ function Get-FlatBufferUIntVectorAddresses {
     return $addresses
 }
 
+# ---------------------------------------------------------------------------
+# PRIX DES OBJETS â€” bin\pml\item\item.dat
+#
+# Structure verifiee sur Epee 1.3.2 (50 972 octets) :
+#   0x40                 u32        debut de la table d'enregistrements (4652)
+#   0x44                 u16[1609]  itemId -> numero d'enregistrement
+#   4652                 965 enregistrements de 48 octets
+#       +0  u32  prix d'achat en Pokedollars
+#       +4  u32  prix dans une devise secondaire (Watts ou PC, non confirme)
+#
+# Preuve arithmetique : 4652 + 965*48 = 50972, exactement la taille du fichier.
+# Controle croise avec les prix reels du jeu : Poke Ball 200, Hyper Potion 1500,
+# Super Bonbon 10000, DT00 4000.
+#
+# L'enregistrement numero 0 est partage par des centaines d'objets factices
+# (None, objets inutilises). On ne le touche pas : une seule ecriture dessus
+# changerait le prix de tout un paquet d'objets sans rapport.
+# ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# OBJETS AU SOL ET OBJETS CACHES
+#
+# Les deux vivent dans le meme fichier :
+#   bin\archive\field\resident\placement.gfpak
+# Archive GFPAK -> une entree LZ4 par zone -> FlatBuffers.
+#
+# Chemin verifie sur Epee 1.3.2 :
+#   racine        champ 0   vector<PlacementZone>
+#   PlacementZone champ 6   vector<porteur d'objet au sol>
+#       porteur   champ 0   table
+#           champ 6   vector<u64>  hachages d'objets   <- objets au sol
+#           champ 7   vector<u32>  quantites
+#   PlacementZone champ 19  vector<porteur d'objet cache>
+#       porteur   champ 0   table
+#           champ 2   vector<table>  chaque entree :
+#               champ 0   u64  hachage d'objet         <- objets caches
+#               champ 1   i32  probabilite
+#               champ 2   i32  quantite
+#
+# Les objets ne sont PAS stockes par identifiant mais par hachage FNV-1a 64
+# (basis GameFreak 0xCBF29CE484222645). La correspondance se lit dans
+# bin\pml\item\item_hash_to_index.dat : u32 nombre, puis N x { u64 hachage ;
+# u32 identifiant ; u32 remplissage }.
+#
+# Le hachage de la chaine vide (0xCBF29CE484222645) sert de marqueur
+# "emplacement vide" : on ne le remplace jamais, sinon on ferait apparaitre des
+# objets la ou le jeu n'en prevoit pas.
+#
+# Toutes les ecritures sont faites sur place, sans changer la taille : aucune
+# reconstruction de FlatBuffers necessaire.
+# ---------------------------------------------------------------------------
+
+# Hachage de la chaine vide = marqueur "emplacement sans objet".
+# On NE peut PAS ecrire [uint64]0xCBF29CE484222645 : PowerShell 5.1 lit les
+# litteraux hexadecimaux comme des entiers signes, la valeur depasse Int64 et
+# devient negative, et le cast en UInt64 echoue.
+$ItemHashEmptySlot = [uint64]::Parse("CBF29CE484222645", [Globalization.NumberStyles]::HexNumber)
+
+function Get-FlatBufferNestedTablePosition {
+    param(
+        [byte[]]$Data,
+        [int]$TablePos,
+        [int]$FieldIndex
+    )
+
+    $fieldAddress = Get-FlatBufferFieldAddress -Data $Data -TablePos $TablePos -FieldIndex $FieldIndex
+    if ($fieldAddress -lt 0 -or ($fieldAddress + 4) -gt $Data.Length) {
+        return -1
+    }
+    $target = $fieldAddress + [int](Read-U32 -Data $Data -Offset $fieldAddress)
+    if ($target -lt 0 -or $target -ge $Data.Length) {
+        return -1
+    }
+    return $target
+}
+
+function Get-FlatBufferU64VectorAddresses {
+    param(
+        [byte[]]$Data,
+        [int]$TablePos,
+        [int]$FieldIndex
+    )
+
+    $fieldAddress = Get-FlatBufferFieldAddress -Data $Data -TablePos $TablePos -FieldIndex $FieldIndex
+    if ($fieldAddress -lt 0 -or ($fieldAddress + 4) -gt $Data.Length) {
+        return @()
+    }
+    $vectorPos = $fieldAddress + [int](Read-U32 -Data $Data -Offset $fieldAddress)
+    if ($vectorPos -lt 0 -or ($vectorPos + 4) -gt $Data.Length) {
+        return @()
+    }
+    $count = [int](Read-U32 -Data $Data -Offset $vectorPos)
+    if ($count -lt 0 -or $count -gt 10000) {
+        return @()
+    }
+    $addresses = New-Object System.Collections.Generic.List[int]
+    for ($index = 0; $index -lt $count; $index++) {
+        $address = $vectorPos + 4 + ($index * 8)
+        if (($address + 8) -gt $Data.Length) {
+            break
+        }
+        $addresses.Add($address)
+    }
+    return $addresses
+}
+
+function Get-ItemHashLookup {
+    param([string]$RomfsRoot)
+
+    if ($script:ItemHashLookup) {
+        return $script:ItemHashLookup
+    }
+
+    $lookup = @{ HashByItemId = @{}; ItemIdByHash = @{} }
+    $path = Join-Path $RomfsRoot "bin\pml\item\item_hash_to_index.dat"
+    if (-not (Test-Path -LiteralPath $path)) {
+        $script:ItemHashLookup = $lookup
+        return $lookup
+    }
+
+    $data = [IO.File]::ReadAllBytes($path)
+    if ($data.Length -lt 4) {
+        $script:ItemHashLookup = $lookup
+        return $lookup
+    }
+
+    $count = [int](Read-U32 -Data $data -Offset 0)
+    # Verification de coherence : 4 + count*16 doit valoir exactement la taille.
+    if ($count -le 0 -or (4 + ($count * 16)) -ne $data.Length) {
+        $script:ItemHashLookup = $lookup
+        return $lookup
+    }
+
+    for ($i = 0; $i -lt $count; $i++) {
+        $offset = 4 + ($i * 16)
+        $hash = [uint64](Read-U64 -Data $data -Offset $offset)
+        $itemId = [int](Read-U32 -Data $data -Offset ($offset + 8))
+        if (-not $lookup.HashByItemId.ContainsKey($itemId)) {
+            $lookup.HashByItemId[$itemId] = $hash
+        }
+        $lookup.ItemIdByHash[$hash] = $itemId
+    }
+
+    $script:ItemHashLookup = $lookup
+    return $lookup
+}
+
+# Reservoir de remplacement pour les objets du terrain.
+#   "safe"  : tout sauf les objets cle (reservoir deja utilise par les boutiques)
+#   "all"   : idem plus les CT et DT
+function Get-FieldItemReplacementPool {
+    param(
+        [string]$PoolMode,
+        [hashtable]$Lookup
+    )
+
+    $pool = switch (Normalize-Mode $PoolMode) {
+        "all" { @((Get-GeneralRandomItemPool) + (Get-TechnicalRecordItemPool)); break }
+        default { @(Get-GeneralRandomItemPool) }
+    }
+
+    # Un objet sans hachage connu ne peut pas etre ecrit dans le terrain :
+    # le jeu ne saurait pas le resoudre.
+    return [int[]]@($pool | Where-Object { $Lookup.HashByItemId.ContainsKey([int]$_) })
+}
+
+function Invoke-FieldItemRandomization {
+    param(
+        [string]$RomfsRoot,
+        [System.Random]$Rng,
+        [bool]$DoGroundItems,
+        [bool]$DoHiddenItems,
+        [string]$PoolMode = "Safe"
+    )
+
+    $result = [pscustomobject]@{ GroundEdited = 0; HiddenEdited = 0; Skipped = ""; Changes = @() }
+    if (-not $DoGroundItems -and -not $DoHiddenItems) {
+        return $result
+    }
+
+    $path = Join-Path $RomfsRoot "bin\archive\field\resident\placement.gfpak"
+    if (-not (Test-Path -LiteralPath $path)) {
+        $result.Skipped = "placement.gfpak absent"
+        return $result
+    }
+
+    $lookup = Get-ItemHashLookup -RomfsRoot $RomfsRoot
+    if ($lookup.HashByItemId.Count -lt 1) {
+        $result.Skipped = "item_hash_to_index.dat illisible"
+        return $result
+    }
+
+    $pool = Get-FieldItemReplacementPool -PoolMode $PoolMode -Lookup $lookup
+    if ($pool.Count -lt 1) {
+        $result.Skipped = "reservoir d'objets vide"
+        return $result
+    }
+
+    $pack = Read-Gfpak -Path $path
+    $changes = New-Object System.Collections.Generic.List[object]
+    $groundEdited = 0
+    $hiddenEdited = 0
+
+    for ($fileIndex = 0; $fileIndex -lt [int]$pack.Header.CountFiles; $fileIndex++) {
+        $entry = $pack.FileTable[$fileIndex]
+        if ($entry.SizeDecompressed -lt 16) {
+            continue
+        }
+
+        $zoneData = $null
+        try {
+            $zoneData = [byte[]](Expand-GfpakData -CompressedData ([byte[]]$pack.CompressedFiles[$fileIndex]) -DecompressedLength $entry.SizeDecompressed -CompressionType $entry.Type)
+        } catch {
+            continue
+        }
+        if ($null -eq $zoneData -or $zoneData.Length -lt 16) {
+            continue
+        }
+
+        $fileEdited = 0
+        try {
+            $root = Get-FlatBufferRootTablePosition -Data $zoneData
+            if ($root -le 0 -or $root -ge $zoneData.Length) {
+                continue
+            }
+
+            foreach ($zonePos in (Get-FlatBufferTableVectorEntries -Data $zoneData -TablePos $root -FieldIndex 0)) {
+                if ($DoGroundItems) {
+                    foreach ($holderPos in (Get-FlatBufferTableVectorEntries -Data $zoneData -TablePos $zonePos -FieldIndex 6)) {
+                        $itemTable = Get-FlatBufferNestedTablePosition -Data $zoneData -TablePos $holderPos -FieldIndex 0
+                        if ($itemTable -lt 0) { continue }
+                        foreach ($address in (Get-FlatBufferU64VectorAddresses -Data $zoneData -TablePos $itemTable -FieldIndex 6)) {
+                            $currentHash = [uint64](Read-U64 -Data $zoneData -Offset $address)
+                            if ($currentHash -eq $ItemHashEmptySlot -or -not $lookup.ItemIdByHash.ContainsKey($currentHash)) {
+                                continue
+                            }
+                            $beforeId = [int]$lookup.ItemIdByHash[$currentHash]
+                            $newId = [int](Random-FromPool -Rng $Rng -Pool $pool)
+                            if ($newId -eq $beforeId) { continue }
+                            Write-U64 -Data $zoneData -Offset $address -Value ([uint64]$lookup.HashByItemId[$newId])
+                            $groundEdited++
+                            $fileEdited++
+                            if ($changes.Count -lt 4000) {
+                                $changes.Add([ordered]@{
+                                    source = "fieldItem"
+                                    file = "bin\archive\field\resident\placement.gfpak"
+                                    zoneFileIndex = $fileIndex
+                                    dataOffset = $address
+                                    item = [ordered]@{
+                                        before = New-ItemReportObject -ItemId $beforeId
+                                        after = New-ItemReportObject -ItemId $newId
+                                    }
+                                })
+                            }
+                        }
+                    }
+                }
+
+                if ($DoHiddenItems) {
+                    foreach ($holderPos in (Get-FlatBufferTableVectorEntries -Data $zoneData -TablePos $zonePos -FieldIndex 19)) {
+                        $hiddenTable = Get-FlatBufferNestedTablePosition -Data $zoneData -TablePos $holderPos -FieldIndex 0
+                        if ($hiddenTable -lt 0) { continue }
+                        foreach ($chancePos in (Get-FlatBufferTableVectorEntries -Data $zoneData -TablePos $hiddenTable -FieldIndex 2)) {
+                            $hashAddress = Get-FlatBufferFieldAddress -Data $zoneData -TablePos $chancePos -FieldIndex 0
+                            if ($hashAddress -lt 0 -or ($hashAddress + 8) -gt $zoneData.Length) { continue }
+                            $currentHash = [uint64](Read-U64 -Data $zoneData -Offset $hashAddress)
+                            if ($currentHash -eq $ItemHashEmptySlot -or -not $lookup.ItemIdByHash.ContainsKey($currentHash)) {
+                                continue
+                            }
+                            $beforeId = [int]$lookup.ItemIdByHash[$currentHash]
+                            $newId = [int](Random-FromPool -Rng $Rng -Pool $pool)
+                            if ($newId -eq $beforeId) { continue }
+                            Write-U64 -Data $zoneData -Offset $hashAddress -Value ([uint64]$lookup.HashByItemId[$newId])
+                            $hiddenEdited++
+                            $fileEdited++
+                            if ($changes.Count -lt 4000) {
+                                $changes.Add([ordered]@{
+                                    source = "hiddenItem"
+                                    file = "bin\archive\field\resident\placement.gfpak"
+                                    zoneFileIndex = $fileIndex
+                                    dataOffset = $hashAddress
+                                    item = [ordered]@{
+                                        before = New-ItemReportObject -ItemId $beforeId
+                                        after = New-ItemReportObject -ItemId $newId
+                                    }
+                                })
+                            }
+                        }
+                    }
+                }
+            }
+        } catch {
+            # Une zone au format inattendu ne doit pas faire echouer toute la passe.
+            continue
+        }
+
+        if ($fileEdited -gt 0) {
+            $pack.ModifiedFiles[$fileIndex] = $zoneData
+        }
+    }
+
+    if (($groundEdited + $hiddenEdited) -gt 0) {
+        Write-Gfpak -Pack $pack -Path $path
+    }
+
+    $result.GroundEdited = $groundEdited
+    $result.HiddenEdited = $hiddenEdited
+    $result.Changes = [object[]]$changes.ToArray()
+    return $result
+}
+
+# ---------------------------------------------------------------------------
+# REGLAGES SUR LA TABLE POKEMON â€” bin\pml\personal\personal_total.bin
+#
+# Enregistrements de 0xB0 octets. Decalages **verifies empiriquement** contre
+# des valeurs connues du jeu, pas repris d'une documentation :
+#
+#   0x08  u8         taux de capture
+#                    verifie : Mewtwo 3, Leveinard 30, Chenipan 255,
+#                    Bulbizarre 45, Pikachu 190, Metamorph 35
+#   0x0C  u16        objet tenu 1
+#   0x0E  u16        objet tenu 2   verifie : Pikachu tient 236 (Balle Lumiere)
+#   0x10  u16        objet tenu 3
+#   0x15  u8         courbe d'experience
+#                    verifie : Bulbizarre 3 (lente), Pikachu 0 (moyenne),
+#                    Mewtwo 5 (tres lente)
+#   0x28  100 bits   compatibilite CT   (12,5 octets)
+#   0x3C  100 bits   compatibilite DT   (12,5 octets)
+#                    verifie : Mew a exactement 100 bits dans chaque zone,
+#                    Metamorph zero, Dracaufeu 37 CT et 22 DT
+#   0xA8   18 bits   compatibilite maitres de capacites (2,25 octets)
+#                    Les 18 maitres de l'Ile solitaire de l'Armure.
+#                    Localise par mesure, avec quatre temoins concordants :
+#                    aucun des 1192 enregistrements du fichier n'utilise un
+#                    bit au-dela du 18e ; le maximum observe est exactement
+#                    18 ; Mew les a tous, Metamorph et Evoli aucun ; les
+#                    comptes de Dracaufeu (3) et Ectoplasma (3) correspondent
+#                    a leurs tuteurs connus. Les 6 bits hauts de 0xAA et tout
+#                    ce qui suit restent intacts.
+#
+# On ne touche qu'aux especes reellement presentes dans le jeu (somme des
+# statistiques non nulle) : les enregistrements de remplissage restent intacts.
+# ---------------------------------------------------------------------------
+
+$PersonalCatchRateOffset = 0x08
+$PersonalHeldItemOffsets = @(0x0C, 0x0E, 0x10)
+$PersonalExpCurveOffset = 0x15
+$PersonalTmFlagsOffset = 0x28
+$PersonalTrFlagsOffset = 0x3C
+$PersonalMachineCount = 100
+$PersonalTutorFlagsOffset = 0xA8
+$PersonalTutorCount = 18
+
+function Get-ExpCurveValue {
+    param([string]$Mode)
+
+    switch (Normalize-Mode $Mode) {
+        "mediumfast" { return 0 }
+        "erratic" { return 1 }
+        "fluctuating" { return 2 }
+        "mediumslow" { return 3 }
+        "fast" { return 4 }
+        "slow" { return 5 }
+        default { return -1 }
+    }
+}
+
+function Get-MoveTypeTable {
+    <#
+        Le type de chaque attaque, lu dans bin/pml/waza.
+
+        Les enregistrements d'attaque sont des tables FlatBuffers : le champ 3
+        porte le type. Ce n'est pas une supposition - le generateur ecrit deja
+        dans ce champ pour l'option « randomiser les types d'attaques ». Je l'ai
+        reconfirme independamment en croisant les 808 attaques connues avec un
+        catalogue externe : concordance 808/808.
+
+        Un champ absent vaut sa valeur par defaut, soit 0 (Normal) : c'est la
+        convention FlatBuffers, et c'est pour ca que Danse Lames - de type
+        Normal - n'a pas d'entree pour ce champ.
+    #>
+    param([string]$RomfsRoot)
+
+    if ($null -ne $script:MoveTypeTable) {
+        return $script:MoveTypeTable
+    }
+    $table = @{}
+    $moveDir = Get-MoveDir -RomfsRoot $RomfsRoot
+    if (Test-Path -LiteralPath $moveDir) {
+        foreach ($f in (Get-ChildItem -LiteralPath $moveDir -Filter "*.wazabin" -File)) {
+            if ($f.BaseName -notmatch '(\d+)\s*$') { continue }
+            $id = [int]$Matches[1]
+            if ($id -le 0) { continue }
+            if ($f.Length -le $MoveStubRecordMaxSize) { continue }
+            $bytes = [IO.File]::ReadAllBytes($f.FullName)
+            $tablePos = [int](Read-U32 -Data $bytes -Offset 0)
+            $addr = Get-FlatBufferFieldAddress -Data $bytes -TablePos $tablePos -FieldIndex 3
+            $table[$id] = if ($addr -ge 0) { [int]$bytes[$addr] } else { 0 }
+        }
+    }
+    $script:MoveTypeTable = $table
+    return $table
+}
+
+function Get-MachineMoveTable {
+    <#
+        Quelle attaque enseigne chaque machine, dans l'ordre de la table CT/DT.
+        Meme lecture que Invoke-MachineMoveRandomization : pointeur u16 en
+        item.dat+0x02, table a 0x44 + pointeur*2, 200 entrees de 4 octets.
+    #>
+    param([string]$RomfsRoot)
+
+    if ($null -ne $script:MachineMoveTable) {
+        return $script:MachineMoveTable
+    }
+    $table = @()
+    $chemin = Join-Path $RomfsRoot "bin\pml\item\item.dat"
+    if (Test-Path -LiteralPath $chemin) {
+        $d = [IO.File]::ReadAllBytes($chemin)
+        $debut = 0x44 + ([int](Read-U16 -Data $d -Offset 0x02) * 2)
+        if (($debut + 800) -le $d.Length) {
+            $table = @(0..199 | ForEach-Object { [int](Read-U16 -Data $d -Offset ($debut + ($_ * 4) + 2)) })
+        }
+    }
+    $script:MachineMoveTable = $table
+    return $table
+}
+
+function Set-PersonalMachineFlags {
+    param(
+        [byte[]]$Data,
+        [int]$RecordOffset,
+        [int]$FlagsOffset,
+        [int]$Count,
+        [string]$Mode,
+        [System.Random]$Rng,
+        [object]$MachineMoves = $null,
+        [hashtable]$MoveTypes = $null,
+        [int]$SpeciesType1 = -1,
+        [int]$SpeciesType2 = -1
+    )
+
+    $changed = 0
+    for ($index = 0; $index -lt $Count; $index++) {
+        $byteOffset = $RecordOffset + $FlagsOffset + [int][Math]::Floor($index / 8)
+        $bit = 1 -shl ($index % 8)
+        $current = ([int]$Data[$byteOffset] -band $bit) -ne 0
+        $wanted = switch ($Mode) {
+            "full" { $true; break }
+            "sametype" {
+                # « Preferer le meme type » : une machine dont l'attaque partage
+                # un type avec l'espece passe presque toujours, les autres
+                # presque jamais. Sans table des types (item.dat ou bin/pml/waza
+                # absents), on retombe sur le tirage a pile ou face plutot que
+                # de rendre l'option inerte.
+                if ($null -eq $MachineMoves -or $MachineMoves.Count -le $index -or $null -eq $MoveTypes) {
+                    $Rng.Next(0, 2) -eq 0
+                } else {
+                    $moveId = [int]$MachineMoves[$index]
+                    $moveType = if ($MoveTypes.ContainsKey($moveId)) { [int]$MoveTypes[$moveId] } else { -1 }
+                    $partage = ($moveType -ge 0) -and (($moveType -eq $SpeciesType1) -or ($moveType -eq $SpeciesType2))
+                    if ($partage) { $Rng.Next(0, 10) -lt 9 } else { $Rng.Next(0, 10) -lt 1 }
+                }
+                break
+            }
+            default { $Rng.Next(0, 2) -eq 0 }
+        }
+        if ($wanted -eq $current) {
+            continue
+        }
+        if ($wanted) {
+            $Data[$byteOffset] = [byte](([int]$Data[$byteOffset]) -bor $bit)
+        } else {
+            $Data[$byteOffset] = [byte](([int]$Data[$byteOffset]) -band (-bnot $bit) -band 0xFF)
+        }
+        $changed++
+    }
+    return $changed
+}
+
+# ---------------------------------------------------------------------------
+# SUIVRE LES EVOLUTIONS
+#
+# Une evolution reprend les types et/ou les talents tires pour sa forme de
+# base, pour qu'une famille reste coherente : si Bulbizarre devient Feu, ses
+# evolutions le deviennent aussi.
+#
+# Le graphe est lu dans le ROMFS **SOURCE**, pas dans la sortie : si les cibles
+# d'evolution ont ete randomisees, on veut quand meme propager le long des
+# familles d'origine, sinon la notion de famille disparait.
+#
+# Fichiers `evo_NNN.bin` : NNN = espece source, 9 enregistrements de 8 octets,
+# methode en +0 et cible en +4.
+# ---------------------------------------------------------------------------
+function Get-SourceEvolutionGraph {
+    param([string]$SourceRomfsRoot)
+
+    $graph = @{}
+    $isTarget = @{}
+    $dir = Get-EvolutionDir -RomfsRoot $SourceRomfsRoot
+    if (-not (Test-Path -LiteralPath $dir)) {
+        return @{ Edges = $graph; IsTarget = $isTarget }
+    }
+
+    foreach ($file in Get-ChildItem -LiteralPath $dir -Filter "*.bin" -File) {
+        if ($file.BaseName -notmatch '(\d+)\s*$') {
+            continue
+        }
+        $source = [int]$Matches[1]
+        if ($source -lt 1 -or $source -gt $BaseSpeciesMax) {
+            continue
+        }
+        $bytes = [IO.File]::ReadAllBytes($file.FullName)
+        for ($slot = 0; $slot -lt $EvolutionRecordsPerSpecies; $slot++) {
+            $slotOffset = $slot * $EvolutionRecordSize
+            if (($slotOffset + 6) -gt $bytes.Length) {
+                break
+            }
+            $method = [int](Read-U16 -Data $bytes -Offset $slotOffset)
+            $target = [int](Read-U16 -Data $bytes -Offset ($slotOffset + 4))
+            if ($method -eq 0 -or $target -lt 1 -or $target -gt $BaseSpeciesMax -or $target -eq $source) {
+                continue
+            }
+            if (-not $graph.ContainsKey($source)) {
+                $graph[$source] = New-Object System.Collections.Generic.List[int]
+            }
+            if (-not $graph[$source].Contains($target)) {
+                $graph[$source].Add($target)
+            }
+            $isTarget[$target] = $true
+        }
+    }
+
+    return @{ Edges = $graph; IsTarget = $isTarget }
+}
+
+# ---------------------------------------------------------------------------
+# LIMITER LES CHAINES D'EVOLUTION
+#
+# Une fois les cibles randomisees, plus rien n'empeche une chaine de dix
+# maillons, voire une boucle. Cette passe calcule le stade de chaque espece par
+# parcours en largeur depuis les formes de base, puis **efface** les
+# enregistrements d'evolution qui depasseraient le nombre de stades autorise.
+#
+# Effacer = mettre la methode a 0 dans l'enregistrement, ce que le jeu
+# interprete comme "pas d'evolution ici". La taille des fichiers ne bouge pas.
+#
+# Le graphe est lu dans la SORTIE : c'est bien la chaine finale qu'on veut
+# borner, pas celle du jeu de base.
+# ---------------------------------------------------------------------------
+function Invoke-EvolutionChainLimit {
+    param(
+        [string]$RomfsRoot,
+        [int]$MaxStages
+    )
+
+    $result = [pscustomobject]@{ Removed = 0; Skipped = "" }
+    if ($MaxStages -lt 1) {
+        return $result
+    }
+
+    $dir = Get-EvolutionDir -RomfsRoot $RomfsRoot
+    if (-not (Test-Path -LiteralPath $dir)) {
+        $result.Skipped = "dossier d'evolutions absent"
+        return $result
+    }
+
+    # 1. Lecture du graphe et des octets, en une seule passe.
+    $files = @{}
+    $edges = @{}
+    $isTarget = @{}
+    foreach ($file in Get-ChildItem -LiteralPath $dir -Filter "*.bin" -File) {
+        if ($file.BaseName -notmatch '(\d+)\s*$') {
+            continue
+        }
+        $source = [int]$Matches[1]
+        if ($source -lt 1 -or $source -gt $BaseSpeciesMax) {
+            continue
+        }
+        $bytes = [IO.File]::ReadAllBytes($file.FullName)
+        $files[$source] = @{ Path = $file.FullName; Bytes = $bytes }
+        for ($slot = 0; $slot -lt $EvolutionRecordsPerSpecies; $slot++) {
+            $slotOffset = $slot * $EvolutionRecordSize
+            if (($slotOffset + 6) -gt $bytes.Length) {
+                break
+            }
+            $method = [int](Read-U16 -Data $bytes -Offset $slotOffset)
+            $target = [int](Read-U16 -Data $bytes -Offset ($slotOffset + 4))
+            if ($method -eq 0 -or $target -lt 1 -or $target -gt $BaseSpeciesMax -or $target -eq $source) {
+                continue
+            }
+            if (-not $edges.ContainsKey($source)) {
+                $edges[$source] = New-Object System.Collections.Generic.List[int]
+            }
+            $edges[$source].Add($target)
+            $isTarget[$target] = $true
+        }
+    }
+    if ($edges.Count -lt 1) {
+        $result.Skipped = "aucune évolution lue"
+        return $result
+    }
+
+    # 2. Stade de chaque espece, au plus court depuis une forme de base.
+    $stage = @{}
+    $queue = New-Object System.Collections.Generic.Queue[int]
+    foreach ($source in $edges.Keys) {
+        if (-not $isTarget.ContainsKey([int]$source)) {
+            $stage[[int]$source] = 1
+            $queue.Enqueue([int]$source)
+        }
+    }
+    while ($queue.Count -gt 0) {
+        $current = $queue.Dequeue()
+        if (-not $edges.ContainsKey($current)) {
+            continue
+        }
+        foreach ($target in $edges[$current]) {
+            if ($stage.ContainsKey([int]$target)) {
+                continue
+            }
+            $stage[[int]$target] = $stage[$current] + 1
+            $queue.Enqueue([int]$target)
+        }
+    }
+
+    # 3. Effacement des enregistrements qui feraient depasser la limite.
+    $removed = 0
+    foreach ($source in $files.Keys) {
+        $entry = $files[$source]
+        $bytes = $entry.Bytes
+        $changed = $false
+        # Une espece jamais atteinte depuis une forme de base est dans une
+        # boucle fermee : on la traite comme un premier stade.
+        $sourceStage = if ($stage.ContainsKey([int]$source)) { $stage[[int]$source] } else { 1 }
+        if ($sourceStage -lt $MaxStages) {
+            continue
+        }
+        for ($slot = 0; $slot -lt $EvolutionRecordsPerSpecies; $slot++) {
+            $slotOffset = $slot * $EvolutionRecordSize
+            if (($slotOffset + 6) -gt $bytes.Length) {
+                break
+            }
+            $method = [int](Read-U16 -Data $bytes -Offset $slotOffset)
+            $target = [int](Read-U16 -Data $bytes -Offset ($slotOffset + 4))
+            if ($method -eq 0 -or $target -lt 1 -or $target -gt $BaseSpeciesMax) {
+                continue
+            }
+            Write-U16 -Data $bytes -Offset $slotOffset -Value 0
+            Write-U16 -Data $bytes -Offset ($slotOffset + 2) -Value 0
+            Write-U16 -Data $bytes -Offset ($slotOffset + 4) -Value 0
+            Write-U16 -Data $bytes -Offset ($slotOffset + 6) -Value 0
+            $changed = $true
+            $removed++
+        }
+        if ($changed) {
+            [IO.File]::WriteAllBytes($entry.Path, $bytes)
+        }
+    }
+
+    $result.Removed = $removed
+    return $result
+}
+
+function Invoke-PersonalFollowEvolutions {
+    param(
+        [string]$RomfsRoot,
+        [string]$SourceRomfsRoot,
+        [bool]$DoTypes,
+        [bool]$DoAbilities
+    )
+
+    $result = [pscustomobject]@{ Propagated = 0; Skipped = "" }
+    if (-not $DoTypes -and -not $DoAbilities) {
+        return $result
+    }
+
+    $path = Get-PersonalPath -RomfsRoot $RomfsRoot
+    if (-not (Test-Path -LiteralPath $path)) {
+        $result.Skipped = "personal_total.bin absent"
+        return $result
+    }
+
+    $graphInfo = Get-SourceEvolutionGraph -SourceRomfsRoot $SourceRomfsRoot
+    $edges = $graphInfo.Edges
+    if ($edges.Count -lt 1) {
+        $result.Skipped = "aucune évolution lue"
+        return $result
+    }
+
+    $data = [IO.File]::ReadAllBytes($path)
+    $count = [int][Math]::Floor($data.Length / $PersonalRecordSize)
+    $propagated = 0
+
+    # Formes de base : especes qui evoluent sans etre elles-memes une cible.
+    $baseForms = New-Object System.Collections.Generic.List[int]
+    foreach ($source in $edges.Keys) {
+        if (-not $graphInfo.IsTarget.ContainsKey($source)) {
+            $baseForms.Add([int]$source)
+        }
+    }
+
+    foreach ($baseForm in $baseForms) {
+        if ($baseForm -ge $count) {
+            continue
+        }
+        $baseOffset = $baseForm * $PersonalRecordSize
+
+        # Parcours en largeur. Le jeu de visites protege des cycles, qui
+        # deviennent possibles des que les cibles d'evolution sont randomisees.
+        $visited = [System.Collections.Generic.HashSet[int]]::new()
+        $null = $visited.Add($baseForm)
+        $queue = New-Object System.Collections.Generic.Queue[int]
+        $queue.Enqueue($baseForm)
+
+        while ($queue.Count -gt 0) {
+            $current = $queue.Dequeue()
+            if (-not $edges.ContainsKey($current)) {
+                continue
+            }
+            foreach ($target in $edges[$current]) {
+                if (-not $visited.Add([int]$target)) {
+                    continue
+                }
+                $queue.Enqueue([int]$target)
+                if ($target -ge $count) {
+                    continue
+                }
+                $targetOffset = $target * $PersonalRecordSize
+
+                if ($DoTypes) {
+                    $data[$targetOffset + 6] = $data[$baseOffset + 6]
+                    $data[$targetOffset + 7] = $data[$baseOffset + 7]
+                }
+                if ($DoAbilities) {
+                    foreach ($abilityOffset in @(0x18, 0x1A, 0x1C)) {
+                        Write-U16 -Data $data -Offset ($targetOffset + $abilityOffset) -Value ([uint16](Read-U16 -Data $data -Offset ($baseOffset + $abilityOffset)))
+                    }
+                }
+                $propagated++
+            }
+        }
+    }
+
+    if ($propagated -gt 0) {
+        [IO.File]::WriteAllBytes($path, $data)
+    }
+    $result.Propagated = $propagated
+    return $result
+}
+
+# ---------------------------------------------------------------------------
+# CADEAUX D'OBJETS DES PNJ - bin/script/amx/*.amx
+#
+# Les scripts du jeu sont des modules Pawn 64 bits en encodage COMPACT. Le
+# format a ete etabli par mesure (voir docs/offsets/swsh-1.3.2-epee.md) :
+#
+#   en-tete : u32 size (+0x00), u16 flags (+0x0A), u32 cod (+0x0C),
+#             u32 dat (+0x10), u32 hea (+0x14)
+#   zone compacte : de `cod` a `size`
+#   cellules de 8 OCTETS - (hea - cod) / 8 donne exactement le nombre de
+#   cellules decodees ; /4 en donnait le double
+#   une cellule d'instruction vaut (operande << 32) | opcode
+#   les cadeaux utilisent l'opcode 0xBC (push.c)
+#
+# On ne reecrit PAS tout le module : on remplace les octets de la SEULE cellule
+# visee et on corrige `size`. Les autres octets restent identiques au bit pres,
+# et l'image memoire etendue garde exactement le meme nombre de cellules, donc
+# aucune cible de saut ne bouge.
+# ---------------------------------------------------------------------------
+$AmxOpcodePushConstant = 0xBC
+$AmxHeaderSizeOffset = 0x00
+$AmxHeaderCodeOffset = 0x0C
+
+function ConvertTo-AmxCompactCell {
+    <#
+        Encode une valeur de cellule 64 bits en octets compacts.
+
+        Groupes de 7 bits, du plus significatif au moins ; tous les octets sauf
+        le dernier portent 0x80. Le decodeur etend le signe quand le PREMIER
+        octet porte 0x40 : on prefixe donc un groupe nul dans ce cas, pour que
+        la valeur relue soit exactement celle demandee.
+    #>
+    param([UInt64]$Value)
+
+    $groupes = New-Object System.Collections.Generic.List[int]
+    $reste = $Value
+    do {
+        $groupes.Add([int]($reste -band 0x7F))
+        $reste = $reste -shr 7
+    } while ($reste -ne 0)
+    $groupes.Reverse()
+    if (($groupes[0] -band 0x40) -ne 0) {
+        $groupes.Insert(0, 0)
+    }
+
+    $octets = New-Object System.Collections.Generic.List[byte]
+    for ($i = 0; $i -lt $groupes.Count; $i++) {
+        $b = [int]$groupes[$i]
+        if ($i -lt ($groupes.Count - 1)) { $b = $b -bor 0x80 }
+        $octets.Add([byte]$b)
+    }
+    return $octets.ToArray()
+}
+
+function Get-NpcGiftCatalog {
+    <#
+        Le catalogue est produit par tools/build-npc-gifts.py, qui verifie
+        CHAQUE entree contre le dump avant de l'ecrire : fichier present,
+        cellule dans le module, opcode 0xBC, et objet lu egal a l'objet attendu.
+        Les 120 entrees concordaient au moment de sa creation.
+    #>
+    if ($null -ne $script:NpcGiftCatalog) {
+        return $script:NpcGiftCatalog
+    }
+    $rows = @()
+    $path = Find-DataFile -RelativePath "npc-gifts.csv"
+    if ($path) {
+        foreach ($r in (Import-Csv -LiteralPath $path -Encoding UTF8)) {
+            $rows += [pscustomobject]@{
+                Amx = [string]$r.amx
+                Cellule = [int]$r.cellule
+                ItemId = [int]$r.item_id
+                Debut = [int]$r.octet_debut
+                Fin = [int]$r.octet_fin
+                Nom = [string]$r.nom
+            }
+        }
+    }
+    $script:NpcGiftCatalog = $rows
+    return $rows
+}
+
+function Invoke-NpcGiftItemRandomization {
+    param(
+        [string]$RomfsRoot,
+        [System.Random]$Rng,
+        [string]$Mode
+    )
+
+    $resultat = [pscustomobject]@{ Modifies = 0; Proteges = 0; Fichiers = 0; Ignore = "" }
+    $normalise = Normalize-Mode $Mode
+    if ($normalise -eq "unchanged" -or $normalise -eq "") {
+        return $resultat
+    }
+
+    $catalogue = @(Get-NpcGiftCatalog)
+    if ($catalogue.Count -eq 0) {
+        $resultat.Ignore = "npc-gifts.csv absent"
+        return $resultat
+    }
+
+    # Les objets CLES ne sont JAMAIS touches. Mesure : 38 des 120 cadeaux en
+    # sont - Recommandation, Bracelet Dynamax, Velo Rotom, Lien Boite Pokemon,
+    # Materiel de camping. En remplacer un rend la partie infinissable.
+    $poches = @{}
+    foreach ($entry in @((Get-ItemData).Rows)) {
+        if ($null -ne $entry) { $poches[[int]$entry.id] = [int]$entry.categoryId }
+    }
+    if ($poches.Count -eq 0) {
+        $resultat.Ignore = "items.csv absent : impossible de distinguer les objets clés"
+        return $resultat
+    }
+
+    $modifiables = @($catalogue | Where-Object {
+        $poches.ContainsKey([int]$_.ItemId) -and $poches[[int]$_.ItemId] -ne $ItemPocketKeyItems
+    })
+    $resultat.Proteges = $catalogue.Count - $modifiables.Count
+    if ($modifiables.Count -eq 0) {
+        $resultat.Ignore = "aucun cadeau modifiable"
+        return $resultat
+    }
+
+    # Les nouvelles valeurs, tirees AVANT toute ecriture.
+    $nouvelles = New-Object System.Collections.Generic.List[int]
+    if ($normalise -eq "shuffle" -or $normalise -eq "melange") {
+        $melange = [int[]]@($modifiables | ForEach-Object { [int]$_.ItemId })
+        for ($i = $melange.Length - 1; $i -gt 0; $i--) {
+            $j = $Rng.Next(0, $i + 1)
+            $tmp = $melange[$i]; $melange[$i] = $melange[$j]; $melange[$j] = $tmp
+        }
+        $nouvelles.AddRange($melange)
+    } else {
+        $pool = [int[]](Get-GeneralRandomItemPool)
+        if ($pool.Count -lt 2) {
+            $resultat.Ignore = "pool d'objets trop petit"
+            return $resultat
+        }
+        for ($i = 0; $i -lt $modifiables.Count; $i++) {
+            $nouvelles.Add([int]$pool[$Rng.Next(0, $pool.Count)])
+        }
+    }
+
+    # Regroupe par fichier, puis applique du dernier octet vers le premier :
+    # une cellule reencodee peut changer de longueur, ce qui decalerait les
+    # bornes des cellules suivantes si on ecrivait dans l'autre sens.
+    $parFichier = @{}
+    for ($i = 0; $i -lt $modifiables.Count; $i++) {
+        $e = $modifiables[$i]
+        if (-not $parFichier.ContainsKey($e.Amx)) {
+            $parFichier[$e.Amx] = New-Object System.Collections.Generic.List[object]
+        }
+        $parFichier[$e.Amx].Add([pscustomobject]@{ Entree = $e; Nouveau = [int]$nouvelles[$i] })
+    }
+
+    foreach ($nomFichier in @($parFichier.Keys)) {
+        $chemin = Join-Path $RomfsRoot (Join-Path "bin\script\amx" $nomFichier)
+        if (-not (Test-Path -LiteralPath $chemin)) { continue }
+        $data = [IO.File]::ReadAllBytes($chemin)
+        $tailleAnnoncee = [int](Read-U32 -Data $data -Offset $AmxHeaderSizeOffset)
+        if ($tailleAnnoncee -ne $data.Length) {
+            # Un module dont l'en-tete ne decrit pas sa propre taille n'est pas
+            # celui qu'on croit : on le laisse intact.
+            continue
+        }
+        $cod = [int](Read-U32 -Data $data -Offset $AmxHeaderCodeOffset)
+
+        $aFaire = @($parFichier[$nomFichier] | Sort-Object { $_.Entree.Debut } -Descending)
+        $touche = $false
+        foreach ($t in $aFaire) {
+            if ([int]$t.Nouveau -eq [int]$t.Entree.ItemId) { continue }
+            $valeur = ([UInt64][UInt32]$t.Nouveau -shl 32) -bor [UInt64]$AmxOpcodePushConstant
+            $octets = ConvertTo-AmxCompactCell -Value $valeur
+            $debut = $cod + [int]$t.Entree.Debut
+            $fin = $cod + [int]$t.Entree.Fin
+            if ($debut -lt 0 -or $fin -gt $data.Length -or $fin -le $debut) { continue }
+
+            $nouveau = New-Object 'System.Collections.Generic.List[byte]'
+            if ($debut -gt 0) { $nouveau.AddRange([byte[]]$data[0..($debut - 1)]) }
+            $nouveau.AddRange([byte[]]$octets)
+            if ($fin -lt $data.Length) { $nouveau.AddRange([byte[]]$data[$fin..($data.Length - 1)]) }
+            $data = $nouveau.ToArray()
+            $resultat.Modifies++
+            $touche = $true
+        }
+
+        if ($touche) {
+            # `size` decrit la fin de la zone compacte : il doit suivre.
+            Write-U32 -Data $data -Offset $AmxHeaderSizeOffset -Value ([uint32]$data.Length)
+            [IO.File]::WriteAllBytes($chemin, $data)
+            $resultat.Fichiers++
+        }
+    }
+
+    return $resultat
+}
+
+function Invoke-LearnsetRandomization {
+    <#
+        Randomise les attaques apprises en montant de niveau.
+
+        Structure deja decodee par le generateur (Get-LearnsetTable) :
+
+            bin/pml/waza_oboe/wazaoboe_total.bin
+            enregistrements de 0x104 octets, un par entree de personal
+            65 paires de 4 octets : u16 attaque, u16 niveau
+            fin d'enregistrement marquee par FFFF FFFF
+
+        Les NIVEAUX ne sont jamais touches : une espece apprend toujours autant
+        d'attaques, aux memes paliers. Seule change l'attaque enseignee.
+
+        Le tirage se fait dans les attaques deja presentes dans la table. Comme
+        pour les CT/DT, ca garantit que toute attaque obtenue est une vraie
+        attaque apprenable, sans avoir besoin d'une liste externe - et le projet
+        n'en a pas : move_names.csv est absent (voir PROJECT_STATUS §4.1).
+    #>
+    param(
+        [string]$RomfsRoot,
+        [System.Random]$Rng,
+        [string]$Mode,
+        [string]$SourceRomfsRootValue = ""
+    )
+
+    $resultat = [pscustomobject]@{ Attaques = 0; Especes = 0; Ignore = "" }
+    $normalise = Normalize-Mode $Mode
+    if ($normalise -eq "unchanged" -or $normalise -eq "") {
+        return $resultat
+    }
+
+    $chemin = Get-LearnsetPath -RomfsRoot $RomfsRoot
+    if (-not (Test-Path -LiteralPath $chemin)) {
+        $resultat.Ignore = "wazaoboe_total.bin absent"
+        return $resultat
+    }
+
+    $donnees = [IO.File]::ReadAllBytes($chemin)
+    if ($donnees.Length -lt $LearnsetRecordSize -or ($donnees.Length % $LearnsetRecordSize) -ne 0) {
+        $resultat.Ignore = ("taille inattendue : {0} octets, pas un multiple de {1}" -f $donnees.Length, $LearnsetRecordSize)
+        return $resultat
+    }
+
+    # Premier passage : relever toutes les attaques reellement presentes.
+    $positions = New-Object System.Collections.Generic.List[int]
+    $valeurs = New-Object System.Collections.Generic.List[int]
+    $nombreEnregistrements = [int]($donnees.Length / $LearnsetRecordSize)
+    for ($i = 0; $i -lt $nombreEnregistrements; $i++) {
+        $base = $i * $LearnsetRecordSize
+        $vue = $false
+        for ($c = 0; $c -lt $LearnsetRecordSize; $c += 4) {
+            $attaque = [BitConverter]::ToUInt16($donnees, $base + $c)
+            $niveau = [BitConverter]::ToUInt16($donnees, $base + $c + 2)
+            if ($attaque -eq 0xFFFF -and $niveau -eq 0xFFFF) { break }
+            if ($attaque -eq 0) { continue }
+            $positions.Add($base + $c)
+            $valeurs.Add([int]$attaque)
+            $vue = $true
+        }
+        if ($vue) { $resultat.Especes++ }
+    }
+
+    if ($positions.Count -eq 0) {
+        $resultat.Ignore = "aucune attaque trouvee dans la table"
+        return $resultat
+    }
+
+    $distinctes = @($valeurs | Sort-Object -Unique)
+    if ($distinctes.Count -lt 2) {
+        $resultat.Ignore = "moins de deux attaques distinctes"
+        return $resultat
+    }
+
+    # « Tirage integral » : on pioche dans TOUTES les attaques du jeu, pas
+    # seulement dans celles qui figurent deja dans la table des montees de
+    # niveau. Mesure sur le dump : 610 attaques y figurent, alors que le jeu en
+    # compte 787 hors croupions. 177 attaques - Poing Karate, Coupe-Vent,
+    # Sonic Boom, Draco-Rage, Mimique... - ne pouvaient donc JAMAIS sortir du
+    # mode « Tirage aleatoire ».
+    #
+    # Le pool se lit dans le ROMFS SOURCE, pas la sortie : bin/pml/waza n'y est
+    # copie que si une option de donnees d'attaques le touche. Lire la sortie
+    # rendrait ce mode silencieusement identique au precedent - c'est
+    # exactement le piege dans lequel « preferer le meme type » est tombe.
+    $poolIntegral = $null
+    if ($normalise -eq "fullrandom") {
+        $racinePool = if ($SourceRomfsRootValue) { $SourceRomfsRootValue } else { $RomfsRoot }
+        $poolIntegral = [int[]]@(Get-MovePool -RomfsRoot $racinePool)
+        if ($poolIntegral.Count -lt 2) {
+            $resultat.Ignore = "table des attaques introuvable : le tirage intégral est impossible"
+            return $resultat
+        }
+    }
+
+    $nouvelles = New-Object System.Collections.Generic.List[int]
+    if ($normalise -eq "fullrandom") {
+        for ($i = 0; $i -lt $positions.Count; $i++) {
+            $nouvelles.Add([int]$poolIntegral[$Rng.Next(0, $poolIntegral.Count)])
+        }
+    } elseif ($normalise -eq "shuffle" -or $normalise -eq "melange") {
+        # Permutation globale : le jeu conserve exactement le meme multi-ensemble
+        # d'attaques, redistribue entre les especes et les paliers.
+        $melange = [int[]]$valeurs.ToArray()
+        for ($i = $melange.Length - 1; $i -gt 0; $i--) {
+            $j = $Rng.Next(0, $i + 1)
+            $tmp = $melange[$i]; $melange[$i] = $melange[$j]; $melange[$j] = $tmp
+        }
+        $nouvelles.AddRange($melange)
+    } else {
+        for ($i = 0; $i -lt $positions.Count; $i++) {
+            $nouvelles.Add([int]$distinctes[$Rng.Next(0, $distinctes.Count)])
+        }
+    }
+
+    for ($i = 0; $i -lt $positions.Count; $i++) {
+        if ($nouvelles[$i] -eq $valeurs[$i]) { continue }
+        $octets = [BitConverter]::GetBytes([UInt16]$nouvelles[$i])
+        $donnees[$positions[$i]] = $octets[0]
+        $donnees[$positions[$i] + 1] = $octets[1]
+        $resultat.Attaques++
+    }
+
+    if ($resultat.Attaques -gt 0) {
+        [IO.File]::WriteAllBytes($chemin, $donnees)
+    }
+    return $resultat
+}
+
+function Invoke-MachineMoveRandomization {
+    <#
+        Randomise l'attaque enseignee par chaque CT et DT.
+
+        Structure verifiee le 2026-09-04 sur le dump Epee, avec temoin
+        concordant (voir docs/offsets/swsh-1.3.2-epee.md) :
+
+            bin/pml/item/item.dat
+            pointeur u16 a +0x02        (valeur 1608 sur Epee 1.3.2)
+            table   a 0x44 + pointeur*2 (= 0xCD4)
+            200 entrees de 4 octets : u16 identifiant d'objet, u16 attaque
+
+        Les entrees 100 a 199 portent les objets 1130 a 1229, exactement
+        contigus, ce qui correspond a DT00 -> DT99.
+
+        Le tirage se fait UNIQUEMENT dans les attaques deja presentes dans la
+        table. Deux raisons : toute attaque ainsi tiree est forcement
+        enseignable par une machine, et ecrire hors de cette plage corromprait
+        la table d'objets - prix compris.
+    #>
+    param(
+        [string]$RomfsRoot,
+        [System.Random]$Rng,
+        [string]$Mode
+    )
+
+    $resultat = [pscustomobject]@{ Modifiees = 0; Total = 0; Ignore = "" }
+    $normalise = Normalize-Mode $Mode
+    if ($normalise -eq "unchanged" -or $normalise -eq "") {
+        return $resultat
+    }
+
+    $chemin = Join-Path $RomfsRoot "bin\pml\item\item.dat"
+    if (-not (Test-Path -LiteralPath $chemin)) {
+        $resultat.Ignore = "bin\pml\item\item.dat absent"
+        return $resultat
+    }
+
+    $donnees = [IO.File]::ReadAllBytes($chemin)
+    $pointeur = [BitConverter]::ToUInt16($donnees, 0x02)
+    $debut = 0x44 + ($pointeur * 2)
+    $nombre = 200
+    $taille = 4
+    if (($debut + ($nombre * $taille)) -gt $donnees.Length) {
+        # Garde-fou : sur un fichier inattendu, ne rien ecrire plutot que
+        # d'ecraser des octets au hasard.
+        $resultat.Ignore = ("table CT/DT hors limites (debut 0x{0:X}, fichier {1} octets)" -f $debut, $donnees.Length)
+        return $resultat
+    }
+
+    $attaques = New-Object System.Collections.Generic.List[int]
+    for ($i = 0; $i -lt $nombre; $i++) {
+        $attaques.Add([int][BitConverter]::ToUInt16($donnees, $debut + ($i * $taille) + 2))
+    }
+    $resultat.Total = $nombre
+
+    $distinctes = @($attaques | Where-Object { $_ -gt 0 } | Sort-Object -Unique)
+    if ($distinctes.Count -lt 2) {
+        $resultat.Ignore = "moins de deux attaques distinctes dans la table"
+        return $resultat
+    }
+
+    $nouvelles = New-Object System.Collections.Generic.List[int]
+    if ($normalise -eq "shuffle" -or $normalise -eq "melange") {
+        # Permutation de Fisher-Yates sur les valeurs existantes : chaque
+        # attaque reste presente exactement autant de fois qu'avant.
+        $melange = [int[]]$attaques.ToArray()
+        for ($i = $melange.Length - 1; $i -gt 0; $i--) {
+            $j = $Rng.Next(0, $i + 1)
+            $tmp = $melange[$i]; $melange[$i] = $melange[$j]; $melange[$j] = $tmp
+        }
+        $nouvelles.AddRange($melange)
+    } else {
+        for ($i = 0; $i -lt $nombre; $i++) {
+            $nouvelles.Add([int]$distinctes[$Rng.Next(0, $distinctes.Count)])
+        }
+    }
+
+    for ($i = 0; $i -lt $nombre; $i++) {
+        if ($attaques[$i] -eq 0) {
+            # Entree vide : on la laisse vide.
+            continue
+        }
+        if ($nouvelles[$i] -eq $attaques[$i]) { continue }
+        $octets = [BitConverter]::GetBytes([UInt16]$nouvelles[$i])
+        $donnees[$debut + ($i * $taille) + 2] = $octets[0]
+        $donnees[$debut + ($i * $taille) + 3] = $octets[1]
+        $resultat.Modifiees++
+    }
+
+    if ($resultat.Modifiees -gt 0) {
+        [IO.File]::WriteAllBytes($chemin, $donnees)
+    }
+    return $resultat
+}
+
+function Invoke-PersonalExtraTweaks {
+    param(
+        [string]$RomfsRoot,
+        [System.Random]$Rng,
+        [int]$MinimumCatchRateValue,
+        [bool]$DoRandomizeHeldItems,
+        [string]$ExpCurveModeValue,
+        [string]$TmCompatibilityModeValue,
+        [string]$TutorCompatibilityModeValue,
+        [string]$SourceRomfsRootValue = ""
+    )
+
+    $result = [pscustomobject]@{ CatchRates = 0; HeldItems = 0; ExpCurves = 0; MachineFlags = 0; TutorFlags = 0; Skipped = "" }
+
+    $minCatchRate = [Math]::Max(0, [Math]::Min(255, [int]$MinimumCatchRateValue))
+    $expCurve = Get-ExpCurveValue -Mode $ExpCurveModeValue
+    $machineMode = Normalize-Mode $TmCompatibilityModeValue
+    if ($machineMode -notin @("random", "full", "sametype")) {
+        $machineMode = "unchanged"
+    }
+    $tutorMode = Normalize-Mode $TutorCompatibilityModeValue
+    # Pas de « meme type » pour les maitres : les attaques qu'ils enseignent
+    # vivent dans l'executable, donc leur type est hors de portee. Le proposer
+    # serait mentir - on retombe sur le tirage a pile ou face.
+    if ($tutorMode -eq "sametype") { $tutorMode = "random" }
+    if ($tutorMode -notin @("random", "full")) {
+        $tutorMode = "unchanged"
+    }
+    $machineMoves = $null
+    $moveTypes = $null
+    if ($machineMode -eq "sametype") {
+        # Lecture dans le ROMFS SOURCE, pas la sortie : item.dat et bin/pml/waza
+        # n'y sont copies que si d'autres options les touchent. En lisant la
+        # sortie, la table revenait vide et le mode retombait EN SILENCE sur le
+        # tirage a pile ou face - mesure : 50 % des machines autorisees des deux
+        # cotes, soit exactement le comportement de « Une chance sur deux ».
+        $racineTables = if ($SourceRomfsRootValue) { $SourceRomfsRootValue } else { $RomfsRoot }
+        $machineMoves = @(Get-MachineMoveTable -RomfsRoot $racineTables)
+        $moveTypes = Get-MoveTypeTable -RomfsRoot $racineTables
+        if ($machineMoves.Count -lt 1 -or $moveTypes.Count -lt 1) {
+            # On le DIT au lieu de degrader sans bruit.
+            $result.Skipped = "types d'attaques indisponibles : « préférer le même type » retombe sur une chance sur deux"
+        }
+    }
+
+    if ($minCatchRate -le 0 -and -not $DoRandomizeHeldItems -and $expCurve -lt 0 -and $machineMode -eq "unchanged" -and $tutorMode -eq "unchanged") {
+        return $result
+    }
+
+    $path = Get-PersonalPath -RomfsRoot $RomfsRoot
+    if (-not (Test-Path -LiteralPath $path)) {
+        $result.Skipped = "personal_total.bin absent"
+        return $result
+    }
+
+    $data = [IO.File]::ReadAllBytes($path)
+    $count = [int][Math]::Floor($data.Length / $PersonalRecordSize)
+    if ($count -lt 2) {
+        $result.Skipped = "table Pokemon trop courte"
+        return $result
+    }
+
+    $itemPool = if ($DoRandomizeHeldItems) { [int[]](Get-GeneralRandomItemPool) } else { [int[]]@() }
+
+    for ($index = 1; $index -lt $count; $index++) {
+        $offset = $index * $PersonalRecordSize
+        # Somme des six statistiques de base : nulle = enregistrement de
+        # remplissage, l'espece n'existe pas dans le jeu.
+        $bst = 0
+        for ($s = 0; $s -lt 6; $s++) { $bst += [int]$data[$offset + $s] }
+        if ($bst -le 0) {
+            continue
+        }
+
+        if ($minCatchRate -gt 0) {
+            $current = [int]$data[$offset + $PersonalCatchRateOffset]
+            if ($current -lt $minCatchRate) {
+                $data[$offset + $PersonalCatchRateOffset] = [byte]$minCatchRate
+                $result.CatchRates++
+            }
+        }
+
+        if ($expCurve -ge 0) {
+            if ([int]$data[$offset + $PersonalExpCurveOffset] -ne $expCurve) {
+                $data[$offset + $PersonalExpCurveOffset] = [byte]$expCurve
+                $result.ExpCurves++
+            }
+        }
+
+        if ($DoRandomizeHeldItems -and $itemPool.Count -gt 0) {
+            foreach ($itemOffset in $PersonalHeldItemOffsets) {
+                $currentItem = [int](Read-U16 -Data $data -Offset ($offset + $itemOffset))
+                # On ne remplace que les emplacements deja occupes : donner un
+                # objet a tout le monde rendrait chaque capture rentable.
+                if ($currentItem -le 0) {
+                    continue
+                }
+                $newItem = [int](Random-FromPool -Rng $Rng -Pool $itemPool)
+                if ($newItem -eq $currentItem) {
+                    continue
+                }
+                Write-U16 -Data $data -Offset ($offset + $itemOffset) -Value ([uint16]$newItem)
+                $result.HeldItems++
+            }
+        }
+
+        if ($machineMode -ne "unchanged") {
+            $type1 = [int]$data[$offset + 6]
+            $type2 = [int]$data[$offset + 7]
+            # Les CT occupent les rangs 0-99 de la table machine, les DT 100-199.
+            $ctMoves = if ($machineMoves) { @($machineMoves[0..99]) } else { $null }
+            $dtMoves = if ($machineMoves) { @($machineMoves[100..199]) } else { $null }
+            $result.MachineFlags += Set-PersonalMachineFlags -Data $data -RecordOffset $offset -FlagsOffset $PersonalTmFlagsOffset -Count $PersonalMachineCount -Mode $machineMode -Rng $Rng -MachineMoves $ctMoves -MoveTypes $moveTypes -SpeciesType1 $type1 -SpeciesType2 $type2
+            $result.MachineFlags += Set-PersonalMachineFlags -Data $data -RecordOffset $offset -FlagsOffset $PersonalTrFlagsOffset -Count $PersonalMachineCount -Mode $machineMode -Rng $Rng -MachineMoves $dtMoves -MoveTypes $moveTypes -SpeciesType1 $type1 -SpeciesType2 $type2
+        }
+
+        if ($tutorMode -ne "unchanged") {
+            # Meme routine, autre champ : 18 bits au lieu de 100. Elle n'ecrit
+            # que dans les octets qu'elle parcourt, donc les 6 bits hauts de
+            # 0xAA - dont on ignore la signification - ne bougent pas.
+            $result.TutorFlags += Set-PersonalMachineFlags -Data $data -RecordOffset $offset -FlagsOffset $PersonalTutorFlagsOffset -Count $PersonalTutorCount -Mode $tutorMode -Rng $Rng
+        }
+    }
+
+    if (($result.CatchRates + $result.HeldItems + $result.ExpCurves + $result.MachineFlags + $result.TutorFlags) -gt 0) {
+        [IO.File]::WriteAllBytes($path, $data)
+    }
+    return $result
+}
+
+function Invoke-ItemPriceAdjustment {
+    param(
+        [string]$RomfsRoot,
+        [double]$Multiplier,
+        [string]$Mode = "multiplier",
+        [int]$MinPrice = 100,
+        [int]$MaxPrice = 20000,
+        [System.Random]$Rng = $null
+    )
+
+    $result = [pscustomobject]@{ Edited = 0; Skipped = "" }
+
+    $modeNormalise = Normalize-Mode $Mode
+    if ($modeNormalise -eq "vanilla") {
+        $result.Skipped = "prix vanilla"
+        return $result
+    }
+    if ($modeNormalise -eq "random" -and $null -eq $Rng) {
+        $result.Skipped = "mode aléatoire sans générateur"
+        return $result
+    }
+    if ($modeNormalise -ne "random" -and [Math]::Abs($Multiplier - 1.0) -lt 0.0001) {
+        $result.Skipped = "multiplicateur a 1"
+        return $result
+    }
+
+    $path = Join-Path $RomfsRoot "bin\pml\item\item.dat"
+    if (-not (Test-Path -LiteralPath $path)) {
+        $result.Skipped = "bin\pml\item\item.dat absent"
+        return $result
+    }
+
+    $itemIdCount = 1609
+    $indexTableOffset = 0x44
+    $recordSize = 48
+
+    $data = [IO.File]::ReadAllBytes($path)
+    if ($data.Length -lt ($indexTableOffset + ($itemIdCount * 2))) {
+        $result.Skipped = "fichier trop court, structure inattendue"
+        return $result
+    }
+
+    $recordsOffset = [int](Read-U32 -Data $data -Offset 0x40)
+    if ($recordsOffset -le $indexTableOffset -or $recordsOffset -ge $data.Length) {
+        $result.Skipped = "en-tete inattendu, prix non modifies"
+        return $result
+    }
+
+    $recordCount = [int][Math]::Floor(($data.Length - $recordsOffset) / $recordSize)
+    if ($recordCount -lt 1) {
+        $result.Skipped = "aucun enregistrement"
+        return $result
+    }
+
+    $seenRecords = [System.Collections.Generic.HashSet[int]]::new()
+    $edited = 0
+    for ($itemId = 0; $itemId -lt $itemIdCount; $itemId++) {
+        $record = [int](Read-U16 -Data $data -Offset ($indexTableOffset + ($itemId * 2)))
+        if ($record -le 0 -or $record -ge $recordCount) {
+            continue
+        }
+        if (-not $seenRecords.Add($record)) {
+            continue
+        }
+
+        $offset = $recordsOffset + ($record * $recordSize)
+        $price = [double](Read-U32 -Data $data -Offset $offset)
+        # Un objet non achetable le reste : 0 x n'importe quoi vaut 0, mais on
+        # sort tot pour ne pas compter une ecriture inutile.
+        if ($price -le 0.0) {
+            continue
+        }
+
+        $scaled = if ($modeNormalise -eq "random") {
+            $Rng.Next($MinPrice, $MaxPrice + 1)
+        } else {
+            [Math]::Round($price * $Multiplier)
+        }
+        if ($scaled -lt 0) { $scaled = 0 }
+        if ($scaled -gt 999999) { $scaled = 999999 }
+        $scaledValue = [uint32]$scaled
+        if ($scaledValue -eq [uint32]$price) {
+            continue
+        }
+
+        Write-U32 -Data $data -Offset $offset -Value $scaledValue
+        $edited++
+    }
+
+    if ($edited -gt 0) {
+        [IO.File]::WriteAllBytes($path, $data)
+    }
+    $result.Edited = $edited
+    return $result
+}
+
 function Invoke-ItemTableRandomization {
     param(
         [string]$RomfsRoot,
@@ -7398,12 +10955,27 @@ function Invoke-ItemTableRandomization {
         $path = Join-Path $RomfsRoot "bin\appli\shop\bin\shop_data.bin"
         if (Test-Path -LiteralPath $path) {
             $data = [IO.File]::ReadAllBytes($path)
-            $shopIndex = 0
-            foreach ($tablePos in Get-FlatBufferTableVectorPositions -Data $data) {
-                $shopIndex++
-                $vectorFieldAddress = Get-FlatBufferFieldAddress -Data $data -TablePos $tablePos -FieldIndex 1
+            $modeBoutiqueLarge = ((Normalize-Mode $ShopItemMode) -in @("fullrandom", "full", "random", "aleatoire", "complet"))
+            foreach ($inventaireBoutique in (Get-ShopInventorySlotAddresses -Data $data)) {
+                $shopIndex = $inventaireBoutique.ShopIndex
+                $adressesBoutique = @($inventaireBoutique.Addresses)
+
+                # Premiere passe : releve des poches que cette boutique vend.
+                # Elle doit se faire AVANT toute ecriture, sinon les poches deja
+                # remplacees fausseraient l'union pour les emplacements suivants.
+                $pochesDeLaBoutique = New-Object System.Collections.Generic.List[int]
+                if ($modeBoutiqueLarge) {
+                    $carte = Get-ItemPocketMap
+                    foreach ($a in $adressesBoutique) {
+                        $brut = [uint32](Read-U32 -Data $data -Offset $a)
+                        if ($brut -eq [uint32]::MaxValue -or $brut -le 0 -or $brut -gt [uint32][int]::MaxValue) { continue }
+                        $ident = [int]$brut
+                        if ($carte.ContainsKey($ident)) { $pochesDeLaBoutique.Add([int]$carte[$ident]) }
+                    }
+                }
+
                 $slotIndex = 0
-                foreach ($address in Get-FlatBufferUIntVectorAddresses -Data $data -VectorFieldAddress $vectorFieldAddress) {
+                foreach ($address in $adressesBoutique) {
                     $slotIndex++
                     $rawItemId = [uint32](Read-U32 -Data $data -Offset $address)
                     if ($rawItemId -eq [uint32]::MaxValue -or $rawItemId -le 0 -or $rawItemId -gt [uint32][int]::MaxValue) {
@@ -7420,7 +10992,11 @@ function Invoke-ItemTableRandomization {
                         continue
                     }
 
-                    $replacement = Get-RandomItemReplacement -CurrentItemId $itemId -Rng $Rng -PreferTechnicalRecord:($isTechnical -and $RandomizeTechnicalRecords.IsPresent)
+                    $replacement = if ($modeBoutiqueLarge) {
+                        Get-RandomItemReplacement -CurrentItemId $itemId -Rng $Rng -PreferTechnicalRecord:($isTechnical -and $RandomizeTechnicalRecords.IsPresent) -ShopPockets ([int[]]$pochesDeLaBoutique.ToArray())
+                    } else {
+                        Get-RandomItemReplacement -CurrentItemId $itemId -Rng $Rng -PreferTechnicalRecord:($isTechnical -and $RandomizeTechnicalRecords.IsPresent) -SamePocket
+                    }
                     if ($replacement -eq $itemId) {
                         continue
                     }
@@ -7475,7 +11051,7 @@ function Write-ItemChangesReport {
         return $null
     }
 
-    $path = Join-Path $OutputRomfsRoot "item-changes.json"
+    $path = Get-OutputReportPath -OutputRomfsRoot $OutputRomfsRoot -FileName "item-changes.json"
     $changesArray = Convert-ToObjectArray $ItemChanges
     $report = [ordered]@{
         generatedAt = [DateTime]::UtcNow.ToString("o")
@@ -7632,12 +11208,56 @@ function Invoke-MoveDataRandomization {
     }
 }
 
+function Test-GlobalMoveDataRandomizationRequested {
+    return (
+        $RandomizeMoveTypes.IsPresent -or
+        $RandomizeMovePower.IsPresent -or
+        $RandomizeMovePP.IsPresent -or
+        $RandomizeMoveAccuracy.IsPresent -or
+        $RandomizeMoveCategory.IsPresent
+    )
+}
+
+function Remove-SourceOnlyMoveDataFromOutput {
+    param(
+        [string]$OutputRomfsRoot,
+        [object]$MoveDataResult
+    )
+
+    $moveDir = Get-MoveDir -RomfsRoot $OutputRomfsRoot
+    if (-not (Test-Path -LiteralPath $moveDir)) {
+        return $false
+    }
+
+    $movesEdited = 0
+    if ($MoveDataResult -and $MoveDataResult.PSObject.Properties["MovesEdited"]) {
+        $movesEdited = [int]$MoveDataResult.MovesEdited
+    }
+
+    if ((Test-GlobalMoveDataRandomizationRequested) -and $movesEdited -gt 0) {
+        return $false
+    }
+
+    $rootFull = [IO.Path]::GetFullPath($OutputRomfsRoot).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+    $moveDirFull = [IO.Path]::GetFullPath($moveDir).TrimEnd([IO.Path]::DirectorySeparatorChar, [IO.Path]::AltDirectorySeparatorChar)
+    $rootPrefix = $rootFull + [IO.Path]::DirectorySeparatorChar
+    $altRootPrefix = $rootFull + [IO.Path]::AltDirectorySeparatorChar
+    if (-not ($moveDirFull.StartsWith($rootPrefix, [StringComparison]::OrdinalIgnoreCase) -or $moveDirFull.StartsWith($altRootPrefix, [StringComparison]::OrdinalIgnoreCase))) {
+        throw "Refus de supprimer le dossier moves hors sortie ROMFS: $moveDirFull"
+    }
+
+    Remove-Item -LiteralPath $moveDirFull -Recurse -Force
+    return $true
+}
+
 function Invoke-GiftAndEncounterRandomization {
     param(
         [string]$RomfsRoot,
         [System.Random]$Rng,
         [string]$GiftModeValue,
         [string]$StarterModeValue,
+        [int]$StarterMinBaseStatTotalValue = 0,
+        [int]$StarterMaxBaseStatTotalValue = 0,
         [bool]$AllowLegendaryGiftSpecies,
         [string]$TradeModeValue,
         [bool]$AllowLegendaryTradeSpecies,
@@ -7648,6 +11268,7 @@ function Invoke-GiftAndEncounterRandomization {
         [bool]$AllowLegendaryGrassSpecies,
         [string]$GrassEncounterStableMapping,
         [string]$VisibleEncounterBehaviorValue,
+        [string]$EncounterDrawModeValue = "SlotParEspece",
         [string]$UndergroundModeValue,
         [bool]$AllowLegendaryUndergroundSpecies
     )
@@ -7658,9 +11279,52 @@ function Invoke-GiftAndEncounterRandomization {
     $staticMode = Normalize-Mode $StaticEncounterModeValue
     $grassMode = Normalize-Mode $GrassEncounterModeValue
     $visibleBehavior = Get-NormalizedVisibleEncounterBehavior -Value $VisibleEncounterBehaviorValue
-    $includeVisibleSymbolsInRomfs = ($visibleBehavior -ne "VanillaVisualBattleRandom")
+    $drawMode = Get-NormalizedEncounterDrawMode -Value $EncounterDrawModeValue -LegacyVisibleBehavior $VisibleEncounterBehaviorValue
+    $includeVisibleSymbolsInRomfs = ($visibleBehavior -eq "RomfsMatch" -or $drawMode -eq "FullRandom")
+    $effectiveGrassStableMapping = Get-EffectiveGrassEncounterStableMapping -DrawModeValue $EncounterDrawModeValue -LegacyVisibleBehavior $VisibleEncounterBehaviorValue -FallbackStableMapping $GrassEncounterStableMapping
     $undergroundMode = Normalize-Mode $UndergroundModeValue
     $sharedEncounterStableMap = @{}
+    # Lu sur le romfs SOURCE, jamais sur la sortie. La sortie ne contient que
+    # les fichiers deja synchronises : sans option de rencontre en herbe, le
+    # gfpak des symboles n'y est pas, la liste revenait vide et la contrainte
+    # « especes affichables » devenait silencieusement inerte. Mesure du
+    # 2026-09-07 : 277 rencontres fixes et 444 souterraines non affichables
+    # alors que la contrainte etait censee etre active. Meme piege que le mode
+    # « preferer le meme type », qui lisait lui aussi la sortie.
+    $visualSpeciesPoolSource = if (-not [string]::IsNullOrWhiteSpace($SourceRomfs)) { $SourceRomfs } else { $RomfsRoot }
+    # Meme reglage que la couche runtime : sans ca, les tables ROMFS seraient
+    # restees plafonnees a 330 pendant que le module en affichait 664.
+    $visualSpeciesPool = Get-OverworldVisiblePoolForMode -RomfsRoot $visualSpeciesPoolSource -AllowLegendaries $AllowLegendaryGrassSpecies
+
+    # Le reservoir impose aux tables ROMFS des rencontres : filtre de
+    # generation, plus la restriction « especes que le vanilla affiche » si elle
+    # est demandee. Un ensemble vide veut dire « aucune contrainte ».
+    $poolCompletRencontres = @(Get-BaseSpeciesPool -AllowLegendaries $AllowLegendaryGrassSpecies -RomfsRoot $RomfsRoot)
+
+    # Un reservoir par categorie. Vide = aucune contrainte.
+    # Un filtre vide rend le pool complet, donc « pas de filtrage » : pas besoin
+    # d'un interrupteur au-dessus, qui ne pourrait que mentir.
+    $filtrer = {
+        param([string]$categorie)
+        $retenu = @(Select-SpeciesByGeneration -SpeciesIds ([int[]]$poolCompletRencontres) -Filter $categorie)
+        if ((Get-ObjectArrayCount $retenu) -lt 1) { return @() }
+        if ((Get-ObjectArrayCount $retenu) -ge (Get-ObjectArrayCount $poolCompletRencontres)) { return @() }
+        return [int[]]$retenu
+    }
+    $restrictionRencontres = @(& $filtrer $GenerationFilterBattle)
+    $restrictionVisible = @(& $filtrer $GenerationFilterVisible)
+    $restrictionCadeaux = @(& $filtrer $GenerationFilterGifts)
+
+    if ($OverworldModelSafeEncounters -and (Get-ObjectArrayCount $visualSpeciesPool) -gt 0) {
+        $visibles = [System.Collections.Generic.HashSet[int]]::new()
+        foreach ($espece in $visualSpeciesPool) { $null = $visibles.Add([int]$espece) }
+        if ((Get-ObjectArrayCount $restrictionRencontres) -gt 0) {
+            $croise = @($restrictionRencontres | Where-Object { $visibles.Contains([int]$_) })
+            if ($croise.Count -gt 0) { $restrictionRencontres = [int[]]$croise }
+        } else {
+            $restrictionRencontres = [int[]]$visualSpeciesPool
+        }
+    }
     $configuredStarters = Get-ConfiguredStarterSpeciesIds
     if ($configuredStarters) {
         Assert-PlayableSpeciesIds -RomfsRoot $RomfsRoot -SpeciesIds ([int[]]$configuredStarters) -Context "Starters manuels"
@@ -7686,14 +11350,40 @@ function Invoke-GiftAndEncounterRandomization {
             @(810, 813, 816) | ForEach-Object { $null = $starterSpeciesIds.Add($_) }
             $starterReplacementByOriginal = @{}
 
+            # Les cadeaux et les starters suivent le filtre « donnes au joueur ».
+            $poolCadeaux = @(Get-BaseSpeciesPool -AllowLegendaries $AllowLegendaryGiftSpecies -RomfsRoot $RomfsRoot)
+            $retenuCadeaux = @(Select-SpeciesByGeneration -SpeciesIds ([int[]]$poolCadeaux) -Filter $GenerationFilterGifts)
+            if ((Get-ObjectArrayCount $retenuCadeaux) -gt 0) { $poolCadeaux = [int[]]$retenuCadeaux }
             $giftContext = @{
-                BaseSpeciesPool = Get-BaseSpeciesPool -AllowLegendaries $AllowLegendaryGiftSpecies -RomfsRoot $RomfsRoot
+                BaseSpeciesPool = [int[]]$poolCadeaux
                 BaseSpeciesEntries = @{}
                 SimilarBstCache = @{}
             }
             $entries = Get-PersonalEntries -RomfsRoot $RomfsRoot
             for ($i = 1; $i -le $BaseSpeciesMax; $i++) {
                 $giftContext.BaseSpeciesEntries[$i] = $entries[$i]
+            }
+
+            # Reservoir dedie aux starters, borne par le total de statistiques.
+            # On n'applique la borne que s'il reste au moins trois candidats :
+            # il faut bien pouvoir remplir les trois emplacements.
+            $starterMinBst = [Math]::Max(0, [int]$StarterMinBaseStatTotalValue)
+            $starterMaxBst = [Math]::Max(0, [int]$StarterMaxBaseStatTotalValue)
+            $starterContext = $giftContext
+            if ($starterMinBst -gt 0 -or $starterMaxBst -gt 0) {
+                $starterPool = @($giftContext.BaseSpeciesPool | Where-Object {
+                    $entry = $giftContext.BaseSpeciesEntries[[int]$_]
+                    $entry -and
+                        ($starterMinBst -le 0 -or [int]$entry.BST -ge $starterMinBst) -and
+                        ($starterMaxBst -le 0 -or [int]$entry.BST -le $starterMaxBst)
+                })
+                if ($starterPool.Count -ge 3) {
+                    $starterContext = @{
+                        BaseSpeciesPool = [int[]]$starterPool
+                        BaseSpeciesEntries = $giftContext.BaseSpeciesEntries
+                        SimilarBstCache = @{}
+                    }
+                }
             }
 
             foreach ($tablePos in Get-FlatBufferTableVectorPositions -Data $data) {
@@ -7721,7 +11411,11 @@ function Invoke-GiftAndEncounterRandomization {
                         default { $replacement = $speciesId }
                     }
                 } else {
-                    $replacement = Get-SpeciesReplacement -Rng $Rng -CurrentSpeciesId $speciesId -Mode $mode -Context $giftContext
+                    $slotContext = $giftContext
+                    if ($isStarter) {
+                        $slotContext = $starterContext
+                    }
+                    $replacement = Get-SpeciesReplacement -Rng $Rng -CurrentSpeciesId $speciesId -Mode $mode -Context $slotContext
                 }
 
                 if ($isStarter) {
@@ -7760,6 +11454,7 @@ function Invoke-GiftAndEncounterRandomization {
         -FieldIndices @(8, 18) `
         -Rng $Rng `
         -ModeValue $TradeModeValue `
+        -RestrictToSpeciesPool $restrictionCadeaux `
         -AllowLegendarySpecies $AllowLegendaryTradeSpecies `
         -BlockName "inGameTrade"
     $result.TradeSpeciesSlots = $tradeSpeciesResult.Edited
@@ -7773,7 +11468,8 @@ function Invoke-GiftAndEncounterRandomization {
         -AllowLegendarySpecies $AllowLegendaryStaticSpecies `
         -BlockName "staticScriptedEncounter" `
         -StableMappingMode $StaticEncounterStableMapping `
-        -StableMap $sharedEncounterStableMap
+        -StableMap $sharedEncounterStableMap `
+        -RestrictToSpeciesPool $restrictionRencontres
     $result.StaticEncounters = $staticEncounterResult.Edited
 
     $grassResult = Invoke-GrassEncounterRandomization `
@@ -7781,10 +11477,22 @@ function Invoke-GiftAndEncounterRandomization {
         -Rng $Rng `
         -ModeValue $GrassEncounterModeValue `
         -AllowLegendarySpecies $AllowLegendaryGrassSpecies `
-        -StableMappingMode $GrassEncounterStableMapping `
+        -StableMappingMode $effectiveGrassStableMapping `
         -IncludeVisibleSymbols $includeVisibleSymbolsInRomfs `
-        -StableMap $sharedEncounterStableMap
+        -StableMap $sharedEncounterStableMap `
+        -VisualSpeciesPool $visualSpeciesPool `
+        -RestrictToSpeciesPool $restrictionRencontres `
+        -RestrictVisibleToSpeciesPool $restrictionVisible
     $result.GrassEncounterSlots = $grassResult.Edited
+
+    # Apres la randomisation des especes : celle-ci reecrit l'archive, la mise a
+    # l'echelle des niveaux doit donc repartir du fichier deja modifie.
+    $wildLevelResult = Invoke-WildLevelAdjustment -RomfsRoot $RomfsRoot -Percent $WildLevelPercent
+    if ($wildLevelResult.Edited -gt 0) {
+        Write-Host ("[Wild] niveaux ajustes : {0} bornes modifiees ({1:+#;-#;0} %)" -f $wildLevelResult.Edited, [int]$WildLevelPercent)
+    } elseif ($wildLevelResult.Skipped) {
+        Write-Host ("[Wild] niveaux non modifies : {0}" -f $wildLevelResult.Skipped)
+    }
 
     $undergroundResult = Invoke-FlatBufferSpeciesFieldRandomization `
         -RomfsRoot $RomfsRoot `
@@ -7793,7 +11501,8 @@ function Invoke-GiftAndEncounterRandomization {
         -Rng $Rng `
         -ModeValue $UndergroundModeValue `
         -AllowLegendarySpecies $AllowLegendaryUndergroundSpecies `
-        -BlockName "undergroundEncounter"
+        -BlockName "undergroundEncounter" `
+        -RestrictToSpeciesPool $restrictionRencontres
     $result.UndergroundSpeciesSlots = $undergroundResult.Edited
     $result.WildEncounterChanges = @($staticEncounterResult.Changes) + @($grassResult.Changes) + @($undergroundResult.Changes)
 
@@ -7914,9 +11623,7 @@ function Update-StarterRelatedTrainerTeams {
                 if ($shouldRebuildMoves) {
                     $level = [int](Read-U16 -Data $bytes -Offset ($offset + 0x0A))
                     if ($normalizedTrainerMoveMode -eq "random4" -and (Get-ObjectArrayCount $movePool) -gt 0) {
-                        foreach ($moveOffset in 0x12, 0x14, 0x16, 0x18) {
-                            Write-U16 -Data $bytes -Offset ($offset + $moveOffset) -Value (Random-FromPool -Rng $Rng -Pool $movePool)
-                        }
+                        $null = Set-TrainerMovesRandomDistinct -Data $bytes -Offset $offset -MovePool $movePool -Rng $Rng
                     } elseif ($usesSmogonTrainerMoves) {
                         $null = Set-TrainerMovesSmogonStrategic -Data $bytes -Offset $offset -SmogonData $smogonStrategicData -SpeciesId $replacement -FormId 0 -Level $level -Rng $Rng -FallbackMode $normalizedSmogonMoveFallbackMode -MovePool $movePool -MovePoolSet $movePoolSet -LearnsetBytes $learnsetBytes -PersonalEntries $personalEntries -Cache $levelUpMoveCache
                     } else {
@@ -8075,6 +11782,7 @@ function Invoke-TrainerRandomization {
         [string]$ItemPoolModeValue = "Battle",
         [string]$AddedSlotSpeciesModeValue = "Random",
         [string]$DuplicateModeValue = "NoDuplicates",
+        [string]$BagItemModeValue = "Unchanged",
         [string]$AbilityModeValue,
         [string]$IVModeValue,
         [string]$EVModeValue,
@@ -8095,6 +11803,19 @@ function Invoke-TrainerRandomization {
         [object[]]$TeamMaxNormalizationTargetCatalog = @(),
         [string]$TeamMaxNormalizationMode = "none",
         [bool]$AllowLegendarySpecies,
+        # Regles speciales. Les deux catalogues servent a classer les dresseurs :
+        # ceux du catalogue arenes+ligue sont des "Boss", ceux qui sont dans le
+        # catalogue des boss majeurs sans etre dans le premier sont "Important",
+        # le reste est "Normal".
+        [object[]]$GymLeagueRuleTargetCatalog = @(),
+        [object[]]$MajorBossRuleTargetCatalog = @(),
+        [int]$ExtraPokemonBoss = 0,
+        [int]$ExtraPokemonImportant = 0,
+        [int]$ExtraPokemonRegular = 0,
+        [string]$SpecialRuleScopeValue = "GymLeague",
+        [string]$LegendaryPolicyValue = "Unchanged",
+        [int]$MinBaseStatTotalValue = 0,
+        [string]$ForceDiverseTypesScopeValue = "Off",
         [scriptblock]$ProgressCallback = $null
     )
 
@@ -8115,6 +11836,18 @@ function Invoke-TrainerRandomization {
         default { "random" }
     }
     $addedSlotNeedsGymLeagueType = ($addedSlotSpeciesMode -in @("sametyperandom", "sametypebst", "randomsametype", "similarbstsametype", "typedrandom", "typedbst"))
+    $bagItemMode = Normalize-Mode $BagItemModeValue
+    if ($bagItemMode -notin @("none", "vide", "empty", "random", "aleatoire")) {
+        $bagItemMode = "unchanged"
+    }
+    if ($bagItemMode -in @("vide", "empty")) { $bagItemMode = "none" }
+    if ($bagItemMode -eq "aleatoire") { $bagItemMode = "random" }
+    # Le remplacant reste dans la MEME POCHE que l'objet remplace. On ne
+    # pretend pas savoir laquelle est celle des soins : le code du projet
+    # interdit d'inclure sur une poche supposee, et seules trois poches sont
+    # prouvees. Rester dans la poche d'origine donne la garantie sans le pari,
+    # et c'est deja la regle des boutiques.
+    $bagItemsEdited = 0
     $duplicateMode = Normalize-Mode $DuplicateModeValue
     $preventTrainerDuplicates = $duplicateMode -notin @("normal", "allow", "allowduplicates", "duplicates", "vanilla")
     $abilityMode = Normalize-Mode $AbilityModeValue
@@ -8123,6 +11856,39 @@ function Invoke-TrainerRandomization {
     $natureMode = Get-EffectiveTrainerNatureMode -Mode $NatureModeValue -LegacyRandomize $DoRandomizeNatures
     $bossTeamsToSixTargetArray = Convert-ToObjectArray $BossTeamsToSixTargetCatalog
     $teamMaxNormalizationTargetArray = Convert-ToObjectArray $TeamMaxNormalizationTargetCatalog
+
+    # --- Regles speciales de dresseurs -------------------------------------
+    $extraPokemonBoss = [Math]::Max(0, [Math]::Min(5, [int]$ExtraPokemonBoss))
+    $extraPokemonImportant = [Math]::Max(0, [Math]::Min(5, [int]$ExtraPokemonImportant))
+    $extraPokemonRegular = [Math]::Max(0, [Math]::Min(5, [int]$ExtraPokemonRegular))
+    $extraPokemonMax = [Math]::Max($extraPokemonBoss, [Math]::Max($extraPokemonImportant, $extraPokemonRegular))
+    $trainerRuleScope = Normalize-TrainerSpecialRuleScope -Scope $SpecialRuleScopeValue
+    $trainerLegendaryPolicy = Normalize-TrainerLegendaryPolicy -Policy $LegendaryPolicyValue
+    $trainerMinBst = [Math]::Max(0, [int]$MinBaseStatTotalValue)
+    $trainerRulesActive = ($trainerLegendaryPolicy -ne "unchanged") -or ($trainerMinBst -gt 0)
+
+    # "Types varies" : desactive si la valeur ne designe pas une portee.
+    $diverseTypesRaw = Normalize-Mode $ForceDiverseTypesScopeValue
+    $diverseTypesActive = $diverseTypesRaw -notin @("off", "", "unchanged", "none")
+    $diverseTypesScope = if ($diverseTypesActive) { Normalize-TrainerSpecialRuleScope -Scope $ForceDiverseTypesScopeValue } else { "" }
+
+    # Classement des dresseurs. Un identifiant present dans le catalogue
+    # arenes+ligue est un Boss ; present seulement dans le catalogue des boss
+    # majeurs, il est Important ; absent des deux, il est Normal.
+    $gymLeagueRuleIds = [System.Collections.Generic.HashSet[int]]::new()
+    foreach ($target in (Convert-ToObjectArray $GymLeagueRuleTargetCatalog)) {
+        $targetTrainerId = -1
+        if ($null -ne $target -and $null -ne $target.trainerId -and [int]::TryParse([string]$target.trainerId, [ref]$targetTrainerId)) {
+            $null = $gymLeagueRuleIds.Add($targetTrainerId)
+        }
+    }
+    $majorBossRuleIds = [System.Collections.Generic.HashSet[int]]::new()
+    foreach ($target in (Convert-ToObjectArray $MajorBossRuleTargetCatalog)) {
+        $targetTrainerId = -1
+        if ($null -ne $target -and $null -ne $target.trainerId -and [int]::TryParse([string]$target.trainerId, [ref]$targetTrainerId)) {
+            $null = $majorBossRuleIds.Add($targetTrainerId)
+        }
+    }
 
     if (
         $speciesMode -eq "unchanged" -and
@@ -8139,18 +11905,27 @@ function Invoke-TrainerRandomization {
         $ShinyChancePercent -le 0.0 -and
         (-not $DoForceFullyEvolved) -and
         (-not $DoMaxTrainerAI) -and
+        ($bagItemMode -eq "unchanged") -and
         (Normalize-Mode $DynamaxLevelModeValue) -eq "unchanged" -and
         (-not $DoForceCanDynamax) -and
         (-not $DoForceAllTeamsToSix) -and
         ((Get-ObjectArrayCount $bossTeamsToSixTargetArray) -lt 1) -and
+        $extraPokemonMax -lt 1 -and
+        (-not $trainerRulesActive) -and
         (([string]$TeamMaxNormalizationMode) -eq "none" -or (Get-ObjectArrayCount $teamMaxNormalizationTargetArray) -lt 1)
     ) {
-        return [pscustomobject]@{ Trainers = 0; Pokemon = 0; BossTeamsExpanded = 0; BossTeamsLevelNormalized = 0; ShiniesForced = 0; SpeciesForceEvolved = 0; TrainerTypeThemedTrainers = 0; TrainerAIMaxed = 0; DynamaxLevelsEdited = 0; DynamaxFlagsForced = 0; BossTrainerTargets = @(); TrainerChanges = @() }
+        return [pscustomobject]@{ Trainers = 0; Pokemon = 0; BossTeamsExpanded = 0; BossTeamsLevelNormalized = 0; ShiniesForced = 0; SpeciesForceEvolved = 0; TrainerTypeThemedTrainers = 0; TrainerAIMaxed = 0; BagItemsEdited = 0; DynamaxLevelsEdited = 0; DynamaxFlagsForced = 0; BossTrainerTargets = @(); TrainerChanges = @() }
     }
 
-    $mayExtendTrainerTeams = $DoForceAllTeamsToSix -or ((Get-ObjectArrayCount $bossTeamsToSixTargetArray) -gt 0) -or ($TeamMin -ge 0)
+    $mayExtendTrainerTeams = $DoForceAllTeamsToSix -or ((Get-ObjectArrayCount $bossTeamsToSixTargetArray) -gt 0) -or ($TeamMin -ge 0) -or ($extraPokemonMax -gt 0)
+    # Les equipes adverses suivent leur PROPRE filtre de generation. Laisse-le
+    # vide et elles suivent le filtre global ; renseigne-le pour « joueur en
+    # generation 1, adversaires en tout ».
+    $poolDresseurs = @(Get-BaseSpeciesPool -AllowLegendaries $AllowLegendarySpecies -RomfsRoot $RomfsRoot)
+    $retenuDresseurs = @(Select-SpeciesByGeneration -SpeciesIds ([int[]]$poolDresseurs) -Filter $GenerationFilterTrainers)
+    if ((Get-ObjectArrayCount $retenuDresseurs) -gt 0) { $poolDresseurs = [int[]]$retenuDresseurs }
     $context = @{
-        BaseSpeciesPool = Get-BaseSpeciesPool -AllowLegendaries $AllowLegendarySpecies -RomfsRoot $RomfsRoot
+        BaseSpeciesPool = [int[]]$poolDresseurs
         BaseSpeciesEntries = @{}
         SimilarBstCache = @{}
     }
@@ -8159,13 +11934,23 @@ function Invoke-TrainerRandomization {
     $usesSmogonLegacyStrategy = (Test-TrainerModeUsesSmogonLegacy $moveMode) -or (Test-TrainerModeUsesSmogonLegacy $itemMode) -or (Test-TrainerModeUsesSmogonLegacy $abilityMode) -or (Test-TrainerModeUsesSmogonLegacy $evMode) -or (Test-TrainerModeUsesSmogonLegacy $natureMode)
     $usesStrictSmogonStrategy = $usesSmogonStrategy -and -not $usesSmogonLegacyStrategy
     $needsLevelMoveFallback = ($moveMode -eq "lastlevelup4") -or ((Test-TrainerModeUsesSmogon $moveMode) -and $smogonMoveFallbackMode -eq "lastlevelup4")
-    $needsPersonalEntries = ($speciesMode -ne "unchanged") -or $needsLevelMoveFallback -or (Test-TrainerModeUsesSmogon $abilityMode) -or $mayExtendTrainerTeams
+    # Les regles speciales lisent le total de statistiques : sans les entrees
+    # personal, le filtre BST ne pourrait rien decider.
+    $needsPersonalEntries = ($speciesMode -ne "unchanged") -or $needsLevelMoveFallback -or (Test-TrainerModeUsesSmogon $abilityMode) -or $mayExtendTrainerTeams -or $trainerRulesActive -or $diverseTypesActive
     if ($needsPersonalEntries) {
         $personalEntries = Get-PersonalEntries -RomfsRoot $RomfsRoot
         for ($i = 1; $i -le $BaseSpeciesMax; $i++) {
             $context.BaseSpeciesEntries[$i] = $personalEntries[$i]
         }
     }
+    # Reservoir de secours pour les regles qui exigent des legendaires alors que
+    # le reservoir courant les exclut. Calcule une seule fois, et seulement si
+    # une regle en a besoin.
+    $trainerRuleFallbackPool = [int[]]@()
+    if ($trainerRulesActive -and $trainerLegendaryPolicy -in @("all", "oneeach")) {
+        $trainerRuleFallbackPool = [int[]](Get-BaseSpeciesPool -AllowLegendaries $true -RomfsRoot $RomfsRoot)
+    }
+
     $learnsetBytes = if ($needsLevelMoveFallback -or $mayExtendTrainerTeams) { Get-LearnsetBytes -RomfsRoot $RomfsRoot } else { $null }
     $levelUpMoveCache = @{}
     $movePool = if ($moveMode -eq "random4" -or (Test-TrainerModeUsesSmogon $moveMode)) { Get-MovePool -RomfsRoot $RomfsRoot } else { @() }
@@ -8286,6 +12071,26 @@ function Invoke-TrainerRandomization {
                 $changedTrainer = $true
             }
         }
+        # Le sac du dresseur : quatre emplacements d'objets a 0x04, 0x06, 0x08
+        # et 0x0A d'un enregistrement de 20 octets. Ce sont les soins qu'il
+        # utilise en plein combat.
+        if ($bagItemMode -ne "unchanged" -and $dataBytes.Length -ge 0x0C) {
+            foreach ($bagOffset in 0x04, 0x06, 0x08, 0x0A) {
+                $actuel = [int](Read-U16 -Data $dataBytes -Offset $bagOffset)
+                if ($actuel -le 0) { continue }
+                $remplacant = if ($bagItemMode -eq "none") {
+                    0
+                } else {
+                    [int](Get-RandomItemReplacement -CurrentItemId $actuel -Rng $Rng -SamePocket)
+                }
+                if ($remplacant -ne $actuel) {
+                    Write-U16 -Data $dataBytes -Offset $bagOffset -Value ([uint16]$remplacant)
+                    $bagItemsEdited++
+                    $changedTrainer = $true
+                }
+            }
+        }
+
         $currentTeamSize = [int]$dataBytes[3]
         $recordCount = [int]($partyBytes.Length / $TrainerPokemonRecordSize)
         $bossToSixTarget = $bossTeamsToSixTrainerIds.Contains($trainerId)
@@ -8311,13 +12116,48 @@ function Invoke-TrainerRandomization {
         $addedSlotLeonFallback = [bool]($addedSlotNeedsGymLeagueType -and $addedSlotGymLeagueTypeId -lt 0 -and ($trainerId -eq 149 -or ((@($bossNameEn, $bossNameFr) -join " ") -match "Leon|Tarak")))
         $forceBossToSix = $bossToSixTarget
         $applyTeamMaxNormalization = (([string]$TeamMaxNormalizationMode) -ne "none") -and $normalizationTarget
-        if (-not $hasGlobalTrainerEdits -and -not $forceBossToSix -and -not $applyTeamMaxNormalization) {
+        # Classe du dresseur, et regles qui en decoulent. Cette classification
+        # doit venir AVANT les deux sorties anticipees ci-dessous : « N Pokemon
+        # de plus » en depend, et le sauter revenait a rendre l'option inerte.
+        $trainerRuleClass = if ($gymLeagueRuleIds.Contains($trainerId)) {
+            "boss"
+        } elseif ($majorBossRuleIds.Contains($trainerId)) {
+            "important"
+        } else {
+            "regular"
+        }
+        $trainerRuleApplies = $trainerRulesActive -and (
+            ($trainerRuleScope -eq "Everyone") -or
+            ($trainerRuleScope -eq "AllBosses" -and $trainerRuleClass -in @("boss", "important")) -or
+            ($trainerRuleScope -eq "GymLeague" -and $trainerRuleClass -eq "boss")
+        )
+        $extraPokemonForClass = switch ($trainerRuleClass) {
+            "boss" { $extraPokemonBoss; break }
+            "important" { $extraPokemonImportant; break }
+            default { $extraPokemonRegular }
+        }
+        # $hasGlobalTrainerEdits enumere les options qui touchent TOUS les
+        # dresseurs, et il oubliait « N Pokemon de plus ». Mesure du 2026-09-07
+        # avec +2 sur les trois classes et la portee « tous » : 77 equipes
+        # agrandies sur les 318 qui avaient la place. Les 77 etaient les boss,
+        # traites par un autre chemin ; tous les autres sortaient ici avant
+        # meme qu'on regarde leur equipe.
+        if (-not $hasGlobalTrainerEdits -and -not $forceBossToSix -and
+            -not $applyTeamMaxNormalization -and $extraPokemonForClass -lt 1) {
             continue
         }
         if ($currentTeamSize -lt 1 -and -not $DoForceAllTeamsToSix -and -not $forceBossToSix -and $TeamMin -lt 1) {
             continue
         }
+
         $targetTeamSize = if ($DoForceAllTeamsToSix -or $forceBossToSix) { 6 } else { $currentTeamSize }
+        # "N Pokemon de plus" : on part de l'equipe d'origine et on plafonne a 6.
+        # Un dresseur sans equipe n'en recoit pas, sinon on creerait des combats
+        # la ou le jeu n'en prevoit aucun.
+        if ($extraPokemonForClass -gt 0 -and $currentTeamSize -gt 0) {
+            $withExtra = [Math]::Min(6, $currentTeamSize + $extraPokemonForClass)
+            if ($withExtra -gt $targetTeamSize) { $targetTeamSize = $withExtra }
+        }
         if ($TeamMin -ge 0 -and $targetTeamSize -lt $TeamMin) { $targetTeamSize = $TeamMin }
         if ($TeamMax -ge 0 -and $targetTeamSize -gt $TeamMax) { $targetTeamSize = $TeamMax }
         if ($targetTeamSize -lt 1) { $targetTeamSize = 1 }
@@ -8436,6 +12276,59 @@ function Invoke-TrainerRandomization {
             }
         }
 
+        # Application des regles speciales. On ne touche qu'au reservoir
+        # d'especes : tout le reste du traitement d'un dresseur est inchange.
+        $legendarySlotIndex = -1
+        $legendarySlotContext = $null
+        if ($trainerRuleApplies) {
+            if ($trainerLegendaryPolicy -eq "oneeach") {
+                # Exactement un legendaire par equipe : un seul slot tire dans
+                # un reservoir de legendaires, les autres restent normaux.
+                $legendarySlotContext = Get-TrainerRulePoolContext `
+                    -SourcePool $trainerContext.BaseSpeciesPool `
+                    -FallbackSourcePool $trainerRuleFallbackPool `
+                    -SpeciesEntries $context.BaseSpeciesEntries `
+                    -LegendaryPolicy "all" `
+                    -MinBaseStatTotal $trainerMinBst
+                if ($null -ne $legendarySlotContext -and $targetTeamSize -gt 0) {
+                    $legendarySlotIndex = $Rng.Next(0, $targetTeamSize)
+                }
+                if ($trainerMinBst -gt 0) {
+                    $ruleContext = Get-TrainerRulePoolContext `
+                        -SourcePool $trainerContext.BaseSpeciesPool `
+                        -SpeciesEntries $context.BaseSpeciesEntries `
+                        -LegendaryPolicy "unchanged" `
+                        -MinBaseStatTotal $trainerMinBst
+                    if ($null -ne $ruleContext) { $trainerContext = $ruleContext }
+                }
+            } else {
+                $ruleContext = Get-TrainerRulePoolContext `
+                    -SourcePool $trainerContext.BaseSpeciesPool `
+                    -FallbackSourcePool $trainerRuleFallbackPool `
+                    -SpeciesEntries $context.BaseSpeciesEntries `
+                    -LegendaryPolicy $trainerLegendaryPolicy `
+                    -MinBaseStatTotal $trainerMinBst
+                if ($null -ne $ruleContext) { $trainerContext = $ruleContext }
+            }
+        }
+        $baseTrainerContext = $trainerContext
+
+        # "Types varies" : ignore si le dresseur a deja un theme de type, sinon
+        # les deux regles se contrediraient.
+        $diverseTypesApplies = $diverseTypesActive -and ($null -eq $themeType) -and (
+            ($diverseTypesScope -eq "Everyone") -or
+            ($diverseTypesScope -eq "AllBosses" -and $trainerRuleClass -in @("boss", "important")) -or
+            ($diverseTypesScope -eq "GymLeague" -and $trainerRuleClass -eq "boss")
+        )
+        # NE PAS ecrire : $x = if (...) { [HashSet[int]]::new() } else { $null }
+        # PowerShell enumere le resultat d'une expression, et une collection
+        # VIDE s'enumere en zero element, donc la variable vaut $null. C'est la
+        # forme ci-dessous, en deux temps, qui est correcte.
+        $usedTrainerTypeIds = $null
+        if ($diverseTypesApplies) {
+            $usedTrainerTypeIds = [System.Collections.Generic.HashSet[int]]::new()
+        }
+
         $requiredThemeType = if ($null -ne $themeType) { [int]$themeType } else { -1 }
         $shouldKeepTrainerSpeciesUnique = ($preventTrainerDuplicates -and ((($DoForceAllTeamsToSix -or $forceBossToSix) -or $speciesMode -ne "unchanged") -and $targetTeamSize -gt 1))
         $usedExpandedTeamSpeciesIds = $null
@@ -8449,6 +12342,21 @@ function Invoke-TrainerRandomization {
 
         for ($slot = 0; $slot -lt $targetTeamSize; $slot++) {
             try {
+            # Regle "un legendaire chacun" : seul le slot designe pioche dans le
+            # reservoir de legendaires. On reaffecte $trainerContext plutot que
+            # de toucher aux dizaines d'appels qui l'utilisent ; il est restaure
+            # apres la boucle.
+            $trainerContext = if ($legendarySlotIndex -ge 0 -and $slot -eq $legendarySlotIndex -and $null -ne $legendarySlotContext) {
+                $legendarySlotContext
+            } else {
+                $baseTrainerContext
+            }
+            if ($null -ne $usedTrainerTypeIds -and $usedTrainerTypeIds.Count -gt 0) {
+                $diverseContext = Get-DiverseTypeContext -Context $trainerContext -UsedTypeIds $usedTrainerTypeIds
+                if ($null -ne $diverseContext) {
+                    $trainerContext = $diverseContext
+                }
+            }
             $offset = $slot * $TrainerPokemonRecordSize
             $isSyntheticAddedSlot = $slot -ge $currentTeamSize
             if ($isSyntheticAddedSlot) {
@@ -8637,9 +12545,7 @@ function Invoke-TrainerRandomization {
             $slotSmogonSet = if ($usesSmogonStrategy) { Get-SmogonStrategicSet -SmogonData $smogonStrategicData -SpeciesId $speciesId -Rng $Rng -PersonalEntries $personalEntries -RequireLegalAbility:(Test-TrainerModeUsesSmogon $abilityMode) } else { $null }
 
             if ($moveMode -eq "random4") {
-                foreach ($moveOffset in 0x12, 0x14, 0x16, 0x18) {
-                    Write-U16 -Data $partyBytes -Offset ($offset + $moveOffset) -Value (Random-FromPool -Rng $Rng -Pool $movePool)
-                }
+                $null = Set-TrainerMovesRandomDistinct -Data $partyBytes -Offset $offset -MovePool $movePool -Rng $Rng
                 $changedTrainer = $true
             } elseif ($moveMode -eq "lastlevelup4") {
                 $level = Read-U16 -Data $partyBytes -Offset ($offset + 0x0A)
@@ -8750,11 +12656,28 @@ function Invoke-TrainerRandomization {
                 $changedTrainer = $true
             }
 
+            # Types de l'espece finalement retenue, pour l'emplacement suivant.
+            if ($null -ne $usedTrainerTypeIds) {
+                $placedSpeciesId = [int](Read-U16 -Data $partyBytes -Offset ($offset + 0x0C))
+                $placedEntry = $null
+                if ($placedSpeciesId -gt 0) {
+                    $placedEntry = $context.BaseSpeciesEntries[$placedSpeciesId]
+                }
+                if ($placedEntry) {
+                    $null = $usedTrainerTypeIds.Add([int]$placedEntry.Type1)
+                    $null = $usedTrainerTypeIds.Add([int]$placedEntry.Type2)
+                }
+            }
+
             $editedPokemon++
             } catch {
                 throw ("Erreur trainer {0} slot {1}: {2}" -f $trainerDataFile.Name, $slot, $_.Exception.Message)
             }
         }
+
+        # La passe de reparation des doublons ci-dessous ne doit pas heriter du
+        # reservoir de legendaires du dernier slot traite.
+        $trainerContext = $baseTrainerContext
 
         $teamDuplicateRepairRequiredType = if ($requiredThemeType -ge 0) {
             [int]$requiredThemeType
@@ -9089,6 +13012,7 @@ function Invoke-TrainerRandomization {
         SpeciesForceEvolved = $speciesForceEvolved
         TrainerTypeThemedTrainers = $trainerTypeThemedTrainers
         TrainerAIMaxed = $trainerAIMaxed
+        BagItemsEdited = $bagItemsEdited
         DynamaxLevelsEdited = $dynamaxLevelsEdited
         DynamaxFlagsForced = $dynamaxFlagsForced
         BossTrainerTargets = [object[]]$bossTrainerTargets.ToArray()
@@ -9107,7 +13031,10 @@ function Invoke-EvolutionRandomization {
         [bool]$DoNormalizeTrade,
         [int]$TradeLevel,
         [bool]$DoNormalizeSpecial,
-        [int]$SpecialLevel
+        [int]$SpecialLevel,
+        [bool]$DoForceGrowth = $false,
+        [bool]$DoSameType = $false,
+        [int]$MinBstGain = -1
     )
 
     $mode = Normalize-Mode $ModeValue
@@ -9150,9 +13077,28 @@ function Invoke-EvolutionRandomization {
     $tradeLevelValue = [Math]::Max(1, [Math]::Min(100, $TradeLevel))
     $specialLevelValue = [Math]::Max(1, [Math]::Min(100, $SpecialLevel))
 
+    # Les fichiers sont nommes evo_NNN.bin, ou NNN est l'espece source : c'est
+    # ce qui permet de comparer la cible tiree a la forme de base.
+    $evolutionConstraintCache = @{}
+
     foreach ($file in Get-ChildItem -LiteralPath (Get-EvolutionDir -RomfsRoot $RomfsRoot) -Filter "*.bin" -File) {
         $bytes = [IO.File]::ReadAllBytes($file.FullName)
         $changed = $false
+
+        $sourceSpeciesId = 0
+        if ($file.BaseName -match '(\d+)\s*$') {
+            $sourceSpeciesId = [int]$Matches[1]
+        }
+        $evolutionContext = $context
+        if ($null -ne $context -and $sourceSpeciesId -gt 0 -and ($DoForceGrowth -or $DoSameType -or $MinBstGain -ge 0)) {
+            $evolutionContext = Get-EvolutionConstrainedContext `
+                -Context $context `
+                -SourceSpeciesId $sourceSpeciesId `
+                -ForceGrowth $DoForceGrowth `
+                -SameType $DoSameType `
+                -MinBstGain $MinBstGain `
+                -Cache $evolutionConstraintCache
+        }
 
         for ($slot = 0; $slot -lt $EvolutionRecordsPerSpecies; $slot++) {
             $slotOffset = $slot * $EvolutionRecordSize
@@ -9183,7 +13129,7 @@ function Invoke-EvolutionRandomization {
             }
 
             if ($mode -ne "unchanged") {
-                $replacement = Get-SpeciesReplacement -Rng $Rng -CurrentSpeciesId $targetSpecies -Mode $mode -Context $context
+                $replacement = Get-SpeciesReplacement -Rng $Rng -CurrentSpeciesId $targetSpecies -Mode $mode -Context $evolutionContext
                 if ($replacement -ne $targetSpecies) {
                     Write-U16 -Data $bytes -Offset ($slotOffset + 4) -Value $replacement
                     $changed = $true
@@ -9272,35 +13218,35 @@ function Write-RandomizationReport {
     $effectiveAnyExpLevelCap = $selectedExpLevelCapMode -ne "none"
     $effectiveStrictBossMaxLevelCap = $selectedExpLevelCapMode -eq "strictBossMaxLevel"
     $bossCapEnforcementMode = Get-BossLevelCapEnforcementMode
-    $dynamicExpCapNotesFr = "Le cap EXP dynamique n'est plus genere en IPS brut: le hook fiable passe par ExLaunch au point final du calcul EXP. Le multiplicateur EXP runtime et l'etat EXP Share passent aussi par ExLaunch."
+    $dynamicExpCapNotesFr = "Le cap EXP dynamique n'est plus généré en IPS brut: le hook fiable passe par ExLaunch au point final du calcul EXP. Le multiplicateur EXP runtime et l'état EXP Share passent aussi par ExLaunch."
     $dynamicExpCapNotesEn = "Dynamic EXP cap is no longer emitted as a raw IPS patch: the reliable hook goes through ExLaunch at the final EXP calculation point. Runtime EXP multiplier and EXP Share state also go through ExLaunch."
     if ($effectiveStoryMajorBattleOrderLevelCap) {
-        $dynamicExpCapNotesFr += " Avec le mode ordre histoire principale, le randomizer uniformise une liste ordonnee de gros combats (arenes, Nabil, Travis, Rosemary, Liv, Shehroz, Tarak) sur leur niveau max, mais le blocage EXP demande ExLaunch."
+        $dynamicExpCapNotesFr += " Avec le mode ordre histoire principale, le randomizer uniformise une liste ordonnée de gros combats (arènes, Nabil, Travis, Rosemary, Liv, Shehroz, Tarak) sur leur niveau max, mais le blocage EXP demande ExLaunch."
         $dynamicExpCapNotesEn += " With the ordered main-story mode, the randomizer normalizes an ordered list of major battles (gyms, Hop, Bede, Marnie, Oleana, Rose, Leon) to their max level, but EXP enforcement requires ExLaunch."
     } elseif ($effectiveStrictBossMaxLevelCap) {
-        $dynamicExpCapNotesFr += " Avec l'option boss max strict, l'outil aligne chaque equipe boss listee sur son niveau max; le blocage EXP strict demande ExLaunch."
+        $dynamicExpCapNotesFr += " Avec l'option boss max strict, l'outil aligne chaque équipe boss listée sur son niveau max; le blocage EXP strict demande ExLaunch."
         $dynamicExpCapNotesEn += " With the strict boss max option, the tool normalizes each listed boss team to its highest level; strict EXP enforcement requires ExLaunch."
     }
-    $mainStorySoftCapNotesFr = "Mode progression principale souple: calcule une table de 9 caps basee sur les badges, mais chaque palier prend le niveau max des gros combats de progression du meme bloc. Les arenes restent l'ossature et les vrais boss antagonistes / fin d'histoire sont ajoutes quand ils tombent dans le meme palier, pour reduire l'overlevel sans micro-caps trop frequents."
+    $mainStorySoftCapNotesFr = "Mode progression principale souple: calcule une table de 9 caps basée sur les badges, mais chaque palier prend le niveau max des gros combats de progression du même bloc. Les arènes restent l'ossature et les vrais boss antagonistes / fin d'histoire sont ajoutés quand ils tombent dans le même palier, pour reduire l'overlevel sans micro-caps trop frequents."
     $mainStorySoftCapNotesEn = "Soft main-story progression mode: computes a 9-step badge-based cap table, but each milestone takes the max level from the major progression fights in the same block. Gyms remain the backbone and the real villain / endgame bosses are folded in when they land in the same milestone, reducing overleveling without overly frequent micro-caps."
-    $storyGymLeagueCapNotesFr = "Mode histoire arenes/champion: les 9 caps sont calcules apres randomisation depuis les vraies equipes generees. L'application en jeu demande maintenant le module ExLaunch, pas un IPS brut."
+    $storyGymLeagueCapNotesFr = "Mode histoire arènes/champion: les 9 caps sont calculés après randomisation depuis les vraies équipes générées. L'application en jeu demande maintenant le module ExLaunch, pas un IPS brut."
     $storyGymLeagueCapNotesEn = "Gym/champion story mode: the 9 caps are computed after randomization from the actual generated teams. In-game enforcement now requires the ExLaunch module, not a raw IPS patch."
     $storyMajorBattleCapNotesFr = "Mode ordre histoire principale: l'outil prend une liste ordonnee des gros combats de l'histoire principale (arenes, Nabil, Travis, Rosemary, Liv, Shehroz, Tarak). Chaque equipe de cette liste est uniformisee sur son niveau max apres randomisation et exportee dans story-major-battle-caps.json. Le blocage EXP en jeu demande ExLaunch."
     $storyMajorBattleCapNotesEn = "Ordered main-story mode: the tool uses an ordered list of major main-story battles (gyms, Hop, Bede, Marnie, Oleana, Rose, Leon). Each listed team is normalized to its max level after randomization and exported to story-major-battle-caps.json. In-game EXP enforcement requires ExLaunch."
     $bossLevelCapNotesFr = if ($effectiveMainStorySoftLevelCap) {
-        "Le JSON liste toujours les caps boss calcules depuis le niveau max des equipes boss apres randomisation, mais le cap applique en jeu vient du mode progression principale souple. Ce mode utilise toujours 9 paliers par badge, enrichis avec les vrais boss antagonistes / fin d'histoire du meme bloc."
+        "Le JSON liste toujours les caps boss calculés depuis le niveau max des équipes boss après randomisation, mais le cap applique en jeu vient du mode progression principale souple. Ce mode utilise toujours 9 paliers par badge, enrichis avec les vrais boss antagonistes / fin d'histoire du même bloc."
     } elseif ($effectiveStoryGymLeagueExpCap) {
-        "Le JSON liste toujours les caps boss calcules depuis le niveau max des equipes boss apres randomisation, mais le cap applique en jeu vient du mode histoire arenes/champion. Ce mode lit 9 caps de progression bases sur le nombre de badges: arene 1 a 8 puis Tarak."
+        "Le JSON liste toujours les caps boss calculés depuis le niveau max des équipes boss après randomisation, mais le cap applique en jeu vient du mode histoire arènes/champion. Ce mode lit 9 caps de progression bases sur le nombre de badges: arène 1 a 8 puis Tarak."
     } elseif ($effectiveStoryMajorBattleOrderLevelCap) {
         "Le JSON liste les caps calcules depuis le niveau max des boss apres randomisation. Avec le mode ordre histoire principale, le patch EXP dynamique reste global et les gros combats listes dans story-major-battle-caps.json sont aussi uniformises sur leur niveau max pour rendre leurs caps stricts."
     } elseif ($effectiveStrictBossMaxLevelCap) {
-        "Le JSON liste les caps calcules depuis le niveau max des boss apres randomisation. Le mode strict boss max active aussi le patch EXP dynamique puis aligne tous les Pokemon des boss listes sur le niveau max de leur equipe: pendant ces combats, le cap se comporte donc comme un vrai plafond boss max level. Ce n'est toujours pas un suivi de progression par badge."
+        "Le JSON liste les caps calculés depuis le niveau max des boss après randomisation. Le mode strict boss max active aussi le patch EXP dynamique puis aligne tous les Pokémon des boss listes sur le niveau max de leur équipe: pendant ces combats, le cap se comporte donc comme un vrai plafond boss max level. Ce n'est toujours pas un suivi de progression par badge."
     } elseif ($effectiveReceiverLevelExpCap) {
-        "Le JSON liste les caps calcules depuis le niveau max des boss apres randomisation. Avec le levelcap EXP dynamique actif, le jeu bloque a 1 EXP quand le Pokemon receveur est au niveau du Pokemon adverse vaincu ou au-dessus. Ce n'est pas un suivi de progression par badge: c'est un cap dynamique par Pokemon adverse battu."
+        "Le JSON liste les caps calculés depuis le niveau max des boss après randomisation. Avec le levelcap EXP dynamique actif, le jeu bloque a 1 EXP quand le Pokémon receveur est au niveau du Pokémon adverse vaincu ou au-dessus. Ce n'est pas un suivi de progression par badge: c'est un cap dynamique par Pokémon adverse battu."
     } elseif ($expLevelCapRequiresExLaunch) {
         "Le JSON liste les caps calcules. Le cap EXP en jeu passe maintenant par ExLaunch: il faut que main.npdm/subsdk9 soient presents dans exefs et que sdmc/config/swsh-mods-exl/config.toml contienne les caps generes. Le vieux patch IPS brut a ete retire car il ecrasait du code vivant."
     } else {
-        "Le JSON liste les caps calcules depuis le niveau max des boss apres randomisation. Sans patch ExeFS actif, ce fichier reste une reference des caps boss."
+        "Le JSON liste les caps calculés depuis le niveau max des boss après randomisation. Sans patch ExeFS actif, ce fichier reste une référence des caps boss."
     }
     $bossLevelCapNotesEn = if ($effectiveMainStorySoftLevelCap) {
         "This JSON still lists boss caps computed from max team level after randomization, but the in-game cap now comes from soft main-story progression mode. That mode still uses 9 badge-count milestones, enriched with the real villain / endgame bosses that land in the same block."
@@ -9320,7 +13266,7 @@ function Write-RandomizationReport {
     $starterPatchChanges = Convert-ToObjectArray $Result.StarterRelatedTrainerPatchChanges
 
     $report = [ordered]@{
-        version = "V4.17"
+        version = $AppVersion
         generatedAt = [DateTime]::UtcNow.ToString("o")
         reportLanguage = $reportLang
         sourceRomfs = $SourceRomfs
@@ -9330,18 +13276,12 @@ function Write-RandomizationReport {
         sourceGameVersion = $sourceGameVersion
         seed = $Result.Seed
         bstExplanation = @{
-            fr = "BST = Base Stat Total, la somme des 6 stats de base d'un Pokemon."
+            fr = "BST = Base Stat Total, la somme des 6 stats de base d'un Pokémon."
             en = "BST = Base Stat Total, the sum of a Pokemon's 6 base stats."
         }
         options = [ordered]@{
             autoInstallToEmulators = [bool]$AutoInstallToEden
-            installToEden = [bool]$InstallToEden
             installToRyujinx = [bool]$InstallToRyujinx
-            installToYuzu = [bool]$InstallToYuzu
-            installToSudachi = [bool]$InstallToSudachi
-            installToCitron = [bool]$InstallToCitron
-            installToSuyu = [bool]$InstallToSuyu
-            installToCitronNeo = [bool]$InstallToCitronNeo
             modInstallName = Get-NormalizedModName -ModName $EdenModName
             trainerSpeciesMode = $TrainerSpeciesMode
             trainerMoveMode = $TrainerMoveMode
@@ -9350,6 +13290,7 @@ function Write-RandomizationReport {
             trainerItemPoolMode = $TrainerItemPoolMode
             trainerAddedSlotSpeciesMode = $TrainerAddedSlotSpeciesMode
             trainerDuplicateMode = $TrainerDuplicateMode
+            trainerBagItemMode = $TrainerBagItemMode
             trainerAbilityMode = $TrainerAbilityMode
             trainerIVMode = $TrainerIVMode
             trainerEVMode = $TrainerEVMode
@@ -9391,6 +13332,14 @@ function Write-RandomizationReport {
             randomizePickupItems = [bool]$RandomizePickupItems
             randomizeShopItems = [bool]$RandomizeShopItems
             randomizeTechnicalRecords = [bool]$RandomizeTechnicalRecords
+            shopItemMode = $ShopItemMode
+            shopPriceMode = Get-ShopPriceModeValue
+            shopPriceMultiplier = Get-ShopPriceMultiplierValue
+            shopPriceMin = (Get-ShopPriceBounds).Min
+            shopPriceMax = (Get-ShopPriceBounds).Max
+            overworldModelSafeEncounters = [bool]$OverworldModelSafeEncounters
+            writeInstallationPackage = [bool]$WriteInstallationPackage
+            strictDataFiles = [bool]$StrictDataFiles
             evolutionMode = $EvolutionMode
             allowLegendaryEvolutions = [bool]$AllowLegendaryEvolutions
             normalizeFriendshipEvolutions = [bool]$NormalizeFriendshipEvolutions
@@ -9413,8 +13362,12 @@ function Write-RandomizationReport {
             grassEncounterMode = $GrassEncounterMode
             allowLegendaryGrassEncounters = [bool]$AllowLegendaryGrassEncounters
             grassEncounterStableMapping = $GrassEncounterStableMapping
+            effectiveGrassEncounterStableMapping = (Get-EffectiveGrassEncounterStableMapping)
             visibleEncounterBehavior = (Get-NormalizedVisibleEncounterBehavior -Value $VisibleEncounterBehavior)
+            encounterDrawMode = (Get-NormalizedEncounterDrawMode -Value $EncounterDrawMode -LegacyVisibleBehavior $VisibleEncounterBehavior)
             liveEncounterRandomizerMode = (Get-LiveEncounterRandomizerMode)
+            liveEncounterVisibleBehavior = (Get-LiveEncounterVisibleBehaviorValue)
+            liveEncounterDrawMode = (Get-LiveEncounterDrawModeValue)
             undergroundMode = $UndergroundMode
             allowLegendaryUnderground = [bool]$AllowLegendaryUnderground
             disableExpShare = [bool]$DisableExpShare
@@ -9428,7 +13381,6 @@ function Write-RandomizationReport {
             effectiveAnyExpLevelCap = $effectiveAnyExpLevelCap
             effectiveExpLevelCapMode = Get-SelectedExpLevelCapMode
             expLevelCapRequiresExLaunch = $expLevelCapRequiresExLaunch
-            raceMode = [bool]$RaceMode
             exportEncounterZoneReport = [bool]$ExportEncounterZoneReport
         }
         counts = [ordered]@{
@@ -9452,6 +13404,7 @@ function Write-RandomizationReport {
             trainerSpeciesForceEvolved = $Result.TrainerSpeciesForceEvolved
             trainerTypeThemedTrainers = $Result.TrainerTypeThemedTrainers
             trainerAIMaxed = $Result.TrainerAIMaxed
+            trainerBagItemsEdited = $Result.TrainerBagItemsEdited
             trainerDynamaxLevelsEdited = $Result.TrainerDynamaxLevelsEdited
             trainerDynamaxFlagsForced = $Result.TrainerDynamaxFlagsForced
             trainerChangesLogged = $Result.TrainerChangesLogged
@@ -9494,7 +13447,7 @@ function Write-RandomizationReport {
             patchRoot = $Result.ExeFsPatchRoot
             filesWritten = $Result.ExeFsPatchFilesWritten
             notes = [ordered]@{
-                fr = "Les anciens IPS ExeFS generes par cet outil sont nettoyes. Le cap EXP, le multiplicateur EXP runtime et l'etat EXP Share demandent maintenant le module ExLaunch."
+                fr = "Les anciens IPS ExeFS générés par cet outil sont nettoyes. Le cap EXP, le multiplicateur EXP runtime et l'état EXP Share demandent maintenant le module ExLaunch."
                 en = "Old ExeFS IPS files generated by this tool are cleaned up. EXP caps, runtime EXP multiplier, and EXP Share state now require the ExLaunch module."
             }
             all = @($Result.ExeFsPatches)
@@ -9535,7 +13488,7 @@ function Write-RandomizationReport {
                 exLaunchConfigPath = $Result.ExpLevelCapExLaunchConfigPath
                 requestedDirectly = ([bool]$GymLeagueStoryLevelCap -or [bool]$MainStorySoftLevelCap)
                 notes = [ordered]@{
-                    fr = if ($effectiveMainStorySoftLevelCap) { $mainStorySoftCapNotesFr + " Techniquement, le module ExLaunch reutilise la meme table interne de 9 caps par badge que le mode arenes/Tarak." } else { $storyGymLeagueCapNotesFr }
+                    fr = if ($effectiveMainStorySoftLevelCap) { $mainStorySoftCapNotesFr + " Techniquement, le module ExLaunch réutilise la même table interne de 9 caps par badge que le mode arènes/Tarak." } else { $storyGymLeagueCapNotesFr }
                     en = if ($effectiveMainStorySoftLevelCap) { $mainStorySoftCapNotesEn + " Technically, the ExLaunch module reuses the same internal 9-slot badge table backend as the gym/champion mode." } else { $storyGymLeagueCapNotesEn }
                 }
                 patches = @($storyGymLeagueExpCapPatches)
@@ -9567,7 +13520,7 @@ function Write-RandomizationReport {
             failureCount = $Result.AutoInstallFailureCount
             results = @($Result.AutoInstallResults)
             notes = [ordered]@{
-                fr = "Si l'option est cochee, le randomizer tente de copier automatiquement romfs, exefs et le sous-arbre sdmc genere vers tous les emulateurs coches et detectes sur le PC: Eden, Ryujinx, Yuzu, Sudachi, Citron, Suyu et Citron Neo."
+                fr = "Si l'option est cochee, le randomizer tente de copier automatiquement romfs, exefs et le sous-arbre sdmc généré vers tous les émulateurs coches et detectes sur le PC: Eden, Ryujinx, Yuzu, Sudachi, Citron, Suyu et Citron Neo."
                 en = "When enabled, the randomizer tries to copy the generated romfs, exefs and sdmc subtree into every checked and detected emulator on the PC: Eden, Ryujinx, Yuzu, Sudachi, Citron, Suyu, and Citron Neo."
             }
         }
@@ -9576,8 +13529,8 @@ function Write-RandomizationReport {
             readmePath = $Result.InstallationPackageReadmePath
             targets = @($Result.InstallationTargets)
             notes = [ordered]@{
-                fr = "Le dossier Installation contient des arborescences deja pretes a copier pour Eden, Ryujinx, Yuzu, Sudachi, Citron, Suyu et Citron Neo, avec un README bilingue."
-                en = "The Installation folder contains ready-to-copy layouts for Eden, Ryujinx, Yuzu, Sudachi, Citron, Suyu, and Citron Neo, plus a bilingual README."
+                fr = "Le dossier Installation contient une arborescence déjà prete a copier pour Ryujinx, avec un README bilingue."
+                en = "The Installation folder contains a ready-to-copy layout for Ryujinx, plus a bilingual README."
             }
         }
         starterRelatedTrainerPatches = [ordered]@{
@@ -9585,7 +13538,7 @@ function Write-RandomizationReport {
             filesEdited = $Result.StarterRelatedTrainerFilesEdited
             slotsEdited = $Result.StarterRelatedTrainerSlotsEdited
             notes = [ordered]@{
-                fr = "Repatch robuste: les slots sont identifies depuis les donnees vanilla, puis forces vers le trio de starters final meme si les dresseurs ont deja ete randomises. Les slots patches reconstruisent aussi leurs attaques selon le mode moves dresseurs actif."
+                fr = "Repatch robuste: les slots sont identifies depuis les données vanilla, puis forces vers le trio de starters final même si les dresseurs ont déjà été randomises. Les slots patches reconstruisent aussi leurs attaques selon le mode moves dresseurs actif."
                 en = "Robust repatch: slots are identified from vanilla data, then forced to the final starter trio even if trainer teams were already randomized. Patched slots also rebuild their moves according to the active trainer move mode."
             }
             changes = @($starterPatchChanges)
@@ -9596,7 +13549,7 @@ function Write-RandomizationReport {
             configuredTargetCount = Get-ObjectArrayCount $bossTeamsToSixConfiguredCatalog
             appliedTargetCount = Get-ObjectArrayCount $bossTeamsToSixAppliedTargets
             notes = [ordered]@{
-                fr = "configuredTargets liste les combats retenus par le scope choisi pour l'option boss a 6. appliedTargets liste les combats effectivement traites pendant cette generation. forcedToSix peut etre false si une limite de taille d'equipe bloque sous 6."
+                fr = "configuredTargets liste les combats retenus par le scope choisi pour l'option boss a 6. appliedTargets liste les combats effectivement traites pendant cette génération. forcedToSix peut être false si une limite de taille d'équipe bloque sous 6."
                 en = "configuredTargets lists the battles selected by the chosen boss-to-6 scope. appliedTargets lists battles actually processed during this generation. forcedToSix can be false if a team-size clamp keeps the team below 6."
             }
             uniqueNames = [ordered]@{
@@ -9616,8 +13569,8 @@ function Write-RandomizationReport {
             appliedTargetCount = Get-ObjectArrayCount $strictBossCapAppliedTargets
             normalizedTeamCount = @($strictBossCapAppliedTargets | Where-Object { $_.strictBossMaxLevelCap -and [bool]$_.strictBossMaxLevelCap.applied }).Count
             notes = [ordered]@{
-                fr = if ($effectiveMainStorySoftLevelCap) { "Cette option a ete demandee mais le mode progression principale souple a la priorite pour l'EXP et ne lance pas la normalisation boss max stricte pendant cette generation." } elseif ([bool]$GymLeagueStoryLevelCap) { "Cette option a ete demandee mais le mode histoire arenes/champion a la priorite pour l'EXP et desactive la normalisation boss max strict pendant cette generation." } elseif ([bool]$StoryMajorBattleOrderLevelCap) { "Cette option a ete demandee mais le mode ordre histoire principale prend la priorite et utilise sa propre liste ordonnee de combats." } else { "Utilise la meme liste de boss que ci-dessus et aligne tous les Pokemon de ces equipes sur le niveau max de leur equipe. Le blocage EXP en jeu demande le module ExLaunch." }
-                en = if ($effectiveMainStorySoftLevelCap) { "This option was requested, but soft main-story progression mode takes priority for EXP and does not run strict boss max normalization during this generation." } elseif ([bool]$GymLeagueStoryLevelCap) { "This option was requested, but the gym/champion story mode takes priority for EXP and disables strict boss max normalization during this run." } elseif ([bool]$StoryMajorBattleOrderLevelCap) { "This option was requested, but the ordered main-story mode takes priority and uses its own ordered battle list." } else { "Uses the same boss list as above and normalizes every Pokemon in those teams to that team's max level. In-game EXP enforcement requires the ExLaunch module." }
+                fr = if ($effectiveMainStorySoftLevelCap) { "Cette option a été demandée mais le mode progression principale souple a la priorité pour l'EXP et ne lance pas la normalisation boss max stricte pendant cette génération." } elseif ([bool]$GymLeagueStoryLevelCap) { "Cette option a été demandée mais le mode histoire arènes/champion a la priorité pour l'EXP et désactivé la normalisation boss max strict pendant cette génération." } elseif ([bool]$StoryMajorBattleOrderLevelCap) { "Cette option a été demandée mais le mode ordre histoire principale prend la priorité et utilise sa propre liste ordonnée de combats." } else { "Utilise la même liste de boss que ci-dessus et aligne tous les Pokémon de ces équipes sur le niveau max de leur équipe. Le blocage EXP en jeu demande le module ExLaunch." }
+                en = if ($effectiveMainStorySoftLevelCap) { "This option was requested, but soft main-story progression mode takes priority for EXP and does not run strict boss max normalization during this generation." } elseif ([bool]$GymLeagueStoryLevelCap) { "This option was requested, but the gym/champion story mode takes priority for EXP and disables strict boss max normalization during this run." } elseif ([bool]$StoryMajorBattleOrderLevelCap) { "This option was requested, but the ordered main-story mode takes priority and uses its own ordered battle list." } else { "Uses the same boss list as above and normalizes every Pokémon in those teams to that team's max level. In-game EXP enforcement requires the ExLaunch module." }
             }
             configuredTargets = @($bossTargetCatalog)
             appliedTargets = @($strictBossCapAppliedTargets)
@@ -9643,7 +13596,7 @@ function Write-RandomizationReport {
             normalizedTeamCount = @($storyMajorBattleAppliedTargets | Where-Object { $_.storyMajorBattleOrderLevelCap -and [bool]$_.storyMajorBattleOrderLevelCap.applied }).Count
             reportPath = $Result.StoryMajorBattleCapsReportPath
             notes = [ordered]@{
-                fr = if ($effectiveMainStorySoftLevelCap) { "Cette option a ete demandee mais le mode progression principale souple garde la priorite pour l'EXP. Le mode ordre histoire principale n'est donc pas applique pendant cette generation." } elseif ([bool]$GymLeagueStoryLevelCap) { "Cette option a ete demandee mais le mode histoire arenes/champion garde la priorite pour l'EXP. Le mode ordre histoire principale n'est donc pas applique pendant cette generation." } else { $storyMajorBattleCapNotesFr }
+                fr = if ($effectiveMainStorySoftLevelCap) { "Cette option a été demandée mais le mode progression principale souple garde la priorité pour l'EXP. Le mode ordre histoire principale n'est donc pas applique pendant cette génération." } elseif ([bool]$GymLeagueStoryLevelCap) { "Cette option a été demandée mais le mode histoire arènes/champion garde la priorité pour l'EXP. Le mode ordre histoire principale n'est donc pas applique pendant cette génération." } else { $storyMajorBattleCapNotesFr }
                 en = if ($effectiveMainStorySoftLevelCap) { "This option was requested, but soft main-story progression mode keeps EXP priority. The ordered main-story mode is therefore not applied during this generation." } elseif ([bool]$GymLeagueStoryLevelCap) { "This option was requested, but gym/champion story mode keeps EXP priority. The ordered main-story mode is therefore not applied during this run." } else { $storyMajorBattleCapNotesEn }
             }
             configuredTargets = @($storyMajorBattleTargetCatalog)
@@ -9655,7 +13608,7 @@ function Write-RandomizationReport {
             count = Get-ObjectArrayCount $storyGymLeagueCaps
             reportPath = $Result.StoryGymLeagueCapsReportPath
             notes = [ordered]@{
-                fr = if ($effectiveMainStorySoftLevelCap) { "Cette option a ete demandee mais le mode progression principale souple garde la priorite et utilise sa propre table de 9 caps enrichie avec les boss antagonistes." } else { $storyGymLeagueCapNotesFr }
+                fr = if ($effectiveMainStorySoftLevelCap) { "Cette option a été demandée mais le mode progression principale souple garde la priorité et utilise sa propre table de 9 caps enrichie avec les boss antagonistes." } else { $storyGymLeagueCapNotesFr }
                 en = if ($effectiveMainStorySoftLevelCap) { "This option was requested, but soft main-story progression mode keeps priority and uses its own 9-step table enriched with villain bosses." } else { $storyGymLeagueCapNotesEn }
             }
             stages = @($storyGymLeagueCaps)
@@ -9676,7 +13629,7 @@ function Write-RandomizationReport {
             fr = @(
                 "Amitie convertie en niveau: methodes 1, 2, 3.",
                 "Echange converti en niveau: methodes 5, 6, 7.",
-                "Special converti en niveau: toutes les methodes non vides qui ne sont pas deja niveau pur."
+                "Spécial converti en niveau: toutes les methodes non vides qui ne sont pas déjà niveau pur."
             )
             en = @(
                 "Friendship converted to level-up: methods 1, 2, 3.",
@@ -9690,7 +13643,6 @@ function Write-RandomizationReport {
             itemChanges = $Result.ItemChangesReportPath
             encounterZones = $Result.EncounterZoneReportPath
             seedSummary = $Result.SeedSummaryReportPath
-            raceSummary = $Result.RaceSummaryReportPath
             spoilerLog = $Result.SpoilerLogReportPath
             levelCaps = $Result.BossLevelCapsReportPath
             mainStorySoftCaps = $Result.MainStorySoftCapsReportPath
@@ -9700,7 +13652,7 @@ function Write-RandomizationReport {
     }
 
     $reportPath = if ([string]::IsNullOrWhiteSpace($JsonReportPath)) {
-        Join-Path $OutputRomfsRoot "randomizer-report.json"
+        Get-OutputReportPath -OutputRomfsRoot $OutputRomfsRoot -FileName "randomizer-report.json"
     } else {
         $JsonReportPath
     }
@@ -9726,7 +13678,7 @@ function Write-TrainerChangesReport {
         return $null
     }
 
-    $reportPath = Join-Path $OutputRomfsRoot "trainer-changes.json"
+    $reportPath = Get-OutputReportPath -OutputRomfsRoot $OutputRomfsRoot -FileName "trainer-changes.json"
     Ensure-ParentDirectory -Path $reportPath
     $trainerChangesArray = Convert-ToObjectArray $TrainerChanges
     $bossTrainerTargetsArray = Convert-ToObjectArray $BossTrainerTargets
@@ -9737,19 +13689,19 @@ function Write-TrainerChangesReport {
         Sort-Object @{ Expression = { if ($_.storyMajorBattleOrderLevelCap) { [int]$_.storyMajorBattleOrderLevelCap.stageIndex } else { 0 } } }, @{ Expression = { [int]$_.trainerId } })
 
     $report = [ordered]@{
-        version = "V4.17"
+        version = $AppVersion
         generatedAt = [DateTime]::UtcNow.ToString("o")
         sourceRomfs = $SourceRomfs
         outputRomfs = $OutputRomfsRoot
         seed = $ResolvedSeed
         notes = [ordered]@{
-            fr = "Detail avant/apres pour chaque dresseur modifie. Les slots sont numerotes a partir de 1."
+            fr = "Detail avant/après pour chaque dresseur modifie. Les slots sont numerotes a partir de 1."
             en = "Before/after details for each edited trainer. Slots are numbered from 1."
         }
         bossTeamsToSixTargets = [ordered]@{
             count = Get-ObjectArrayCount $bossTeamsToSixTargetsArray
             notes = [ordered]@{
-                fr = "Combats detectes comme boss et traites par l'option boss a 6 Pokemon pendant cette generation."
+                fr = "Combats detectes comme boss et traites par l'option boss a 6 Pokémon pendant cette génération."
                 en = "Battles detected as bosses and processed by the boss teams to 6 Pokemon option during this generation."
             }
             targets = @($bossTeamsToSixTargetsArray)
@@ -9757,7 +13709,7 @@ function Write-TrainerChangesReport {
         strictBossMaxLevelCapTargets = [ordered]@{
             count = Get-ObjectArrayCount $strictBossCapTargetsArray
             notes = [ordered]@{
-                fr = "Combats detectes comme boss et traites par l'option boss max strict pendant cette generation. Chaque cible exporte le niveau cap retenu et les niveaux avant/apres normalisation."
+                fr = "Combats detectes comme boss et traites par l'option boss max strict pendant cette génération. Chaque cible exporte le niveau cap retenu et les niveaux avant/après normalisation."
                 en = "Battles detected as bosses and processed by the strict boss max option during this generation. Each target exports the selected cap level and the levels before/after normalization."
             }
             targets = @($strictBossCapTargetsArray)
@@ -9765,7 +13717,7 @@ function Write-TrainerChangesReport {
         storyMajorBattleOrderLevelCapTargets = [ordered]@{
             count = Get-ObjectArrayCount $storyMajorBattleTargetsArray
             notes = [ordered]@{
-                fr = "Combats majeurs de l'histoire principale traites par le mode ordre histoire. Ils sont exportes dans l'ordre avec leur etape, leur categorie et les niveaux avant/apres normalisation."
+                fr = "Combats majeurs de l'histoire principale traites par le mode ordre histoire. Ils sont exportes dans l'ordre avec leur étape, leur catégorie et les niveaux avant/après normalisation."
                 en = "Main-story major battles processed by the ordered story mode. They are exported in order with their stage, category, and levels before/after normalization."
             }
             targets = @($storyMajorBattleTargetsArray)
@@ -9789,33 +13741,50 @@ function Write-WildChangesReport {
         return $null
     }
 
-    $reportPath = Join-Path $OutputRomfsRoot "wild-changes.json"
+    $reportPath = Get-OutputReportPath -OutputRomfsRoot $OutputRomfsRoot -FileName "wild-changes.json"
     Ensure-ParentDirectory -Path $reportPath
     $wildChangesArray = Convert-ToObjectArray $WildChanges
     $visibleBehavior = Get-NormalizedVisibleEncounterBehavior -Value $VisibleEncounterBehavior
-    $visibleNotes = switch ($visibleBehavior) {
-        "VanillaVisualBattleRandom" {
+    $drawMode = Get-NormalizedEncounterDrawMode -Value $EncounterDrawMode -LegacyVisibleBehavior $VisibleEncounterBehavior
+    $visibleNotes = switch ($drawMode) {
+        "FullRandom" {
             [ordered]@{
-                fr = "Les Pokemon visibles gardent leur modele vanilla dans le ROMFS. Le combat est remplace au runtime par ExLaunch, donc les remplacements visibles->combat sont documentes dans randomizer-report.json/config.toml plutot que comme edits ROMFS."
-                en = "Visible Pokemon keep their vanilla ROMFS model. Battle species are swapped at runtime through ExLaunch, so visible->battle replacements are documented in randomizer-report.json/config.toml rather than as ROMFS edits."
+                fr = "Mode full_random: les tables visibles ROMFS utilisent un pool de modeles overworld detectes, et le combat runtime relance un tirage independant a chaque rencontre."
+                en = "full_random mode: visible ROMFS tables use a detected overworld-model pool, and the runtime battle layer rolls an independent replacement for each encounter."
             }
         }
-        "RandomVisualBattleRandom" {
+        "VisibleFixeTirageRandom" {
             [ordered]@{
-                fr = "Les Pokemon visibles sont randomises dans les tables ROMFS, puis ExLaunch peut reroll le modele visible et tirer un Pokemon de combat cache separe. C'est le mode full random visible + combat cache, avec fallback ROMFS si une zone n'est pas couverte par le hook."
-                en = "Visible Pokemon are randomized in the ROMFS tables, then ExLaunch can reroll the visible model and choose a separate hidden battle Pokemon. This is the full random visual + hidden battle mode, with a ROMFS fallback if one area is not covered by the hook."
+                fr = "Mode visible_fixe_tirage_random: les modeles visibles restent ceux du ROMFS, mais le combat runtime relance un tirage a chaque rencontre."
+                en = "visible_fixe_tirage_random mode: visible models stay as authored in ROMFS, but the runtime battle layer rolls again for each encounter."
             }
         }
         default {
-            [ordered]@{
-                fr = "Les Pokemon visibles sont reecrits dans le ROMFS: le visuel random et le combat random correspondent."
-                en = "Visible Pokemon are rewritten in ROMFS: random visual and random battle match."
+            switch ($visibleBehavior) {
+                "RevelationPermanente" {
+                    [ordered]@{
+                        fr = "Mode slot_par_espece + revelation permanente: une espèce visible de cette zone mene a un remplacement stable, puis le Pokémon révélé reste stable sans boucle."
+                        en = "slot_par_espece + permanent reveal: a visible species in this zone maps to a stable replacement, then the revealed Pokemon stays stable without chaining."
+                    }
+                }
+                "MasqueFixe" {
+                    [ordered]@{
+                        fr = "Mode slot_par_espece + masque fixe: le modèle overworld ne change pas; la copie de combat reçoit le remplacement stable par zone/espèce/form."
+                        en = "slot_par_espece + fixed mask: the overworld model does not change; the battle copy receives the stable zone/species/form replacement."
+                    }
+                }
+                default {
+                    [ordered]@{
+                        fr = "Mode classique: les Pokémon visibles et les combats suivent les tables ROMFS."
+                        en = "Classic mode: visible Pokemon and battles follow ROMFS tables."
+                    }
+                }
             }
         }
     }
 
     $report = [ordered]@{
-        version = "V4.17"
+        version = $AppVersion
         generatedAt = [DateTime]::UtcNow.ToString("o")
         sourceRomfs = $SourceRomfs
         outputRomfs = $OutputRomfsRoot
@@ -9867,11 +13836,11 @@ function Get-EncounterMethodDisplayName {
         }
         "symbolOverworldEncounter" {
             if (-not [string]::IsNullOrWhiteSpace($subTable)) { return "Visible overworld - $subTable" }
-            return $(if ($Language -eq "en") { "Visible overworld" } else { "Pokemon visible overworld" })
+            return $(if ($Language -eq "en") { "Visible overworld" } else { "Pokémon visible overworld" })
         }
         "staticScriptedEncounter" { return $(if ($Language -eq "en") { "Static / scripted encounter" } else { "Rencontre fixe / script" }) }
         "undergroundEncounter" { return "Underground / chika" }
-        "inGameTrade" { return $(if ($Language -eq "en") { "NPC trade" } else { "Echange PNJ" }) }
+        "inGameTrade" { return $(if ($Language -eq "en") { "NPC trade" } else { "Échange PNJ" }) }
         default {
             if (-not [string]::IsNullOrWhiteSpace($block)) { return $block }
             return $(if ($Language -eq "en") { "Unknown method" } else { "Methode inconnue" })
@@ -9961,19 +13930,19 @@ function Write-EncounterZoneReport {
     }
 
     $report = [ordered]@{
-        version = "V4.18"
+        version = $AppVersion
         generatedAt = [DateTime]::UtcNow.ToString("o")
         sourceRomfs = $SourceRomfs
         outputRomfs = $OutputRomfsRoot
         seed = $ResolvedSeed
         spoilerWarning = [ordered]@{
-            fr = "Ce fichier revele les rencontres randomisees par zone. Ne l'affiche pas automatiquement dans le viewer si le joueur ne veut pas etre spoile."
+            fr = "Ce fichier révélé les rencontres randomisées par zone. Ne l'affiche pas automatiquement dans le viewer si le joueur ne veut pas être spoile."
             en = "This file reveals randomized encounters by zone. Do not auto-open it in the viewer if the player does not want spoilers."
         }
         schema = [ordered]@{
             intendedViewer = "PokeFeur Trainer Viewer / future encounter viewer"
             zoneNameNote = [ordered]@{
-                fr = "Les noms sont generes depuis les identifiants de tables disponibles. Le viewer peut remplacer name via une table de correspondance zoneId -> nom de route/zone."
+                fr = "Les noms sont générés depuis les identifiants de tables disponibles. Le viewer peut remplacer name via une table de correspondance zoneId -> nom de route/zone."
                 en = "Names are generated from available table identifiers. The viewer can replace name through a zoneId -> route/area name mapping table."
             }
         }
@@ -9981,7 +13950,7 @@ function Write-EncounterZoneReport {
         zones = @($zones.ToArray())
     }
 
-    $reportPath = Join-Path $OutputRomfsRoot "encounter-zones.json"
+    $reportPath = Get-OutputReportPath -OutputRomfsRoot $OutputRomfsRoot -FileName "encounter-zones.json"
     Write-JsonFile -Value $report -Path $reportPath -Depth 30
     return $reportPath
 }
@@ -10022,13 +13991,13 @@ function New-RunSummaryObject {
     $difficultyEstimate = if ($score -ge 10) { "veryHard" } elseif ($score -ge 6) { "hard" } elseif ($score -ge 3) { "moderate" } else { "standard" }
 
     return [ordered]@{
-        version = "V4.18"
+        version = $AppVersion
         generatedAt = [DateTime]::UtcNow.ToString("o")
         seed = $Result.Seed
         sourceGameVersion = $Result.ExLaunchModuleGameVersion
         outputRomfs = $OutputRomfsRoot
         spoilerWarning = [ordered]@{
-            fr = "Ce resume peut spoiler les starters, dresseurs importants, objets, caps et rencontres. Affiche-le seulement si l'utilisateur le demande."
+            fr = "Ce résumé peut spoiler les starters, dresseurs importants, objets, caps et rencontres. Affiche-le seulement si l'utilisateur le demande."
             en = "This summary can spoil starters, important trainers, items, caps, and encounters. Show it only when the user asks for it."
         }
         starters = @($starters)
@@ -10059,53 +14028,33 @@ function New-RunSummaryObject {
         }
         firstTrainerChanges = @($importantTrainers)
         bossTargets = @($bossTargets | Select-Object -First 40)
+        dataFiles = @(foreach ($entry in @($script:DataFileDiagnostics)) {
+            [ordered]@{
+                path = $entry.RelativePath
+                present = $entry.Present
+                severity = $entry.Severity
+                degradationIfMissing = $entry.Degradation
+            }
+        })
     }
 }
 
-function Write-RaceAndSpoilerReports {
+function Write-SeedAndSpoilerReports {
     param(
         [object]$Result,
         [string]$OutputRomfsRoot
     )
 
     if (-not $ExportJsonReport) {
-        return [pscustomobject]@{ RaceSummaryPath = ""; SpoilerLogPath = ""; SeedSummaryPath = "" }
+        return [pscustomobject]@{ SpoilerLogPath = ""; SeedSummaryPath = "" }
     }
 
     $summary = New-RunSummaryObject -Result $Result -OutputRomfsRoot $OutputRomfsRoot
-    $seedSummaryPath = Join-Path $OutputRomfsRoot "seed-summary.json"
+    $seedSummaryPath = Get-OutputReportPath -OutputRomfsRoot $OutputRomfsRoot -FileName "seed-summary.json"
     Write-JsonFile -Value $summary -Path $seedSummaryPath -Depth 18
 
-    $raceSummaryPath = ""
-    if ([bool]$RaceMode) {
-        $raceSummary = [ordered]@{
-            version = "V4.18"
-            generatedAt = [DateTime]::UtcNow.ToString("o")
-            raceMode = $true
-            lockedSeed = $Result.Seed
-            outputRomfs = $OutputRomfsRoot
-            notes = [ordered]@{
-                fr = "Mode race: partage ce fichier pour verifier la seed et les options principales sans ouvrir le spoiler log detaille."
-                en = "Race mode: share this file to verify the seed and main options without opening the detailed spoiler log."
-            }
-            optionsFingerprint = [ordered]@{
-                gameVersion = $GameVersion
-                trainerSpeciesMode = $TrainerSpeciesMode
-                trainerMoveMode = $TrainerMoveMode
-                trainerItemMode = $TrainerItemMode
-                grassEncounterMode = $GrassEncounterMode
-                starterMode = $StarterMode
-                levelCapMode = Get-SelectedExpLevelCapMode
-            }
-            counts = $summary.counts
-            difficulty = $summary.difficulty
-        }
-        $raceSummaryPath = Join-Path $OutputRomfsRoot "race-summary.json"
-        Write-JsonFile -Value $raceSummary -Path $raceSummaryPath -Depth 12
-    }
-
     $spoilerLog = [ordered]@{
-        version = "V4.18"
+        version = $AppVersion
         generatedAt = [DateTime]::UtcNow.ToString("o")
         seed = $Result.Seed
         spoilerWarning = [ordered]@{
@@ -10120,11 +14069,10 @@ function Write-RaceAndSpoilerReports {
         storyGymLeagueCaps = @(Convert-ToObjectArray $Result.StoryGymLeagueCaps)
         storyMajorBattleCaps = @(Convert-ToObjectArray $Result.StoryMajorBattleCaps)
     }
-    $spoilerLogPath = Join-Path $OutputRomfsRoot "spoiler-log.json"
+    $spoilerLogPath = Get-OutputReportPath -OutputRomfsRoot $OutputRomfsRoot -FileName "spoiler-log.json"
     Write-JsonFile -Value $spoilerLog -Path $spoilerLogPath -Depth 30
 
     return [pscustomobject]@{
-        RaceSummaryPath = $raceSummaryPath
         SpoilerLogPath = $spoilerLogPath
         SeedSummaryPath = $seedSummaryPath
     }
@@ -10141,7 +14089,7 @@ function Write-LevelCapsReport {
         return $null
     }
 
-    $reportPath = Join-Path $OutputRomfsRoot "level-caps.json"
+    $reportPath = Get-OutputReportPath -OutputRomfsRoot $OutputRomfsRoot -FileName "level-caps.json"
     Ensure-ParentDirectory -Path $reportPath
     $levelCapsArray = Convert-ToObjectArray $LevelCaps
 
@@ -10153,7 +14101,7 @@ function Write-LevelCapsReport {
     $effectiveAnyExpLevelCap = $selectedExpLevelCapMode -ne "none"
     $bossCapEnforcementMode = Get-BossLevelCapEnforcementMode
     $report = [ordered]@{
-        version = "V4.17"
+        version = $AppVersion
         generatedAt = [DateTime]::UtcNow.ToString("o")
         sourceRomfs = $SourceRomfs
         outputRomfs = $OutputRomfsRoot
@@ -10166,7 +14114,7 @@ function Write-LevelCapsReport {
             enabled = ($selectedExpLevelCapMode -eq "strictBossMaxLevel")
             requested = [bool]$StrictBossMaxLevelCap
             notes = [ordered]@{
-                fr = if ($effectiveMainStorySoftLevelCap) { "Cette option est demandee, mais le mode progression principale souple prend la priorite pour le cap EXP et n'utilise pas la normalisation boss max stricte." } elseif ([bool]$GymLeagueStoryLevelCap) { "Cette option est demandee, mais le mode histoire arenes/champion prend la priorite et n'utilise pas la normalisation boss max stricte." } elseif ([bool]$StoryMajorBattleOrderLevelCap) { "Cette option est demandee, mais le mode ordre histoire principale prend la priorite et utilise sa propre liste ordonnee de combats." } else { "Quand cette option est activee, l'outil normalise chaque equipe boss listee sur son niveau max. Le blocage EXP en jeu demande le module ExLaunch." }
+                fr = if ($effectiveMainStorySoftLevelCap) { "Cette option est demandée, mais le mode progression principale souple prend la priorité pour le cap EXP et n'utilise pas la normalisation boss max stricte." } elseif ([bool]$GymLeagueStoryLevelCap) { "Cette option est demandée, mais le mode histoire arènes/champion prend la priorité et n'utilise pas la normalisation boss max stricte." } elseif ([bool]$StoryMajorBattleOrderLevelCap) { "Cette option est demandée, mais le mode ordre histoire principale prend la priorité et utilise sa propre liste ordonnée de combats." } else { "Quand cette option est activée, l'outil normalise chaque équipe boss listée sur son niveau max. Le blocage EXP en jeu demande le module ExLaunch." }
                 en = if ($effectiveMainStorySoftLevelCap) { "This option is requested, but soft main-story progression mode takes priority for EXP and does not use strict boss max normalization." } elseif ([bool]$GymLeagueStoryLevelCap) { "This option is requested, but gym/champion story mode takes priority and does not use strict boss max normalization." } elseif ([bool]$StoryMajorBattleOrderLevelCap) { "This option is requested, but the ordered main-story mode takes priority and uses its own ordered battle list." } else { "When this option is enabled, the tool normalizes each listed boss team to its max level. In-game EXP enforcement requires the ExLaunch module." }
             }
         }
@@ -10174,7 +14122,7 @@ function Write-LevelCapsReport {
             enabled = $effectiveMainStorySoftLevelCap
             requested = [bool]$MainStorySoftLevelCap
             notes = [ordered]@{
-                fr = "Quand cette option est activee, le randomizer calcule une table de 9 caps souples basee sur les badges, en gardant les arenes comme ossature et en ajoutant les gros boss antagonistes / fin d'histoire du meme palier."
+                fr = "Quand cette option est activée, le randomizer calcule une table de 9 caps souples basée sur les badges, en gardant les arènes comme ossature et en ajoutant les gros boss antagonistes / fin d'histoire du même palier."
                 en = "When this option is enabled, the randomizer computes a soft 9-step badge-based cap table, keeping gyms as the backbone and adding the villain / endgame bosses that land in the same milestone."
             }
         }
@@ -10182,20 +14130,20 @@ function Write-LevelCapsReport {
             enabled = $effectiveStoryMajorBattleOrderLevelCap
             requested = [bool]$StoryMajorBattleOrderLevelCap
             notes = [ordered]@{
-                fr = if ($effectiveMainStorySoftLevelCap) { "Cette option est demandee, mais le mode progression principale souple garde la priorite et n'active donc pas cette liste ordonnee." } else { "Quand cette option est activee, une liste ordonnee de gros combats de l'histoire principale est uniformisee sur son niveau max. Le blocage EXP en jeu demande le module ExLaunch." }
+                fr = if ($effectiveMainStorySoftLevelCap) { "Cette option est demandée, mais le mode progression principale souple garde la priorité et n'active donc pas cette liste ordonnée." } else { "Quand cette option est activée, une liste ordonnée de gros combats de l'histoire principale est uniformisee sur son niveau max. Le blocage EXP en jeu demande le module ExLaunch." }
                 en = if ($effectiveMainStorySoftLevelCap) { "This option is requested, but soft main-story progression mode keeps priority and therefore does not enable this ordered battle list." } else { "When this option is enabled, an ordered list of main-story major battles is normalized to its max level. In-game EXP enforcement requires the ExLaunch module." }
             }
         }
         storyGymLeagueLevelCap = [ordered]@{
             enabled = $effectiveStoryGymLeagueExpCap
             notes = [ordered]@{
-                fr = if ($effectiveMainStorySoftLevelCap) { "Cette option est demandee, mais le mode progression principale souple prend la priorite et utilise sa propre table de 9 caps par badge." } else { "Quand cette option est activee, les niveaux utilises viennent des equipes generees et sont exportes dans story-gym-league-caps.json. Le cap en jeu demande le module ExLaunch." }
+                fr = if ($effectiveMainStorySoftLevelCap) { "Cette option est demandée, mais le mode progression principale souple prend la priorité et utilise sa propre table de 9 caps par badge." } else { "Quand cette option est activee, les niveaux utilises viennent des equipes generees et sont exportes dans story-gym-league-caps.json. Le cap en jeu demande le module ExLaunch." }
                 en = if ($effectiveMainStorySoftLevelCap) { "This option is requested, but soft main-story progression mode takes priority and uses its own 9-step badge table." } else { "When this option is enabled, the levels used come from the generated teams and are exported in story-gym-league-caps.json. In-game enforcement requires the ExLaunch module." }
             }
         }
         notes = [ordered]@{
-            fr = if ($effectiveAnyExpLevelCap) { "Caps boss calcules depuis le niveau max de chaque equipe boss apres randomisation. Le cap EXP en jeu n'est pas applique par IPS brut; il demande le module ExLaunch." } else { "Caps boss calcules depuis le niveau max de chaque equipe boss apres randomisation. Sans patch ExeFS actif, ce fichier reste une reference de caps." }
-            en = if ($effectiveAnyExpLevelCap) { "Boss caps computed from each boss team's max level after randomization. In-game EXP cap enforcement is not applied through raw IPS; it requires the ExLaunch module." } else { "Boss caps computed from each boss team's max level after randomization. Without an active ExeFS patch, this file remains a cap reference only." }
+            fr = if ($effectiveAnyExpLevelCap) { "Caps boss calculés depuis le niveau max de chaque équipe boss après randomisation. Le cap EXP en jeu n'est pas applique par IPS brut; il demande le module ExLaunch." } else { "Caps boss calculés depuis le niveau max de chaque équipe boss après randomisation. Sans patch ExeFS actif, ce fichier reste une référence de caps." }
+            en = if ($effectiveAnyExpLevelCap) { "Boss caps computed from each boss team's max level after randomization. In-game EXP cap enforcement is not applied through raw IPS; it requires the ExLaunch module." } else { "Boss caps computed from each boss team's max level after randomization. Without an active ExeFS patch, this file remains a cap référence only." }
         }
         count = Get-ObjectArrayCount $levelCapsArray
         caps = @($levelCapsArray)
@@ -10216,12 +14164,12 @@ function Write-StoryGymLeagueCapsReport {
         return $null
     }
 
-    $reportPath = Join-Path $OutputRomfsRoot "story-gym-league-caps.json"
+    $reportPath = Get-OutputReportPath -OutputRomfsRoot $OutputRomfsRoot -FileName "story-gym-league-caps.json"
     Ensure-ParentDirectory -Path $reportPath
     $storyCapsArray = Convert-ToObjectArray $StoryCaps
     $gameVersion = Get-SourceGameVersion -RomfsRoot $SourceRomfs
     $report = [ordered]@{
-        version = "V4.17"
+        version = $AppVersion
         generatedAt = [DateTime]::UtcNow.ToString("o")
         sourceRomfs = $SourceRomfs
         outputRomfs = $OutputRomfsRoot
@@ -10230,7 +14178,7 @@ function Write-StoryGymLeagueCapsReport {
         gameVersion = $gameVersion
         enforcementMode = "nextGymLeaderOrChampionByBadgeCount"
         notes = [ordered]@{
-            fr = "Cap histoire global base sur le nombre de badges. Les 9 entrees ci-dessous sont calculees depuis les equipes randomisees finales: 0 badge = prochaine arene 1, puis arene 2, ..., 8 badges = maitre de la Ligue. Le patch ExeFS ne lit pas ce JSON: il lit la meme information injectee dans sa table interne."
+            fr = "Cap histoire global base sur le nombre de badges. Les 9 entrées ci-dessous sont calculées depuis les équipes randomisées finales: 0 badge = prochaine arène 1, puis arène 2, ..., 8 badges = maitre de la Ligue. Le patch ExeFS ne lit pas ce JSON: il lit la même information injectee dans sa table interne."
             en = "Global story cap based on badge count. The 9 entries below are computed from the final randomized teams: 0 badges = next Gym 1, then Gym 2, ..., 8 badges = Champion. The ExeFS patch does not read this JSON: it reads the same information injected into its internal table."
         }
         count = Get-ObjectArrayCount $storyCapsArray
@@ -10252,13 +14200,13 @@ function Write-MainStorySoftCapsReport {
         return $null
     }
 
-    $reportPath = Join-Path $OutputRomfsRoot "story-main-progression-soft-caps.json"
+    $reportPath = Get-OutputReportPath -OutputRomfsRoot $OutputRomfsRoot -FileName "story-main-progression-soft-caps.json"
     Ensure-ParentDirectory -Path $reportPath
     $storyCapsArray = Convert-ToObjectArray $StoryCaps
     $gameVersion = Get-SourceGameVersion -RomfsRoot $SourceRomfs
     $effectiveEnabled = ((Get-SelectedExpLevelCapMode) -eq "storyMainProgressionSoft")
     $report = [ordered]@{
-        version = "V4.17"
+        version = $AppVersion
         generatedAt = [DateTime]::UtcNow.ToString("o")
         sourceRomfs = $SourceRomfs
         outputRomfs = $OutputRomfsRoot
@@ -10268,8 +14216,8 @@ function Write-MainStorySoftCapsReport {
         gameVersion = $gameVersion
         enforcementMode = "mainStoryProgressionSoftByBadgeCount"
         notes = [ordered]@{
-            fr = if ($effectiveEnabled) { "Mode progression principale souple: les 9 caps suivent toujours les paliers de badges, mais chaque palier est calcule depuis un groupe de gros combats de l'histoire principale. Ce mode garde les arenes comme ossature et ajoute aussi les vrais boss antagonistes / fin d'histoire quand ils tombent dans le meme palier, pour eviter l'overlevel sans changer le cap toutes les 10 minutes. Le jeu ne lit pas ce JSON: il lit la meme table de 9 caps injectee dans la config ExLaunch." } else { "Cette option n'est pas effective sur cette generation. Si elle n'est pas cochee, ce JSON documente simplement la table qui aurait ete utilisee." }
-            en = if ($effectiveEnabled) { "Soft main-story progression mode: the 9 caps still follow badge-count milestones, but each milestone is computed from a grouped set of major main-story fights. This keeps gyms as the backbone and also folds in the real villain / endgame bosses that land in the same milestone, so overleveling is reduced without changing the cap every few minutes. The game does not read this JSON directly: it reads the same 9-cap table injected into the ExLaunch config." } else { "This option is not effective for this generation. If it is not checked, this JSON simply documents the table that would have been used." }
+            fr = if ($effectiveEnabled) { "Mode progression principale souple: les 9 caps suivent toujours les paliers de badges, mais chaque palier est calcule depuis un groupe de gros combats de l'histoire principale. Ce mode garde les arènes comme ossature et ajoute aussi les vrais boss antagonistes / fin d'histoire quand ils tombent dans le même palier, pour éviter l'overlevel sans changer le cap toutes les 10 minutes. Le jeu ne lit pas ce JSON: il lit la même table de 9 caps injectee dans la config ExLaunch." } else { "Cette option n'est pas effective sur cette génération. Si elle n'est pas cochee, ce JSON documente simplement la table qui aurait été utilisee." }
+            en = if ($effectiveEnabled) { "Soft main-story progression mode: the 9 caps still follow badge-count milestones, but each milestone is computed from a grouped set of major main-story fights. This keeps gyms as the backbone and also folds in the real villain / endgame bosses that land in the same milestone, so overleveling is reduced without changing the cap every few minutes. The game does not read this JSON directly: it reads the same 9-cap table injected into the ExLaunch config." } else { "This option is not effective for this génération. If it is not checked, this JSON simply documents the table that would have been used." }
         }
         count = Get-ObjectArrayCount $storyCapsArray
         stages = @($storyCapsArray)
@@ -10290,13 +14238,13 @@ function Write-StoryMajorBattleCapsReport {
         return $null
     }
 
-    $reportPath = Join-Path $OutputRomfsRoot "story-major-battle-caps.json"
+    $reportPath = Get-OutputReportPath -OutputRomfsRoot $OutputRomfsRoot -FileName "story-major-battle-caps.json"
     Ensure-ParentDirectory -Path $reportPath
     $storyCapsArray = Convert-ToObjectArray $StoryCaps
     $gameVersion = Get-SourceGameVersion -RomfsRoot $SourceRomfs
     $effectiveEnabled = ((Get-SelectedExpLevelCapMode) -eq "storyOrderedMajorBattles")
     $report = [ordered]@{
-        version = "V4.17"
+        version = $AppVersion
         generatedAt = [DateTime]::UtcNow.ToString("o")
         sourceRomfs = $SourceRomfs
         outputRomfs = $OutputRomfsRoot
@@ -10307,8 +14255,8 @@ function Write-StoryMajorBattleCapsReport {
         gameVersion = $gameVersion
         enforcementMode = "orderedBaseStoryMajorBattlesStrictViaDynamicExpAndTeamNormalization"
         notes = [ordered]@{
-            fr = if ($effectiveEnabled) { "Liste ordonnee des gros combats de l'histoire principale couverts par la nouvelle option. Le JSON suit l'ordre de progression et inclut les variantes dependantes du starter ou de la version. En jeu, cette option garde le patch EXP dynamique global puis uniformise seulement ces equipes majeures sur leur niveau max. Ce JSON n'est pas lu par le jeu: il documente la meme selection calculee par le randomizer." } else { "Cette option n'est pas effective sur cette generation. Si le mode histoire arenes/Tarak est coche en meme temps, il garde la priorite pour le patch EXP global et cette liste ordonnee reste desactivee." }
-            en = if ($effectiveEnabled) { "Ordered list of the main-story major battles covered by the new option. This JSON follows story order and includes starter-dependent or version-dependent variants. In game, this option keeps the global dynamic EXP patch and only normalizes these major teams to their own max level. The game does not read this JSON: it documents the same selection computed by the randomizer." } else { "This option is not effective for this generation. If gym/champion story mode is checked at the same time, it keeps priority for the global EXP patch and this ordered list stays disabled." }
+            fr = if ($effectiveEnabled) { "Liste ordonnée des gros combats de l'histoire principale couverts par la nouvelle option. Le JSON suit l'ordre de progression et inclut les variantes dependantes du starter ou de la version. En jeu, cette option garde le patch EXP dynamique global puis uniformise seulement ces équipes majeures sur leur niveau max. Ce JSON n'est pas lu par le jeu: il documente la même sélection calculée par le randomizer." } else { "Cette option n'est pas effective sur cette génération. Si le mode histoire arènes/Tarak est coche en même temps, il garde la priorité pour le patch EXP global et cette liste ordonnée reste désactivée." }
+            en = if ($effectiveEnabled) { "Ordered list of the main-story major battles covered by the new option. This JSON follows story order and includes starter-dependent or version-dependent variants. In game, this option keeps the global dynamic EXP patch and only normalizes these major teams to their own max level. The game does not read this JSON: it documents the same selection computed by the randomizer." } else { "This option is not effective for this génération. If gym/champion story mode is checked at the same time, it keeps priority for the global EXP patch and this ordered list stays disabled." }
         }
         count = Get-ObjectArrayCount $storyCapsArray
         battles = @($storyCapsArray)
@@ -10326,7 +14274,17 @@ function Invoke-Randomization {
         [scriptblock]$ProgressCallback = $null
     )
 
+    # Le dump D'ABORD : les tables de noms se derivent de lui, il faut donc
+    # l'avoir resolu avant de pouvoir les reconstruire.
     $SourceRomfsRoot = Resolve-RequiredSourceRomfsRoot -SourceRomfsRoot $SourceRomfsRoot
+
+    # Puis, si des tables manquent, on les rebatit depuis CE dump plutot que de
+    # les redistribuer : elles sont derivees du jeu.
+    Restore-DataFilesFromDump -RomfsRoot $SourceRomfsRoot -ProgressCallback $ProgressCallback
+
+    # Enfin : dire ce qui manque ENCORE. Un fichier absent ne fait pas echouer
+    # la generation (sauf -StrictDataFiles) mais ne doit plus passer inapercu.
+    $script:DataFileDiagnostics = @(Assert-DataFilesAvailable -ProgressCallback $ProgressCallback)
     $sourceGameVersion = Get-SourceGameVersion -RomfsRoot $SourceRomfsRoot
     $hasExplicitSourceExefs = -not [string]::IsNullOrWhiteSpace($SourceExefsRoot)
     $canGenerateExLaunchOutputs = ($hasExplicitSourceExefs -and (Get-AnyExLaunchRuntimeFeatureEnabled))
@@ -10352,6 +14310,20 @@ function Invoke-Randomization {
     $effectiveStoryMajorBattleOrderLevelCap = $selectedExpLevelCapMode -eq "storyOrderedMajorBattles"
     $effectiveStrictBossMaxLevelCap = $selectedExpLevelCapMode -eq "strictBossMaxLevel"
     $bossTeamsToSixTargetCatalog = if ([bool]$ForceBossTeamsToSix) { Convert-ToObjectArray (Get-BossTrainerTargetCatalog -Scope $BossTeamsToSixScope -GameVersionValue $sourceGameVersion) } else { @() }
+    # Catalogues de classement des dresseurs, utilises par les regles speciales.
+    # Ils ne sont construits que si une regle en a besoin : leur calcul lit les
+    # fichiers de dresseurs.
+    # Les catalogues sont necessaires des qu'un "Pokemon en plus" est demande,
+    # meme pour la seule classe Normal : sans eux, tous les dresseurs seraient
+    # classes Normal et les boss recevraient le bonus destine aux autres.
+    $trainerRulesNeedCatalogs = ((Normalize-TrainerLegendaryPolicy -Policy $TrainerLegendaryPolicy) -ne "unchanged") -or
+        ([int]$TrainerMinBaseStatTotal -gt 0) -or
+        ([int]$TrainerExtraPokemonBoss -gt 0) -or
+        ([int]$TrainerExtraPokemonImportant -gt 0) -or
+        ([int]$TrainerExtraPokemonRegular -gt 0) -or
+        ((Normalize-Mode $TrainerForceDiverseTypes) -notin @("off", "", "unchanged", "none"))
+    $gymLeagueRuleTargetCatalog = if ($trainerRulesNeedCatalogs) { Convert-ToObjectArray (Get-BossTrainerTargetCatalog -Scope "GymLeague" -GameVersionValue $sourceGameVersion) } else { @() }
+    $majorBossRuleTargetCatalog = if ($trainerRulesNeedCatalogs) { Convert-ToObjectArray (Get-BossTrainerTargetCatalog -Scope "MajorBosses" -GameVersionValue $sourceGameVersion) } else { @() }
     $storyMajorBattleTargetCatalog = if ($effectiveStoryMajorBattleOrderLevelCap) { Get-StoryMajorBattleTargetCatalog -SourceRomfsRoot $SourceRomfsRoot } else { @() }
     $teamMaxNormalizationMode = if ($effectiveStoryMajorBattleOrderLevelCap) { "storyOrderedMajorBattles" } elseif ($effectiveStrictBossMaxLevelCap) { "strictBossMaxLevel" } else { "none" }
     $teamMaxNormalizationTargetCatalog = if ($effectiveStoryMajorBattleOrderLevelCap) { $storyMajorBattleTargetCatalog } elseif ($effectiveStrictBossMaxLevelCap) { Convert-ToObjectArray (Get-BossTrainerTargetCatalog) } else { @() }
@@ -10360,7 +14332,7 @@ function Invoke-Randomization {
         Sync-RequiredRomfsAssets -SourceRoot $SourceRomfsRoot -OutputRoot $OutputRomfsRoot
     }
 
-    Write-RandomizerProgress -Message "[Step] Randomisation des donnees Pokemon" -ProgressCallback $ProgressCallback
+    Write-RandomizerProgress -Message "[Step] Randomisation des données Pokémon" -ProgressCallback $ProgressCallback
     $personalExpMultiplier = if (Get-RuntimeExpMultiplierEnabled) { 1.0 } else { $ExpYieldMultiplier }
     $personalResult = Invoke-PersonalRandomization `
         -RomfsRoot $OutputRomfsRoot `
@@ -10372,6 +14344,60 @@ function Invoke-Randomization {
         -StatModeValue $StatMode `
         -ExpMultiplierValue $personalExpMultiplier `
         -ForceOneExpYieldValue $ForceOneExpYield.IsPresent
+
+    # Apres la randomisation principale : elle reecrit le fichier, ces reglages
+    # doivent donc s'appliquer par-dessus.
+    $personalTweakResult = Invoke-PersonalExtraTweaks `
+        -RomfsRoot $OutputRomfsRoot `
+        -Rng $rng `
+        -MinimumCatchRateValue $MinimumCatchRate `
+        -DoRandomizeHeldItems $RandomizeWildHeldItems.IsPresent `
+        -ExpCurveModeValue $ExpCurveMode `
+        -TmCompatibilityModeValue $TmCompatibilityMode `
+        -TutorCompatibilityModeValue $TutorCompatibilityMode `
+        -SourceRomfsRootValue $SourceRomfsRoot
+    if (($personalTweakResult.CatchRates + $personalTweakResult.HeldItems + $personalTweakResult.ExpCurves + $personalTweakResult.MachineFlags + $personalTweakResult.TutorFlags) -gt 0) {
+        Write-RandomizerProgress -Message ("[Pokemon] captures {0}, objets tenus {1}, courbes EXP {2}, bits CT/DT {3}, bits maitres {4}" -f $personalTweakResult.CatchRates, $personalTweakResult.HeldItems, $personalTweakResult.ExpCurves, $personalTweakResult.MachineFlags, $personalTweakResult.TutorFlags) -ProgressCallback $ProgressCallback
+    } elseif ($personalTweakResult.Skipped) {
+        Write-RandomizerProgress -Message ("[Pokemon] reglages non appliques : {0}" -f $personalTweakResult.Skipped) -ProgressCallback $ProgressCallback
+    }
+
+    $giftItemResult = Invoke-NpcGiftItemRandomization `
+        -RomfsRoot $OutputRomfsRoot -Rng $rng -Mode $NpcGiftItemMode
+    if ($giftItemResult.Modifies -gt 0) {
+        Write-RandomizerProgress -Message ("[Cadeaux PNJ] {0} cadeaux changes dans {1} scripts, {2} objets clés protégés" -f $giftItemResult.Modifies, $giftItemResult.Fichiers, $giftItemResult.Proteges) -ProgressCallback $ProgressCallback
+    } elseif ($giftItemResult.Ignore) {
+        Write-RandomizerProgress -Message ("[Cadeaux PNJ] non applique : {0}" -f $giftItemResult.Ignore) -ProgressCallback $ProgressCallback
+    }
+
+    $learnsetResult = Invoke-LearnsetRandomization `
+        -RomfsRoot $OutputRomfsRoot -Rng $rng -Mode $LearnsetMoveMode -SourceRomfsRootValue $SourceRomfsRoot
+    if ($learnsetResult.Attaques -gt 0) {
+        Write-RandomizerProgress -Message ("[Attaques apprises] {0} attaques changees sur {1} espèces" -f $learnsetResult.Attaques, $learnsetResult.Especes) -ProgressCallback $ProgressCallback
+    } elseif ($learnsetResult.Ignore) {
+        Write-RandomizerProgress -Message ("[Attaques apprises] non applique : {0}" -f $learnsetResult.Ignore) -ProgressCallback $ProgressCallback
+    }
+
+    $machineMoveResult = Invoke-MachineMoveRandomization `
+        -RomfsRoot $OutputRomfsRoot -Rng $rng -Mode $TmMoveMode
+    if ($machineMoveResult.Modifiees -gt 0) {
+        Write-RandomizerProgress -Message ("[CT/DT] {0} machines sur {1} enseignent une autre attaque" -f $machineMoveResult.Modifiees, $machineMoveResult.Total) -ProgressCallback $ProgressCallback
+    } elseif ($machineMoveResult.Ignore) {
+        Write-RandomizerProgress -Message ("[CT/DT] non applique : {0}" -f $machineMoveResult.Ignore) -ProgressCallback $ProgressCallback
+    }
+
+    # Doit passer apres la randomisation des types et talents, pour recopier le
+    # resultat du tirage le long des familles.
+    $followEvoResult = Invoke-PersonalFollowEvolutions `
+        -RomfsRoot $OutputRomfsRoot `
+        -SourceRomfsRoot $SourceRomfsRoot `
+        -DoTypes ($FollowEvolutionsForTypes.IsPresent -and (Normalize-Mode $TypeMode) -ne "unchanged") `
+        -DoAbilities ($FollowEvolutionsForAbilities.IsPresent -and (Normalize-Mode $AbilityMode) -ne "unchanged")
+    if ($followEvoResult.Propagated -gt 0) {
+        Write-RandomizerProgress -Message ("[Pokémon] familles : {0} évolutions alignees sur leur forme de base" -f $followEvoResult.Propagated) -ProgressCallback $ProgressCallback
+    } elseif ($followEvoResult.Skipped) {
+        Write-RandomizerProgress -Message ("[Pokemon] familles non alignees : {0}" -f $followEvoResult.Skipped) -ProgressCallback $ProgressCallback
+    }
 
     Write-RandomizerProgress -Message "[Step] Randomisation des attaques globales" -ProgressCallback $ProgressCallback
     $moveDataResult = Invoke-MoveDataRandomization `
@@ -10394,6 +14420,38 @@ function Invoke-Randomization {
         -RomfsRoot $OutputRomfsRoot `
         -Rng $rng
 
+    $fieldItemResult = Invoke-FieldItemRandomization `
+        -RomfsRoot $OutputRomfsRoot `
+        -Rng $rng `
+        -DoGroundItems $RandomizeFieldItems.IsPresent `
+        -DoHiddenItems $RandomizeHiddenItems.IsPresent `
+        -PoolMode $FieldItemPoolMode
+    if (($fieldItemResult.GroundEdited + $fieldItemResult.HiddenEdited) -gt 0) {
+        Write-RandomizerProgress -Message ("[Items] terrain : {0} objets au sol, {1} objets caches" -f $fieldItemResult.GroundEdited, $fieldItemResult.HiddenEdited) -ProgressCallback $ProgressCallback
+    } elseif ($fieldItemResult.Skipped) {
+        Write-RandomizerProgress -Message ("[Items] terrain non modifie : {0}" -f $fieldItemResult.Skipped) -ProgressCallback $ProgressCallback
+    }
+
+    $bornesPrix = Get-ShopPriceBounds
+    $modePrix = Get-ShopPriceModeValue
+    $itemPriceResult = Invoke-ItemPriceAdjustment `
+        -RomfsRoot $OutputRomfsRoot `
+        -Multiplier (Get-ShopPriceMultiplierValue) `
+        -Mode $modePrix `
+        -MinPrice $bornesPrix.Min `
+        -MaxPrice $bornesPrix.Max `
+        -Rng $rng
+    if ($itemPriceResult.Edited -gt 0) {
+        $detailPrix = if ($modePrix -eq "random") {
+            "{0} a {1} P" -f $bornesPrix.Min, $bornesPrix.Max
+        } else {
+            "x{0}" -f (Get-ShopPriceMultiplierValue)
+        }
+        Write-RandomizerProgress -Message ("[Items] prix ajustes sur {0} objets ({1})" -f $itemPriceResult.Edited, $detailPrix) -ProgressCallback $ProgressCallback
+    } elseif ($itemPriceResult.Skipped -and $modePrix -ne "vanilla") {
+        Write-RandomizerProgress -Message ("[Items] prix non modifies : {0}" -f $itemPriceResult.Skipped) -ProgressCallback $ProgressCallback
+    }
+
     Write-RandomizerProgress -Message "[Step] Randomisation des dresseurs" -ProgressCallback $ProgressCallback
     $trainerResult = Invoke-TrainerRandomization `
         -RomfsRoot $OutputRomfsRoot `
@@ -10405,6 +14463,7 @@ function Invoke-Randomization {
         -ItemPoolModeValue $TrainerItemPoolMode `
         -AddedSlotSpeciesModeValue $TrainerAddedSlotSpeciesMode `
         -DuplicateModeValue $TrainerDuplicateMode `
+        -BagItemModeValue $TrainerBagItemMode `
         -AbilityModeValue $TrainerAbilityMode `
         -IVModeValue $TrainerIVMode `
         -EVModeValue $TrainerEVMode `
@@ -10425,9 +14484,18 @@ function Invoke-Randomization {
         -TeamMaxNormalizationTargetCatalog $teamMaxNormalizationTargetCatalog `
         -TeamMaxNormalizationMode $teamMaxNormalizationMode `
         -AllowLegendarySpecies $AllowLegendaryTrainers.IsPresent `
+        -GymLeagueRuleTargetCatalog $gymLeagueRuleTargetCatalog `
+        -MajorBossRuleTargetCatalog $majorBossRuleTargetCatalog `
+        -ExtraPokemonBoss $TrainerExtraPokemonBoss `
+        -ExtraPokemonImportant $TrainerExtraPokemonImportant `
+        -ExtraPokemonRegular $TrainerExtraPokemonRegular `
+        -SpecialRuleScopeValue $TrainerSpecialRuleScope `
+        -LegendaryPolicyValue $TrainerLegendaryPolicy `
+        -MinBaseStatTotalValue $TrainerMinBaseStatTotal `
+        -ForceDiverseTypesScopeValue $TrainerForceDiverseTypes `
         -ProgressCallback $ProgressCallback
 
-    Write-RandomizerProgress -Message "[Step] Randomisation des evolutions" -ProgressCallback $ProgressCallback
+    Write-RandomizerProgress -Message "[Step] Randomisation des évolutions" -ProgressCallback $ProgressCallback
     $evoEdits = Invoke-EvolutionRandomization `
         -RomfsRoot $OutputRomfsRoot `
         -Rng $rng `
@@ -10438,7 +14506,20 @@ function Invoke-Randomization {
         -DoNormalizeTrade $NormalizeTradeEvolutions `
         -TradeLevel $TradeEvolutionLevel `
         -DoNormalizeSpecial $NormalizeSpecialEvolutions `
-        -SpecialLevel $SpecialEvolutionLevel
+        -SpecialLevel $SpecialEvolutionLevel `
+        -DoForceGrowth $EvolutionForceGrowth.IsPresent `
+        -DoSameType $EvolutionSameType.IsPresent `
+        -MinBstGain $EvolutionMinBstGain
+
+    # Apres la randomisation : c'est la chaine finale qu'on borne.
+    if ($EvolutionLimitToThreeStages.IsPresent) {
+        $chainLimitResult = Invoke-EvolutionChainLimit -RomfsRoot $OutputRomfsRoot -MaxStages 3
+        if ($chainLimitResult.Removed -gt 0) {
+            Write-RandomizerProgress -Message ("[Évolutions] {0} évolutions retirees au-dela du 3e stade" -f $chainLimitResult.Removed) -ProgressCallback $ProgressCallback
+        } elseif ($chainLimitResult.Skipped) {
+            Write-RandomizerProgress -Message ("[Evolutions] chaines non bornees : {0}" -f $chainLimitResult.Skipped) -ProgressCallback $ProgressCallback
+        }
+    }
 
     Write-RandomizerProgress -Message "[Step] Randomisation des gifts et rencontres scriptes" -ProgressCallback $ProgressCallback
     $giftEncounterResult = Invoke-GiftAndEncounterRandomization `
@@ -10446,6 +14527,8 @@ function Invoke-Randomization {
         -Rng $rng `
         -GiftModeValue $GiftMode `
         -StarterModeValue $StarterMode `
+        -StarterMinBaseStatTotalValue $StarterMinBaseStatTotal `
+        -StarterMaxBaseStatTotalValue $StarterMaxBaseStatTotal `
         -AllowLegendaryGiftSpecies $AllowLegendaryGifts.IsPresent `
         -TradeModeValue $TradeMode `
         -AllowLegendaryTradeSpecies $AllowLegendaryTrades.IsPresent `
@@ -10456,6 +14539,7 @@ function Invoke-Randomization {
         -AllowLegendaryGrassSpecies $AllowLegendaryGrassEncounters.IsPresent `
         -GrassEncounterStableMapping $GrassEncounterStableMapping `
         -VisibleEncounterBehaviorValue $VisibleEncounterBehavior `
+        -EncounterDrawModeValue $EncounterDrawMode `
         -UndergroundModeValue $UndergroundMode `
         -AllowLegendaryUndergroundSpecies $AllowLegendaryUnderground.IsPresent
 
@@ -10476,6 +14560,10 @@ function Invoke-Randomization {
         Write-RandomizerProgress -Message "[Step] Patch des starters visibles chez les dresseurs lies au choix initial" -ProgressCallback $ProgressCallback
         $starterRelatedTrainerPatchResult = Update-StarterRelatedTrainerTeams -RomfsRoot $OutputRomfsRoot -StarterSpeciesIds $starterSpeciesForTrainerPatch -TrainerMoveMode $TrainerMoveMode -TrainerSmogonMoveFallbackMode $TrainerSmogonMoveFallbackMode -Rng $rng
     }
+    $sourceOnlyMoveDataPruned = Remove-SourceOnlyMoveDataFromOutput -OutputRomfsRoot $OutputRomfsRoot -MoveDataResult $moveDataResult
+    if ($sourceOnlyMoveDataPruned) {
+        Write-RandomizerProgress -Message "[Step] Nettoyage: suppression des donnees moves source-only non modifiees" -ProgressCallback $ProgressCallback
+    }
     $mainStorySoftCaps = @()
     if ($effectiveMainStorySoftLevelCap) {
         Write-RandomizerProgress -Message "[Step] Calcul des caps progression principale souple" -ProgressCallback $ProgressCallback
@@ -10483,7 +14571,7 @@ function Invoke-Randomization {
     }
     $storyGymLeagueCaps = @()
     if ($effectiveGymLeagueStoryLevelCap) {
-        Write-RandomizerProgress -Message "[Step] Calcul des caps histoire arenes / champion" -ProgressCallback $ProgressCallback
+        Write-RandomizerProgress -Message "[Step] Calcul des caps histoire arènes / champion" -ProgressCallback $ProgressCallback
         $storyGymLeagueCaps = Get-GymLeagueStoryCapEntries -SourceRomfsRoot $SourceRomfsRoot -OutputRomfsRoot $OutputRomfsRoot
     }
     $storyMajorBattleCaps = @()
@@ -10492,9 +14580,9 @@ function Invoke-Randomization {
         $storyMajorBattleCaps = Get-StoryMajorBattleCapEntries -SourceRomfsRoot $SourceRomfsRoot -OutputRomfsRoot $OutputRomfsRoot
     }
     if ($canGenerateExLaunchOutputs) {
-        Write-RandomizerProgress -Message "[Step] Options EXP runtime: ExLaunch requis, pas d'IPS brut ecrit" -ProgressCallback $ProgressCallback
+        Write-RandomizerProgress -Message "[Step] Options EXP runtime: ExLaunch requis, pas d'IPS brut écrit" -ProgressCallback $ProgressCallback
     } elseif (Get-AnyExLaunchRuntimeFeatureEnabled) {
-        Write-RandomizerProgress -Message "[Step] Options runtime detectees mais aucun ExeFS explicite n'est fourni: generation ROMFS-only, ExLaunch ignore" -ProgressCallback $ProgressCallback
+        Write-RandomizerProgress -Message "[Step] Options runtime detectees mais aucun ExeFS explicite n'est fourni: génération ROMFS-only, ExLaunch ignore" -ProgressCallback $ProgressCallback
     }
     $exefsPatchResult = [pscustomobject]@{
         Enabled = $false
@@ -10537,7 +14625,7 @@ function Invoke-Randomization {
     }
     if ($canGenerateExLaunchOutputs -and [bool]$exefsPatchResult.ExpLevelCapRequiresExLaunch) {
         Write-RandomizerProgress -Message "[Step] Deploiement auto du module ExLaunch" -ProgressCallback $ProgressCallback
-        $exLaunchModuleDeployment = Deploy-ExLaunchModule -SourceRomfsRoot $SourceRomfsRoot -SourceExefsRoot $resolvedSourceExefsRoot -OutputRomfsRoot $OutputRomfsRoot -GameVersion $sourceGameVersion -RuntimePcControlsEnabled (Get-RandomizerPcMenuEnabled)
+        $exLaunchModuleDeployment = Deploy-ExLaunchModule -SourceRomfsRoot $SourceRomfsRoot -SourceExefsRoot $resolvedSourceExefsRoot -OutputRomfsRoot $OutputRomfsRoot -GameVersion $sourceGameVersion -RuntimePcControlsEnabled (Get-RandomizerPcMenuEnabled) -EarlyBikeEnabled ([bool]$EarlyBike) -DexAnimationsEnabled ([bool]$ModDexAnimations)
         if ($exLaunchModuleDeployment.Deployed) {
             Write-RandomizerProgress -Message ("[ExLaunch] Module {0} deploye dans {1}" -f $exLaunchModuleDeployment.GameVersion, $exLaunchModuleDeployment.TargetRoot) -ProgressCallback $ProgressCallback
         } elseif (-not $exLaunchModuleDeployment.Available) {
@@ -10562,12 +14650,15 @@ function Invoke-Randomization {
     $dynamicExpLevelCapPatchFileCount = @($dynamicExpLevelCapPatchArray | Select-Object -ExpandProperty file -Unique).Count
     $storyGymLeagueExpCapPatchFileCount = @($storyGymLeagueExpCapPatchArray | Select-Object -ExpandProperty file -Unique).Count
     $starterSpeciesForTrainerPatchArray = if (@($starterSpeciesForTrainerPatch).Count -gt 0) { [int[]]$starterSpeciesForTrainerPatch } else { @() }
+    $rootRomfsReportsMoved = Move-RootRomfsReportsToReports -OutputRomfsRoot $OutputRomfsRoot
     $result = [pscustomobject]@{
         Seed = $resolvedSeed
         SourceExefsRoot = $resolvedSourceExefsRoot
         Output = $outputPackageRoot
         OutputPackageRoot = $outputPackageRoot
         OutputRomfsRoot = $OutputRomfsRoot
+        OutputReportsRoot = Get-OutputReportsRoot -OutputRomfsRoot $OutputRomfsRoot
+        RootRomfsReportsMoved = $rootRomfsReportsMoved
         PersonalEntriesEdited = $personalResult.PersonalEntriesEdited
         ExpYieldsEdited = $personalResult.ExpYieldsEdited
         MovesEdited = $moveDataResult.MovesEdited
@@ -10576,6 +14667,7 @@ function Invoke-Randomization {
         MovePPEdited = $moveDataResult.MovePPEdited
         MoveAccuracyEdited = $moveDataResult.MoveAccuracyEdited
         MoveCategoriesEdited = $moveDataResult.MoveCategoriesEdited
+        SourceOnlyMoveDataPruned = [bool]$sourceOnlyMoveDataPruned
         PickupItemsEdited = $itemTableResult.PickupItemsEdited
         ShopItemsEdited = $itemTableResult.ShopItemsEdited
         TechnicalRecordsEdited = $itemTableResult.TechnicalRecordsEdited
@@ -10588,6 +14680,7 @@ function Invoke-Randomization {
         BossTeamsExpanded = $trainerResult.BossTeamsExpanded
         BossTeamsLevelNormalized = $trainerResult.BossTeamsLevelNormalized
         TrainerShiniesForced = $trainerResult.ShiniesForced
+        TrainerBagItemsEdited = $trainerResult.BagItemsEdited
         TrainerSpeciesForceEvolved = $trainerResult.SpeciesForceEvolved
         TrainerTypeThemedTrainers = $trainerResult.TrainerTypeThemedTrainers
         TrainerAIMaxed = $trainerResult.TrainerAIMaxed
@@ -10616,7 +14709,6 @@ function Invoke-Randomization {
         WildChangesReportPath = ""
         EncounterZoneReportPath = ""
         SeedSummaryReportPath = ""
-        RaceSummaryReportPath = ""
         SpoilerLogReportPath = ""
         BossLevelCapsLogged = Get-ObjectArrayCount $bossLevelCaps
         BossLevelCaps = $bossLevelCaps
@@ -10698,7 +14790,8 @@ function Invoke-Randomization {
         $result.WildChangesReportPath = $wildChangesPath
     }
 
-    $itemChangesPath = Write-ItemChangesReport -ItemChanges $itemTableResult.Changes -OutputRomfsRoot $OutputRomfsRoot -ResolvedSeed $resolvedSeed -Notes $result.ItemRandomizationNotes
+    $allItemChanges = @($itemTableResult.Changes) + @($fieldItemResult.Changes)
+    $itemChangesPath = Write-ItemChangesReport -ItemChanges $allItemChanges -OutputRomfsRoot $OutputRomfsRoot -ResolvedSeed $resolvedSeed -Notes $result.ItemRandomizationNotes
     if ($itemChangesPath) {
         $result.ItemChangesReportPath = $itemChangesPath
     }
@@ -10728,19 +14821,22 @@ function Invoke-Randomization {
         $result.StoryMajorBattleCapsReportPath = $storyMajorBattleCapsPath
     }
 
-    $raceReports = Write-RaceAndSpoilerReports -Result $result -OutputRomfsRoot $OutputRomfsRoot
-    $result.SeedSummaryReportPath = [string]$raceReports.SeedSummaryPath
-    $result.RaceSummaryReportPath = [string]$raceReports.RaceSummaryPath
-    $result.SpoilerLogReportPath = [string]$raceReports.SpoilerLogPath
+    $seedReports = Write-SeedAndSpoilerReports -Result $result -OutputRomfsRoot $OutputRomfsRoot
+    $result.SeedSummaryReportPath = [string]$seedReports.SeedSummaryPath
+    $result.SpoilerLogReportPath = [string]$seedReports.SpoilerLogPath
 
-    Write-RandomizerProgress -Message "[Step] Preparation du dossier Installation" -ProgressCallback $ProgressCallback
-    $installationPackage = Write-InstallationPackage -OutputRomfsRoot $OutputRomfsRoot -GameVersion $sourceGameVersion -ModName $EdenModName
-    $result.InstallationPackageRoot = $installationPackage.Root
-    $result.InstallationPackageReadmePath = $installationPackage.ReadmePath
-    $result.InstallationTargets = Convert-ToObjectArray $installationPackage.Targets
+    if ($WriteInstallationPackage) {
+        Write-RandomizerProgress -Message "[Step] Preparation du dossier Installation" -ProgressCallback $ProgressCallback
+        $installationPackage = Write-InstallationPackage -OutputRomfsRoot $OutputRomfsRoot -GameVersion $sourceGameVersion -ModName $EdenModName
+        $result.InstallationPackageRoot = $installationPackage.Root
+        $result.InstallationPackageReadmePath = $installationPackage.ReadmePath
+        $result.InstallationTargets = Convert-ToObjectArray $installationPackage.Targets
+    } else {
+        Write-RandomizerProgress -Message "[Step] Dossier Installation non genere (demande)" -ProgressCallback $ProgressCallback
+    }
 
     if ([bool]$AutoInstallToEden) {
-        Write-RandomizerProgress -Message "[Step] Installation auto dans les emulateurs detectes" -ProgressCallback $ProgressCallback
+        Write-RandomizerProgress -Message "[Step] Installation auto dans les émulateurs detectes" -ProgressCallback $ProgressCallback
         $autoInstallResults = Convert-ToObjectArray (Install-PackageToSelectedEmulators -OutputRomfsRoot $OutputRomfsRoot -GameVersion $sourceGameVersion -ModName $EdenModName)
         $result.AutoInstallResults = $autoInstallResults
         $result.AutoInstallSuccessCount = @($autoInstallResults | Where-Object { [bool]$_.Installed }).Count
@@ -10749,7 +14845,7 @@ function Invoke-Randomization {
         foreach ($installResult in $autoInstallResults) {
             if ([bool]$installResult.Installed) {
                 $installModeMessage = if ([bool]$installResult.AlreadyAtTarget) {
-                    ("[{0}] La sortie est deja dans le dossier cible, sync sdmc faite" -f [string]$installResult.Emulator)
+                    ("[{0}] La sortie est déjà dans le dossier cible, sync sdmc faite" -f [string]$installResult.Emulator)
                 } else {
                     ("[{0}] Mod installe dans {1}" -f [string]$installResult.Emulator, [string]$installResult.ModRoot)
                 }
@@ -10784,13 +14880,13 @@ function Invoke-Randomization {
     $reportPath = Write-RandomizationReport -Result $result -OutputRomfsRoot $OutputRomfsRoot
     if ($reportPath) {
         $result | Add-Member -NotePropertyName "JsonReportPath" -NotePropertyValue $reportPath
-        $outputRomfsFullPath = [IO.Path]::GetFullPath($OutputRomfsRoot).TrimEnd('\')
+        $outputReportsFullPath = [IO.Path]::GetFullPath((Get-OutputReportsRoot -OutputRomfsRoot $OutputRomfsRoot)).TrimEnd('\')
         $reportFullPath = [IO.Path]::GetFullPath($reportPath)
-        if ($reportFullPath.StartsWith($outputRomfsFullPath, [System.StringComparison]::OrdinalIgnoreCase)) {
-            $relativeReportPath = $reportFullPath.Substring($outputRomfsFullPath.Length).TrimStart('\')
+        if ($reportFullPath.StartsWith($outputReportsFullPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+            $relativeReportPath = $reportFullPath.Substring($outputReportsFullPath.Length).TrimStart('\')
             $installedAutoInstallResults = @(Convert-ToObjectArray $result.AutoInstallResults | Where-Object { [bool]$_.Installed -and (-not [bool]$_.AlreadyAtTarget) -and (-not [string]::IsNullOrWhiteSpace([string]$_.ModRoot)) })
             foreach ($installResult in $installedAutoInstallResults) {
-                $installedReportPath = Join-Path (Join-Path $installResult.ModRoot "romfs") $relativeReportPath
+                $installedReportPath = Join-Path (Join-Path $installResult.ModRoot "reports") $relativeReportPath
                 Ensure-ParentDirectory -Path $installedReportPath
                 Copy-Item -LiteralPath $reportPath -Destination $installedReportPath -Force
             }
@@ -10804,7 +14900,7 @@ function Invoke-Randomization {
                         continue
                     }
 
-                    $installationReportPath = Join-Path (Join-Path (Join-Path ([string]$result.InstallationPackageRoot) $targetName) $targetRelativeModPath) ("romfs\" + $relativeReportPath)
+                    $installationReportPath = Join-Path (Join-Path (Join-Path ([string]$result.InstallationPackageRoot) $targetName) $targetRelativeModPath) ("reports\" + $relativeReportPath)
                     Ensure-ParentDirectory -Path $installationReportPath
                     Copy-Item -LiteralPath $reportPath -Destination $installationReportPath -Force
                 }
@@ -10849,4154 +14945,11 @@ function Add-ComboBoxItem {
     $null = $Combo.Items.Add([pscustomobject]@{ Label = $Label; Value = $Value })
 }
 
-function New-GuiFont {
-    param(
-        [string]$Family = "Segoe UI",
-        [single]$Size = 9.5,
-        [System.Drawing.FontStyle]$Style = [System.Drawing.FontStyle]::Regular
-    )
-
-    foreach ($candidate in @($Family, "Exo 2", "Segoe UI", "Arial")) {
-        try {
-            return New-Object System.Drawing.Font($candidate, $Size, $Style)
-        } catch {
-            continue
-        }
-    }
-
-    return New-Object System.Drawing.Font([System.Drawing.FontFamily]::GenericSansSerif, $Size, $Style)
-}
-
-function New-GuiChromePanel {
-    param(
-        [int]$X,
-        [int]$Y,
-        [int]$Width,
-        [int]$Height,
-        [string]$Tag = "ChromePanel"
-    )
-
-    $panel = New-Object System.Windows.Forms.Panel
-    $panel.Location = New-Object System.Drawing.Point($X, $Y)
-    $panel.Size = New-Object System.Drawing.Size($Width, $Height)
-    $panel.Tag = $Tag
-    $panel.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
-    return $panel
-}
-
-function New-ComboBox {
-    param(
-        [System.Collections.Hashtable]$Controls,
-        [string]$Name,
-        [int]$X,
-        [int]$Y,
-        [int]$Width = 220
-    )
-    $combo = New-Object System.Windows.Forms.ComboBox
-    $combo.DropDownStyle = "DropDownList"
-    $combo.Location = New-Object System.Drawing.Point($X, $Y)
-    $combo.Size = New-Object System.Drawing.Size($Width, 28)
-    $combo.Font = New-GuiFont -Size 9.5
-    $Controls[$Name] = $combo
-    return $combo
-}
-
-function New-CheckBox {
-    param(
-        [System.Collections.Hashtable]$Controls,
-        [string]$Name,
-        [string]$Text,
-        [int]$X,
-        [int]$Y,
-        [int]$Width = 260,
-        [bool]$Checked = $false
-    )
-    $check = New-Object System.Windows.Forms.CheckBox
-    $check.Text = $Text
-    $check.Checked = $Checked
-    $check.Location = New-Object System.Drawing.Point($X, $Y)
-    $check.Size = New-Object System.Drawing.Size($Width, 24)
-    $check.Font = New-GuiFont -Size 9.35
-    $check.AutoEllipsis = $true
-    $Controls[$Name] = $check
-    return $check
-}
-
-function New-Label {
-    param(
-        [string]$Text,
-        [int]$X,
-        [int]$Y,
-        [int]$Width = 200,
-        [int]$Height = 22
-    )
-    $label = New-Object System.Windows.Forms.Label
-    $label.Text = $Text
-    $label.Location = New-Object System.Drawing.Point($X, $Y)
-    $label.Size = New-Object System.Drawing.Size($Width, $Height)
-    $label.Font = New-GuiFont -Size 9 -Style ([System.Drawing.FontStyle]::Bold)
-    $label.Tag = "InputLabel"
-    $label.AutoEllipsis = $true
-    return $label
-}
-
-function New-TextBox {
-    param(
-        [System.Collections.Hashtable]$Controls,
-        [string]$Name,
-        [int]$X,
-        [int]$Y,
-        [int]$Width = 120,
-        [string]$Text = ""
-    )
-    $box = New-Object System.Windows.Forms.TextBox
-    $box.Location = New-Object System.Drawing.Point($X, $Y)
-    $box.Size = New-Object System.Drawing.Size($Width, 28)
-    $box.Text = $Text
-    $box.Font = New-GuiFont -Size 9.5
-    $Controls[$Name] = $box
-    return $box
-}
-
-function Get-ComboValue {
-    param([System.Windows.Forms.ComboBox]$Combo)
-    if ($Combo.SelectedItem) {
-        return $Combo.SelectedItem.Value
-    }
-    return ""
-}
-
-function Set-ComboValue {
-    param(
-        [System.Windows.Forms.ComboBox]$Combo,
-        [string]$Value
-    )
-
-    if (-not $Combo) {
-        return $false
-    }
-
-    for ($i = 0; $i -lt $Combo.Items.Count; $i++) {
-        if ([string]$Combo.Items[$i].Value -eq [string]$Value) {
-            $Combo.SelectedIndex = $i
-            return $true
-        }
-    }
-    return $false
-}
-
-function Get-GuiPresetOptionNames {
-    return [string[]]@(
-        "GameVersion",
-        "Source",
-        "SourceExefs",
-        "Output",
-        "Seed",
-        "UiLanguage",
-        "ReportLanguage",
-        "GuiTheme",
-        "DifficultyProfile",
-        "DisableExpShare",
-        "RuntimePcControls",
-        "GymLeagueStoryLevelCap",
-        "AutoInstallToEden",
-        "EdenModName",
-        "InstallToEden",
-        "InstallToRyujinx",
-        "InstallToYuzu",
-        "InstallToSudachi",
-        "InstallToCitron",
-        "InstallToSuyu",
-        "InstallToCitronNeo",
-        "RaceMode",
-        "ExportEncounterZoneReport",
-        "TrainerSpeciesMode",
-        "TrainerMoveMode",
-        "TrainerSmogonMoveFallbackMode",
-        "TrainerItemMode",
-        "TrainerItemPoolMode",
-        "TrainerAddedSlotSpeciesMode",
-        "TrainerDuplicateMode",
-        "TrainerAbilityMode",
-        "TrainerIVMode",
-        "TrainerEVMode",
-        "TrainerNatureMode",
-        "RandomizeTrainerNatures",
-        "TrainerLevelMultiplier",
-        "TrainerTeamMin",
-        "TrainerTeamMax",
-        "TrainerTypeThemed",
-        "TrainerShinyChancePercent",
-        "ForceTrainerFullyEvolved",
-        "TrainerFullyEvolvedLevel",
-        "MaxTrainerAI",
-        "TrainerDynamaxLevelMode",
-        "ForceTrainerCanDynamax",
-        "ForceAllTeamsToSix",
-        "ForceBossTeamsToSix",
-        "BossTeamsToSixScope",
-        "AllowLegendaryTrainers",
-        "TypeMode",
-        "TypesMonotypeOnly",
-        "AbilityMode",
-        "AllowWonderGuard",
-        "StatMode",
-        "ExpYieldMultiplier",
-        "ForceOneExpYield",
-        "RandomizeMoveTypes",
-        "RandomizeMovePower",
-        "MovePowerMin",
-        "MovePowerMax",
-        "RandomizeMovePP",
-        "MovePPMin",
-        "MovePPMax",
-        "RandomizeMoveAccuracy",
-        "MoveAccuracyMin",
-        "MoveAccuracyMax",
-        "RandomizeMoveCategory",
-        "RandomizePickupItems",
-        "RandomizeShopItems",
-        "RandomizeTechnicalRecords",
-        "EvolutionMode",
-        "AllowLegendaryEvolutions",
-        "NormalizeFriendshipEvolutions",
-        "FriendshipEvolutionLevel",
-        "NormalizeTradeEvolutions",
-        "TradeEvolutionLevel",
-        "NormalizeSpecialEvolutions",
-        "SpecialEvolutionLevel",
-        "GiftMode",
-        "StarterMode",
-        "Starter1",
-        "Starter2",
-        "Starter3",
-        "PatchStarterRelatedTrainers",
-        "AllowLegendaryGifts",
-        "TradeMode",
-        "AllowLegendaryTrades",
-        "StaticEncounterMode",
-        "AllowLegendaryStaticEncounters",
-        "StaticEncounterStableMapping",
-        "GrassEncounterMode",
-        "AllowLegendaryGrassEncounters",
-        "GrassEncounterStableMapping",
-        "VisibleEncounterBehavior",
-        "UndergroundMode",
-        "AllowLegendaryUnderground"
-    )
-}
-
-function Get-GuiPresetFromControls {
-    param([System.Collections.Hashtable]$Controls)
-
-    $options = [ordered]@{}
-    foreach ($name in Get-GuiPresetOptionNames) {
-        if (-not $Controls.ContainsKey($name)) {
-            continue
-        }
-
-        $control = $Controls[$name]
-        if ($control -is [System.Windows.Forms.ComboBox]) {
-            $options[$name] = Get-ComboValue -Combo $control
-        } elseif ($control -is [System.Windows.Forms.CheckBox]) {
-            $options[$name] = [bool]$control.Checked
-        } elseif ($control -is [System.Windows.Forms.TextBox]) {
-            if ($name -eq "Output") {
-                $options[$name] = Get-OutputPackageRoot -OutputRomfsRoot ([string]$control.Text)
-            } else {
-                $options[$name] = [string]$control.Text
-            }
-        }
-    }
-
-    return [pscustomobject][ordered]@{
-        presetVersion = "PokeFeurRandomSWSH.GuiPreset.V1"
-        appVersion = "V4.17"
-        exportedAt = (Get-Date).ToString("o")
-        options = $options
-    }
-}
-
-function Set-GuiControlsFromPreset {
-    param(
-        [System.Collections.Hashtable]$Controls,
-        [object]$Preset
-    )
-
-    if ($null -eq $Preset) {
-        throw "Preset JSON vide."
-    }
-
-    $options = if ($Preset.PSObject.Properties.Name -contains "options") { $Preset.options } else { $Preset }
-    if ($null -eq $options) {
-        throw "Preset JSON invalide: bloc options introuvable."
-    }
-
-    $applied = 0
-    foreach ($name in Get-GuiPresetOptionNames) {
-        if (-not $Controls.ContainsKey($name)) {
-            continue
-        }
-        if (-not ($options.PSObject.Properties.Name -contains $name)) {
-            continue
-        }
-
-        $control = $Controls[$name]
-        $value = $options.$name
-        if ($control -is [System.Windows.Forms.ComboBox]) {
-            if (Set-ComboValue -Combo $control -Value ([string]$value)) {
-                $applied++
-            }
-        } elseif ($control -is [System.Windows.Forms.CheckBox]) {
-            $control.Checked = [System.Convert]::ToBoolean($value)
-            $applied++
-        } elseif ($control -is [System.Windows.Forms.TextBox]) {
-            if ($name -eq "Output") {
-                $control.Text = Get-OutputPackageRoot -OutputRomfsRoot ([string]$value)
-            } else {
-                $control.Text = [string]$value
-            }
-            $applied++
-        }
-    }
-
-    if ($applied -lt 1) {
-        throw "Preset JSON invalide: aucune option reconnue."
-    }
-
-    if (
-        $Controls.ContainsKey("TrainerNatureMode") -and
-        -not ($options.PSObject.Properties.Name -contains "TrainerNatureMode") -and
-        ($options.PSObject.Properties.Name -contains "RandomizeTrainerNatures") -and
-        [System.Convert]::ToBoolean($options.RandomizeTrainerNatures)
-    ) {
-        if (Set-ComboValue -Combo $Controls.TrainerNatureMode -Value "Random") {
-            $applied++
-        }
-    }
-
-    return $applied
-}
-
-function Set-GuiControlValue {
-    param(
-        [System.Collections.Hashtable]$Controls,
-        [string]$Name,
-        [object]$Value
-    )
-
-    if (-not $Controls.ContainsKey($Name)) {
-        return $false
-    }
-
-    $control = $Controls[$Name]
-    if ($control -is [System.Windows.Forms.ComboBox]) {
-        return (Set-ComboValue -Combo $control -Value ([string]$Value))
-    }
-    if ($control -is [System.Windows.Forms.CheckBox]) {
-        $control.Checked = [System.Convert]::ToBoolean($Value)
-        return $true
-    }
-    if ($control -is [System.Windows.Forms.TextBox]) {
-        $control.Text = [string]$Value
-        return $true
-    }
-
-    return $false
-}
-
-function Get-DifficultyProfileDefinitions {
-    return [ordered]@{
-        Custom = [pscustomobject]@{
-            Key = "Custom"
-            Labels = @{ fr = "Personnalise"; en = "Custom" }
-            Descriptions = @{
-                fr = "Ne change aucune option. Utilise ce mode quand tu veux regler chaque option a la main."
-                en = "Does not change any option. Use it when you want to tune every setting manually."
-            }
-            Options = [ordered]@{}
-        }
-        VanillaPlus = [pscustomobject]@{
-            Key = "VanillaPlus"
-            Labels = @{ fr = "Vanilla+ equilibre"; en = "Balanced Vanilla+" }
-            Descriptions = @{
-                fr = "Random doux et lisible: puissance proche, rencontres sauvages legerement melangees, pas de hook visible cache par defaut."
-                en = "Readable light randomizer: similar power, lightly mixed wild encounters, no hidden visible-encounter hook by default."
-            }
-            Options = [ordered]@{
-                TrainerSpeciesMode = "SimilarBST"; TrainerMoveMode = "LastLevelUp4"; TrainerSmogonMoveFallbackMode = "LastLevelUp4"; TrainerItemMode = "RandomWhenPresent"; TrainerItemPoolMode = "Battle"; TrainerAbilityMode = "Unchanged"; TrainerIVMode = "Unchanged"; TrainerEVMode = "Unchanged"; TrainerNatureMode = "Unchanged"; TrainerDuplicateMode = "NoDuplicates"
-                TrainerLevelMultiplier = "1.0"; TrainerTeamMin = "-1"; TrainerTeamMax = "-1"; TrainerShinyChancePercent = "0"; TrainerFullyEvolvedLevel = "40"; TrainerDynamaxLevelMode = "Unchanged"
-                RandomizeTrainerNatures = $false; TrainerTypeThemed = $false; ForceTrainerFullyEvolved = $false; MaxTrainerAI = $false; ForceTrainerCanDynamax = $false; ForceAllTeamsToSix = $false; ForceBossTeamsToSix = $false; AllowLegendaryTrainers = $false
-                TypeMode = "Unchanged"; AbilityMode = "Unchanged"; StatMode = "Unchanged"; ExpYieldMultiplier = "1.0"; ForceOneExpYield = $false; RandomizeMoveTypes = $false; RandomizeMovePower = $false; RandomizeMovePP = $false; RandomizeMoveAccuracy = $false; RandomizeMoveCategory = $false; RandomizePickupItems = $false; RandomizeShopItems = $false; RandomizeTechnicalRecords = $false
-                EvolutionMode = "Unchanged"; GiftMode = "Unchanged"; StarterMode = "Unchanged"; TradeMode = "Unchanged"; PatchStarterRelatedTrainers = $true
-                StaticEncounterMode = "Unchanged"; StaticEncounterStableMapping = "Slot"; GrassEncounterMode = "SimilarBST"; GrassEncounterStableMapping = "Slot"; VisibleEncounterBehavior = "RomfsMatch"; UndergroundMode = "SimilarBST"
-                AllowLegendaryStaticEncounters = $false; AllowLegendaryGrassEncounters = $false; AllowLegendaryUnderground = $false; DisableExpShare = $false; RuntimePcControls = $false; GymLeagueStoryLevelCap = $false; RaceMode = $false; ExportEncounterZoneReport = $true
-            }
-        }
-        BalancedRandom = [pscustomobject]@{
-            Key = "BalancedRandom"
-            Labels = @{ fr = "Random complet propre"; en = "Clean full random" }
-            Descriptions = @{
-                fr = "Random principal conseille: dresseurs et rencontres random, doublons bloques, niveaux et objets raisonnables."
-                en = "Recommended full randomizer: randomized trainers and encounters, duplicates blocked, sane levels and items."
-            }
-            Options = [ordered]@{
-                TrainerSpeciesMode = "SimilarBST"; TrainerMoveMode = "LastLevelUp4"; TrainerSmogonMoveFallbackMode = "LastLevelUp4"; TrainerItemMode = "RandomWhenPresent"; TrainerItemPoolMode = "Battle"; TrainerAbilityMode = "RandomSlot"; TrainerIVMode = "Unchanged"; TrainerEVMode = "Unchanged"; TrainerNatureMode = "Random"; TrainerDuplicateMode = "NoDuplicates"
-                TrainerLevelMultiplier = "1.0"; TrainerTeamMin = "-1"; TrainerTeamMax = "-1"; TrainerShinyChancePercent = "0"; TrainerFullyEvolvedLevel = "40"; TrainerDynamaxLevelMode = "Unchanged"
-                RandomizeTrainerNatures = $false; TrainerTypeThemed = $true; ForceTrainerFullyEvolved = $false; MaxTrainerAI = $false; ForceTrainerCanDynamax = $false; ForceAllTeamsToSix = $false; ForceBossTeamsToSix = $false; AllowLegendaryTrainers = $false
-                TypeMode = "Unchanged"; AbilityMode = "Unchanged"; StatMode = "Unchanged"; ExpYieldMultiplier = "1.0"; ForceOneExpYield = $false; RandomizeMoveTypes = $false; RandomizeMovePower = $false; RandomizeMovePP = $false; RandomizeMoveAccuracy = $false; RandomizeMoveCategory = $false; RandomizePickupItems = $false; RandomizeShopItems = $false; RandomizeTechnicalRecords = $false
-                EvolutionMode = "SimilarBST"; GiftMode = "SimilarBST"; StarterMode = "SimilarBST"; TradeMode = "SimilarBST"; PatchStarterRelatedTrainers = $true
-                StaticEncounterMode = "SimilarBST"; StaticEncounterStableMapping = "Slot"; GrassEncounterMode = "Random"; GrassEncounterStableMapping = "Slot"; VisibleEncounterBehavior = "RomfsMatch"; UndergroundMode = "Random"
-                AllowLegendaryStaticEncounters = $false; AllowLegendaryGrassEncounters = $false; AllowLegendaryUnderground = $false; DisableExpShare = $false; RuntimePcControls = $false; GymLeagueStoryLevelCap = $false; RaceMode = $false; ExportEncounterZoneReport = $true
-            }
-        }
-        SmogonStrategic = [pscustomobject]@{
-            Key = "SmogonStrategic"
-            Labels = @{ fr = "Strategique Smogon"; en = "Smogon strategic" }
-            Descriptions = @{
-                fr = "Dresseurs plus intelligents: moves, talents et objets Smogon quand disponibles, backup propre sinon."
-                en = "Smarter trainer battles: Smogon moves, abilities, and items when available, clean fallback otherwise."
-            }
-            Options = [ordered]@{
-                TrainerSpeciesMode = "SimilarBST"; TrainerMoveMode = "SmogonStrategic"; TrainerSmogonMoveFallbackMode = "LastLevelUp4"; TrainerItemMode = "SmogonStrategic"; TrainerItemPoolMode = "Battle"; TrainerAbilityMode = "SmogonStrategic"; TrainerIVMode = "Max31"; TrainerEVMode = "SmogonStrategic"; TrainerNatureMode = "SmogonStrategic"; TrainerAddedSlotSpeciesMode = "SameTypeBST"; TrainerDuplicateMode = "NoDuplicates"
-                TrainerLevelMultiplier = "1.0"; TrainerTeamMin = "-1"; TrainerTeamMax = "-1"; TrainerShinyChancePercent = "0"; TrainerFullyEvolvedLevel = "40"; TrainerDynamaxLevelMode = "Unchanged"
-                RandomizeTrainerNatures = $false; TrainerTypeThemed = $true; ForceTrainerFullyEvolved = $true; MaxTrainerAI = $true; ForceTrainerCanDynamax = $false; ForceAllTeamsToSix = $false; ForceBossTeamsToSix = $true; BossTeamsToSixScope = "GymLeague"; AllowLegendaryTrainers = $false
-                TypeMode = "Unchanged"; AbilityMode = "Unchanged"; StatMode = "Unchanged"; ExpYieldMultiplier = "1.0"; ForceOneExpYield = $false; RandomizePickupItems = $false; RandomizeShopItems = $false; RandomizeTechnicalRecords = $false
-                EvolutionMode = "Unchanged"; GiftMode = "Unchanged"; StarterMode = "Unchanged"; TradeMode = "Unchanged"; PatchStarterRelatedTrainers = $true
-                StaticEncounterMode = "Unchanged"; StaticEncounterStableMapping = "Slot"; GrassEncounterMode = "Unchanged"; GrassEncounterStableMapping = "Slot"; VisibleEncounterBehavior = "RomfsMatch"; UndergroundMode = "Unchanged"
-                AllowLegendaryStaticEncounters = $false; AllowLegendaryGrassEncounters = $false; AllowLegendaryUnderground = $false; DisableExpShare = $false; RuntimePcControls = $false; GymLeagueStoryLevelCap = $false; RaceMode = $false; ExportEncounterZoneReport = $true
-            }
-        }
-        HardcoreGymLeague = [pscustomobject]@{
-            Key = "HardcoreGymLeague"
-            Labels = @{ fr = "Hardcore arenes + ligue"; en = "Hardcore gyms + league" }
-            Descriptions = @{
-                fr = "Challenge centre sur champions et ligue: boss a 6, theme de type garde, IA forte, cap arenes/Tarak."
-                en = "Gym and league challenge: 6-Pokemon bosses, preserved type themes, stronger AI, gym/Leon level cap."
-            }
-            Options = [ordered]@{
-                TrainerSpeciesMode = "SimilarBST"; TrainerMoveMode = "SmogonStrategic"; TrainerSmogonMoveFallbackMode = "LastLevelUp4"; TrainerItemMode = "ForceAll"; TrainerItemPoolMode = "Battle"; TrainerAbilityMode = "SmogonStrategic"; TrainerIVMode = "Max31"; TrainerEVMode = "SmogonStrategic"; TrainerNatureMode = "SmogonStrategic"; TrainerAddedSlotSpeciesMode = "SameTypeBST"; TrainerDuplicateMode = "NoDuplicates"
-                TrainerLevelMultiplier = "1.10"; TrainerTeamMin = "-1"; TrainerTeamMax = "-1"; TrainerShinyChancePercent = "0"; TrainerFullyEvolvedLevel = "35"; TrainerDynamaxLevelMode = "Max10"
-                RandomizeTrainerNatures = $false; TrainerTypeThemed = $true; ForceTrainerFullyEvolved = $true; MaxTrainerAI = $true; ForceTrainerCanDynamax = $false; ForceAllTeamsToSix = $false; ForceBossTeamsToSix = $true; BossTeamsToSixScope = "GymLeague"; AllowLegendaryTrainers = $false
-                TypeMode = "Unchanged"; AbilityMode = "Unchanged"; StatMode = "Unchanged"; ExpYieldMultiplier = "1.0"; ForceOneExpYield = $false; RandomizePickupItems = $false; RandomizeShopItems = $false; RandomizeTechnicalRecords = $false
-                EvolutionMode = "Unchanged"; GiftMode = "Unchanged"; StarterMode = "Unchanged"; TradeMode = "Unchanged"; PatchStarterRelatedTrainers = $true
-                StaticEncounterMode = "SimilarBST"; StaticEncounterStableMapping = "Slot"; GrassEncounterMode = "SimilarBST"; GrassEncounterStableMapping = "Slot"; VisibleEncounterBehavior = "RomfsMatch"; UndergroundMode = "SimilarBST"
-                AllowLegendaryStaticEncounters = $false; AllowLegendaryGrassEncounters = $false; AllowLegendaryUnderground = $false; DisableExpShare = $false; RuntimePcControls = $false; GymLeagueStoryLevelCap = $true; RaceMode = $false; ExportEncounterZoneReport = $true
-            }
-        }
-        Chaos = [pscustomobject]@{
-            Key = "Chaos"
-            Labels = @{ fr = "Chaos total"; en = "Full chaos" }
-            Descriptions = @{
-                fr = "Mode extreme: presque tout random, legendaires autorises, doublons possibles, visuel et combat separes."
-                en = "Extreme mode: nearly everything random, legendaries allowed, duplicates possible, separate visible and battle rolls."
-            }
-            Options = [ordered]@{
-                TrainerSpeciesMode = "Random"; TrainerMoveMode = "Random4"; TrainerSmogonMoveFallbackMode = "Random4"; TrainerItemMode = "ForceAll"; TrainerItemPoolMode = "FullRandom"; TrainerAbilityMode = "RandomSlot"; TrainerIVMode = "Random"; TrainerEVMode = "RandomLegal"; TrainerNatureMode = "Random"; TrainerAddedSlotSpeciesMode = "Random"; TrainerDuplicateMode = "Normal"
-                TrainerLevelMultiplier = "1.0"; TrainerTeamMin = "-1"; TrainerTeamMax = "-1"; TrainerShinyChancePercent = "3"; TrainerFullyEvolvedLevel = "30"; TrainerDynamaxLevelMode = "Random0To10"
-                RandomizeTrainerNatures = $false; TrainerTypeThemed = $false; ForceTrainerFullyEvolved = $true; MaxTrainerAI = $true; ForceTrainerCanDynamax = $true; ForceAllTeamsToSix = $true; ForceBossTeamsToSix = $false; BossTeamsToSixScope = "MajorBosses"; AllowLegendaryTrainers = $true
-                TypeMode = "Random"; AbilityMode = "Random"; StatMode = "Shuffle"; ExpYieldMultiplier = "1.5"; ForceOneExpYield = $false; RandomizeMoveTypes = $true; RandomizeMovePower = $true; RandomizeMovePP = $true; RandomizeMoveAccuracy = $true; RandomizeMoveCategory = $true; RandomizePickupItems = $true; RandomizeShopItems = $true; RandomizeTechnicalRecords = $true
-                EvolutionMode = "Random"; GiftMode = "Random"; StarterMode = "Random"; TradeMode = "Random"; PatchStarterRelatedTrainers = $true; AllowLegendaryEvolutions = $true; AllowLegendaryGifts = $true; AllowLegendaryTrades = $true
-                StaticEncounterMode = "Random"; StaticEncounterStableMapping = "Random"; GrassEncounterMode = "Random"; GrassEncounterStableMapping = "Random"; VisibleEncounterBehavior = "RandomVisualBattleRandom"; UndergroundMode = "Random"
-                AllowLegendaryStaticEncounters = $true; AllowLegendaryGrassEncounters = $true; AllowLegendaryUnderground = $true; DisableExpShare = $false; RuntimePcControls = $false; GymLeagueStoryLevelCap = $false; RaceMode = $false; ExportEncounterZoneReport = $true
-            }
-        }
-    }
-}
-
-function Get-DifficultyProfileComboItems {
-    param([string]$Language = "fr")
-
-    $lang = if ($Language -eq "en") { "en" } else { "fr" }
-    $items = New-Object System.Collections.Generic.List[object]
-    foreach ($profile in (Get-DifficultyProfileDefinitions).Values) {
-        $items.Add([pscustomobject]@{
-            Label = [string]$profile.Labels[$lang]
-            Value = [string]$profile.Key
-        })
-    }
-    return [object[]]$items.ToArray()
-}
-
-function Get-DifficultyProfileBaselineOptions {
-    return [ordered]@{
-        TypesMonotypeOnly = $false
-        AllowWonderGuard = $false
-        AllowLegendaryEvolutions = $false
-        AllowLegendaryGifts = $false
-        AllowLegendaryTrades = $false
-        NormalizeFriendshipEvolutions = $false
-        FriendshipEvolutionLevel = "30"
-        NormalizeTradeEvolutions = $false
-        TradeEvolutionLevel = "37"
-        NormalizeSpecialEvolutions = $false
-        SpecialEvolutionLevel = "36"
-        MovePowerMin = "20"
-        MovePowerMax = "150"
-        MovePPMin = "5"
-        MovePPMax = "40"
-        MoveAccuracyMin = "70"
-        MoveAccuracyMax = "100"
-    }
-}
-
-function Apply-DifficultyProfileToControls {
-    param(
-        [System.Collections.Hashtable]$Controls,
-        [string]$ProfileKey
-    )
-
-    $definitions = Get-DifficultyProfileDefinitions
-    if (-not $definitions.Contains($ProfileKey)) {
-        throw "Profil de difficulte inconnu: $ProfileKey"
-    }
-
-    $profile = $definitions[$ProfileKey]
-    $applied = 0
-    if ($ProfileKey -ne "Custom") {
-        foreach ($entry in (Get-DifficultyProfileBaselineOptions).GetEnumerator()) {
-            if (Set-GuiControlValue -Controls $Controls -Name ([string]$entry.Key) -Value $entry.Value) {
-                $applied++
-            }
-        }
-    }
-    foreach ($entry in $profile.Options.GetEnumerator()) {
-        if (Set-GuiControlValue -Controls $Controls -Name ([string]$entry.Key) -Value $entry.Value) {
-            $applied++
-        }
-    }
-
-    return [pscustomobject]@{
-        Profile = $profile
-        Applied = $applied
-    }
-}
-
-function Try-ParseInvariantDouble {
-    param(
-        [string]$Text,
-        [ref]$Value
-    )
-
-    $styles = [System.Globalization.NumberStyles]::Float
-    $culture = [System.Globalization.CultureInfo]::InvariantCulture
-    $normalized = ([string]$Text).Trim().Replace(",", ".")
-    return [double]::TryParse($normalized, $styles, $culture, $Value)
-}
-
-function Convert-GuiDoubleText {
-    param(
-        [string]$Text,
-        [string]$Label,
-        [string]$Language = "fr"
-    )
-
-    $value = 0.0
-    if (-not (Try-ParseInvariantDouble -Text $Text -Value ([ref]$value))) {
-        if ($Language -eq "en") {
-            throw "$Label must be numeric."
-        }
-        throw "$Label doit etre numerique."
-    }
-    return $value
-}
-
-function Test-GuiBuildConfiguration {
-    param(
-        [System.Collections.Hashtable]$Controls,
-        [string]$Language = "fr"
-    )
-
-    $lang = if ($Language -eq "en") { "en" } else { "fr" }
-    $errors = New-Object System.Collections.Generic.List[string]
-    $warnings = New-Object System.Collections.Generic.List[string]
-    $infos = New-Object System.Collections.Generic.List[string]
-
-    $addError = { param([string]$Message) [void]$errors.Add($Message) }
-    $addWarning = { param([string]$Message) [void]$warnings.Add($Message) }
-    $addInfo = { param([string]$Message) [void]$infos.Add($Message) }
-
-    $textOf = {
-        param([string]$Name)
-        if ($Controls.ContainsKey($Name) -and $Controls[$Name] -is [System.Windows.Forms.TextBox]) {
-            return ([string]$Controls[$Name].Text).Trim()
-        }
-        return ""
-    }
-    $checkedOf = {
-        param([string]$Name)
-        return ($Controls.ContainsKey($Name) -and $Controls[$Name] -is [System.Windows.Forms.CheckBox] -and [bool]$Controls[$Name].Checked)
-    }
-    $comboOf = {
-        param([string]$Name)
-        if ($Controls.ContainsKey($Name) -and $Controls[$Name] -is [System.Windows.Forms.ComboBox]) {
-            return [string](Get-ComboValue -Combo $Controls[$Name])
-        }
-        return ""
-    }
-
-    $sourceRomfs = ""
-    $sourceExefs = ""
-    $outputPackage = ""
-    $sourceRomfsText = & $textOf "Source"
-    $sourceExefsText = & $textOf "SourceExefs"
-    $outputText = & $textOf "Output"
-    $gameVersion = & $comboOf "GameVersion"
-
-    try {
-        $sourceRomfs = Resolve-RequiredSourceRomfsRoot -SourceRomfsRoot $sourceRomfsText
-        Assert-ValidSourceRomfsForRandomizer -RomfsRoot $sourceRomfs
-        & $addInfo $(if ($lang -eq "en") { "ROMFS source OK: $sourceRomfs" } else { "Source ROMFS OK: $sourceRomfs" })
-    } catch {
-        & $addError $_.Exception.Message
-    }
-
-    if ([string]::IsNullOrWhiteSpace($outputText)) {
-        & $addError $(if ($lang -eq "en") { "Generated mod folder is required." } else { "Dossier du mod genere obligatoire." })
-    } else {
-        try {
-            $outputPackage = Get-OutputPackageRoot -OutputRomfsRoot $outputText
-            [void](Resolve-OutputRomfsRoot -OutputPath $outputText)
-            if (-not [string]::IsNullOrWhiteSpace($sourceRomfs)) {
-                if (Test-PathInsideRoot -Path $outputPackage -Root $sourceRomfs) {
-                    & $addError $(if ($lang -eq "en") { "Output cannot be inside the source ROMFS folder." } else { "La sortie ne peut pas etre dans le dossier ROMFS source." })
-                }
-                if (Test-PathInsideRoot -Path $sourceRomfs -Root $outputPackage) {
-                    & $addError $(if ($lang -eq "en") { "Source ROMFS cannot be inside the generated output folder." } else { "Le ROMFS source ne peut pas etre dans le dossier de sortie genere." })
-                }
-            }
-            & $addInfo $(if ($lang -eq "en") { "Output root OK: $outputPackage" } else { "Dossier de sortie OK: $outputPackage" })
-        } catch {
-            & $addError $_.Exception.Message
-        }
-    }
-
-    $seedText = & $textOf "Seed"
-    $seedValue = 0L
-    if (-not [long]::TryParse($seedText, [ref]$seedValue)) {
-        & $addError $(if ($lang -eq "en") { "Seed must be a numeric integer. Use -1 for auto." } else { "Le seed doit etre un entier numerique. Utilise -1 pour auto." })
-    }
-
-    $needsRuntime = $false
-    $runtimeReasons = New-Object System.Collections.Generic.List[string]
-    $visibleBehavior = Get-NormalizedVisibleEncounterBehavior -Value (& $comboOf "VisibleEncounterBehavior")
-    $expMultiplier = 1.0
-    [void](Try-ParseInvariantDouble -Text (& $textOf "ExpYieldMultiplier") -Value ([ref]$expMultiplier))
-    if (& $checkedOf "RuntimePcControls") { $needsRuntime = $true; [void]$runtimeReasons.Add("PC runtime") }
-    if (& $checkedOf "DisableExpShare") { $needsRuntime = $true; [void]$runtimeReasons.Add("EXP Share runtime") }
-    if (& $checkedOf "EarlyBike") { $needsRuntime = $true; [void]$runtimeReasons.Add("early bike") }
-    if (& $checkedOf "DynamicExpLevelCap") { $needsRuntime = $true; [void]$runtimeReasons.Add("dynamic EXP cap") }
-    if (& $checkedOf "StrictBossMaxLevelCap") { $needsRuntime = $true; [void]$runtimeReasons.Add("strict boss EXP cap") }
-    if (& $checkedOf "MainStorySoftLevelCap") { $needsRuntime = $true; [void]$runtimeReasons.Add("soft story EXP cap") }
-    if (& $checkedOf "GymLeagueStoryLevelCap") { $needsRuntime = $true; [void]$runtimeReasons.Add("gym/champion EXP cap") }
-    if (& $checkedOf "StoryMajorBattleOrderLevelCap") { $needsRuntime = $true; [void]$runtimeReasons.Add("ordered major battle EXP cap") }
-    if ((-not (& $checkedOf "ForceOneExpYield")) -and [Math]::Abs($expMultiplier - 1.0) -gt 0.0001) { $needsRuntime = $true; [void]$runtimeReasons.Add("EXP boost") }
-    if ($visibleBehavior -ne "RomfsMatch") { $needsRuntime = $true; [void]$runtimeReasons.Add("visible/combat split") }
-
-    if ($needsRuntime) {
-        if ([string]::IsNullOrWhiteSpace($sourceExefsText)) {
-            & $addWarning $(if ($lang -eq "en") { "Runtime/ExLaunch options are enabled, but no ExeFS folder was explicitly provided. The build will stay ROMFS-only and will not generate exefs or sdmc." } else { "Des options runtime/ExLaunch sont actives, mais aucun dossier ExeFS n'a ete explicitement fourni. La generation restera en mode ROMFS-only et ne produira ni exefs ni sdmc." })
-        } else {
-            try {
-                $sourceExefs = Resolve-RequiredSourceExefsRoot -SourceRomfsRoot $sourceRomfsText -SourceExefsRoot $sourceExefsText -GameVersion $gameVersion
-                & $addInfo $(if ($lang -eq "en") { "ExeFS source OK for runtime features: $sourceExefs" } else { "Source ExeFS OK pour les options runtime: $sourceExefs" })
-            } catch {
-                & $addError $_.Exception.Message
-            }
-        }
-    } elseif (-not [string]::IsNullOrWhiteSpace($sourceExefsText)) {
-        try {
-            $sourceExefs = Resolve-SourceExefsRoot -SourceRomfsRoot $sourceRomfsText -SourceExefsRoot $sourceExefsText -GameVersion $gameVersion
-            if (-not [string]::IsNullOrWhiteSpace($sourceExefs)) {
-                & $addInfo $(if ($lang -eq "en") { "ExeFS source detected: $sourceExefs" } else { "Source ExeFS detectee: $sourceExefs" })
-            }
-        } catch {
-            & $addWarning $_.Exception.Message
-        }
-    }
-
-    if (-not [string]::IsNullOrWhiteSpace($sourceExefs) -and -not [string]::IsNullOrWhiteSpace($outputPackage)) {
-        if (Test-PathInsideRoot -Path $outputPackage -Root $sourceExefs) {
-            & $addError $(if ($lang -eq "en") { "Output cannot be inside the source ExeFS folder." } else { "La sortie ne peut pas etre dans le dossier ExeFS source." })
-        }
-    }
-
-    if (-not [string]::IsNullOrWhiteSpace($sourceRomfs)) {
-        $requiredFiles = New-Object System.Collections.Generic.HashSet[string]
-        $requiredDirs = New-Object System.Collections.Generic.HashSet[string]
-        [void]$requiredFiles.Add("bin\pml\personal\personal_total.bin")
-        [void]$requiredDirs.Add("bin\trainer\trainer_data")
-        [void]$requiredDirs.Add("bin\trainer\trainer_poke")
-
-        $trainerMoveMode = Normalize-Mode (& $comboOf "TrainerMoveMode")
-        $smogonFallback = Normalize-Mode (& $comboOf "TrainerSmogonMoveFallbackMode")
-        if ($trainerMoveMode -eq "lastlevelup4" -or ((Test-TrainerModeUsesSmogon $trainerMoveMode) -and $smogonFallback -eq "lastlevelup4")) {
-            [void]$requiredFiles.Add("bin\pml\waza_oboe\wazaoboe_total.bin")
-        }
-        if ($trainerMoveMode -eq "random4" -or (Test-TrainerModeUsesSmogon $trainerMoveMode) -or (& $checkedOf "RandomizeMoveTypes") -or (& $checkedOf "RandomizeMovePower") -or (& $checkedOf "RandomizeMovePP") -or (& $checkedOf "RandomizeMoveAccuracy") -or (& $checkedOf "RandomizeMoveCategory")) {
-            [void]$requiredDirs.Add("bin\pml\waza")
-        }
-        if ((Normalize-Mode (& $comboOf "EvolutionMode")) -ne "unchanged" -or (& $checkedOf "NormalizeFriendshipEvolutions") -or (& $checkedOf "NormalizeTradeEvolutions") -or (& $checkedOf "NormalizeSpecialEvolutions") -or (& $checkedOf "ForceTrainerFullyEvolved")) {
-            [void]$requiredDirs.Add("bin\pml\evolution")
-        }
-        if ((Normalize-Mode (& $comboOf "GiftMode")) -ne "unchanged" -or (Normalize-Mode (& $comboOf "StarterMode")) -ne "unchanged" -or -not [string]::IsNullOrWhiteSpace((& $textOf "Starter1") + (& $textOf "Starter2") + (& $textOf "Starter3"))) {
-            [void]$requiredFiles.Add("bin\script_event_data\add_poke.bin")
-        }
-        if ((Normalize-Mode (& $comboOf "TradeMode")) -ne "unchanged") {
-            [void]$requiredFiles.Add("bin\script_event_data\field_trade.bin")
-        }
-        if ((Normalize-Mode (& $comboOf "StaticEncounterMode")) -ne "unchanged") {
-            [void]$requiredFiles.Add("bin\script_event_data\event_encount_data.bin")
-        }
-        if ((Normalize-Mode (& $comboOf "GrassEncounterMode")) -ne "unchanged" -or $visibleBehavior -ne "RomfsMatch") {
-            [void]$requiredFiles.Add("bin\archive\field\resident\data_table.gfpak")
-        }
-        if ((Normalize-Mode (& $comboOf "UndergroundMode")) -ne "unchanged") {
-            [void]$requiredFiles.Add("bin\appli\chika\data_table\underground_exploration_poke.bin")
-        }
-        if (& $checkedOf "RuntimePcControls") {
-            [void]$requiredFiles.Add("bin\script\param\script_id\script_id_record.bin")
-        }
-
-        foreach ($relativeDir in @($requiredDirs)) {
-            if (-not (Test-Path -LiteralPath (Join-Path $sourceRomfs $relativeDir) -PathType Container)) {
-                & $addError $(if ($lang -eq "en") { "Missing required ROMFS folder: $relativeDir" } else { "Dossier ROMFS requis manquant: $relativeDir" })
-            }
-        }
-        foreach ($relativeFile in @($requiredFiles)) {
-            $path = Join-Path $sourceRomfs $relativeFile
-            if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
-                & $addError $(if ($lang -eq "en") { "Missing required ROMFS file: $relativeFile" } else { "Fichier ROMFS requis manquant: $relativeFile" })
-            } elseif ((Get-Item -LiteralPath $path).Length -le 0) {
-                & $addError $(if ($lang -eq "en") { "Required ROMFS file is empty: $relativeFile" } else { "Fichier ROMFS requis vide: $relativeFile" })
-            }
-        }
-    }
-
-    $validateDouble = {
-        param([string]$Name, [string]$Label, [double]$Min, [double]$Max)
-        $value = 0.0
-        if (-not (Try-ParseInvariantDouble -Text (& $textOf $Name) -Value ([ref]$value))) {
-            & $addError $(if ($lang -eq "en") { "$Label must be numeric." } else { "$Label doit etre numerique." })
-            return $null
-        }
-        if ($value -lt $Min -or $value -gt $Max) {
-            & $addError $(if ($lang -eq "en") { "$Label must be between $Min and $Max." } else { "$Label doit etre entre $Min et $Max." })
-        }
-        return $value
-    }
-    $validateInt = {
-        param([string]$Name, [string]$Label, [int]$Min, [int]$Max, [bool]$AllowMinusOne)
-        $value = 0
-        if (-not [int]::TryParse((& $textOf $Name), [ref]$value)) {
-            & $addError $(if ($lang -eq "en") { "$Label must be an integer." } else { "$Label doit etre un entier." })
-            return $null
-        }
-        if ($AllowMinusOne -and $value -eq -1) {
-            return $value
-        }
-        if ($value -lt $Min -or $value -gt $Max) {
-            & $addError $(if ($lang -eq "en") { "$Label must be between $Min and $Max." } else { "$Label doit etre entre $Min et $Max." })
-        }
-        return $value
-    }
-
-    $levelMult = & $validateDouble "TrainerLevelMultiplier" $(if ($lang -eq "en") { "Trainer level multiplier" } else { "Multiplicateur des niveaux" }) 0.1 10.0
-    if ($levelMult -and $levelMult -gt 3.0) {
-        & $addWarning $(if ($lang -eq "en") { "Trainer level multiplier is very high; many teams may clamp to Lv.100." } else { "Le multiplicateur de niveau est tres haut; beaucoup d'equipes peuvent finir bloquees au niveau 100." })
-    }
-    $teamMin = & $validateInt "TrainerTeamMin" $(if ($lang -eq "en") { "Minimum team size" } else { "Taille equipe minimum" }) 1 6 $true
-    $teamMax = & $validateInt "TrainerTeamMax" $(if ($lang -eq "en") { "Maximum team size" } else { "Taille equipe maximum" }) 1 6 $true
-    if ($null -ne $teamMin -and $null -ne $teamMax -and $teamMin -ne -1 -and $teamMax -ne -1 -and $teamMin -gt $teamMax) {
-        & $addError $(if ($lang -eq "en") { "Minimum team size cannot be higher than maximum team size." } else { "La taille equipe minimum ne peut pas etre superieure au maximum." })
-    }
-    [void](& $validateDouble "TrainerShinyChancePercent" $(if ($lang -eq "en") { "Trainer shiny rate" } else { "Taux shiny dresseurs" }) 0.0 100.0)
-    [void](& $validateInt "TrainerFullyEvolvedLevel" $(if ($lang -eq "en") { "Final evolution level" } else { "Niveau evolution finale" }) 1 100 $false)
-    [void](& $validateDouble "ExpYieldMultiplier" $(if ($lang -eq "en") { "EXP yield multiplier" } else { "Multiplicateur EXP" }) 0.01 50.0)
-    [void](& $validateInt "MovePowerMin" $(if ($lang -eq "en") { "Move power min" } else { "Puissance min" }) 1 250 $false)
-    $movePowerMax = & $validateInt "MovePowerMax" $(if ($lang -eq "en") { "Move power max" } else { "Puissance max" }) 1 250 $false
-    $movePowerMin = 0
-    [void][int]::TryParse((& $textOf "MovePowerMin"), [ref]$movePowerMin)
-    if ($movePowerMax -and $movePowerMin -gt $movePowerMax) {
-        & $addError $(if ($lang -eq "en") { "Move power min cannot be higher than move power max." } else { "La puissance min ne peut pas etre superieure a la puissance max." })
-    }
-    [void](& $validateInt "MovePPMin" $(if ($lang -eq "en") { "Move PP min" } else { "PP min" }) 1 64 $false)
-    $movePPMax = & $validateInt "MovePPMax" $(if ($lang -eq "en") { "Move PP max" } else { "PP max" }) 1 64 $false
-    $movePPMin = 0
-    [void][int]::TryParse((& $textOf "MovePPMin"), [ref]$movePPMin)
-    if ($movePPMax -and $movePPMin -gt $movePPMax) {
-        & $addError $(if ($lang -eq "en") { "Move PP min cannot be higher than move PP max." } else { "Les PP min ne peuvent pas etre superieurs aux PP max." })
-    }
-    [void](& $validateInt "MoveAccuracyMin" $(if ($lang -eq "en") { "Move accuracy min" } else { "Precision min" }) 1 100 $false)
-    $moveAccuracyMax = & $validateInt "MoveAccuracyMax" $(if ($lang -eq "en") { "Move accuracy max" } else { "Precision max" }) 1 100 $false
-    $moveAccuracyMin = 0
-    [void][int]::TryParse((& $textOf "MoveAccuracyMin"), [ref]$moveAccuracyMin)
-    if ($moveAccuracyMax -and $moveAccuracyMin -gt $moveAccuracyMax) {
-        & $addError $(if ($lang -eq "en") { "Move accuracy min cannot be higher than move accuracy max." } else { "La precision min ne peut pas etre superieure a la precision max." })
-    }
-
-    if ((& $checkedOf "ForceOneExpYield") -and [Math]::Abs($expMultiplier - 1.0) -gt 0.0001) {
-        & $addWarning $(if ($lang -eq "en") { "No EXP mode overrides the EXP multiplier; the multiplier will not matter." } else { "Le mode No EXP prend le dessus sur le multiplicateur EXP; le multiplicateur ne servira pas." })
-    }
-    if ((& $checkedOf "ForceAllTeamsToSix") -and (& $checkedOf "ForceBossTeamsToSix")) {
-        & $addWarning $(if ($lang -eq "en") { "All teams at 6 already includes boss teams; the boss-only option is redundant." } else { "Mettre tous les dresseurs a 6 inclut deja les boss; l'option boss seulement est redondante." })
-    }
-    if ((Normalize-Mode (& $comboOf "TrainerSpeciesMode")) -eq "unchanged" -and (& $checkedOf "TrainerTypeThemed")) {
-        & $addWarning $(if ($lang -eq "en") { "Type-themed trainer teams only matters when trainer species are randomized." } else { "Les equipes themees par type servent surtout quand les especes des dresseurs sont randomisees." })
-    }
-    if ((Normalize-Mode (& $comboOf "TrainerItemMode")) -eq "removeall") {
-        & $addWarning $(if ($lang -eq "en") { "Held item pool is ignored because held items are removed." } else { "Le pool d'objets est ignore car les objets tenus sont supprimes." })
-    }
-    $validationUsesSmogon = (Test-TrainerModeUsesSmogon (& $comboOf "TrainerMoveMode")) -or (Test-TrainerModeUsesSmogon (& $comboOf "TrainerItemMode")) -or (Test-TrainerModeUsesSmogon (& $comboOf "TrainerAbilityMode")) -or (Test-TrainerModeUsesSmogon (& $comboOf "TrainerEVMode")) -or (Test-TrainerModeUsesSmogon (& $comboOf "TrainerNatureMode"))
-    $validationUsesLegacySmogon = (Test-TrainerModeUsesSmogonLegacy (& $comboOf "TrainerMoveMode")) -or (Test-TrainerModeUsesSmogonLegacy (& $comboOf "TrainerItemMode")) -or (Test-TrainerModeUsesSmogonLegacy (& $comboOf "TrainerAbilityMode")) -or (Test-TrainerModeUsesSmogonLegacy (& $comboOf "TrainerEVMode")) -or (Test-TrainerModeUsesSmogonLegacy (& $comboOf "TrainerNatureMode"))
-    if ($validationUsesSmogon) {
-        & $addInfo $(if ($lang -eq "en") { "Smogon strategic modes use one coherent cached set per Pokemon when present, then fall back to safe local choices if a set is missing." } else { "Les modes Strategique Smogon utilisent un meme set coherent en cache par Pokemon quand il existe, puis un backup propre si un set manque." })
-    }
-    if ($validationUsesLegacySmogon) {
-        & $addInfo $(if ($lang -eq "en") { "Smogon historical mode tries SS first, then SM, XY, BW, DP, RS, GS and RB; if no set exists, the configured backup is used." } else { "Le mode Smogon anciennes gens essaie SS d'abord, puis SM, XY, BW, DP, RS, GS et RB; si aucun set n'existe, le backup configure est utilise." })
-    }
-    if ($needsRuntime) {
-        & $addInfo $(if ($lang -eq "en") { "Runtime features enabled: $($runtimeReasons -join ', ')." } else { "Options runtime actives: $($runtimeReasons -join ', ')." })
-    }
-    if ((& $checkedOf "AutoInstallToEden") -and -not ((& $checkedOf "InstallToEden") -or (& $checkedOf "InstallToRyujinx") -or (& $checkedOf "InstallToYuzu") -or (& $checkedOf "InstallToSudachi") -or (& $checkedOf "InstallToCitron") -or (& $checkedOf "InstallToSuyu") -or (& $checkedOf "InstallToCitronNeo"))) {
-        & $addError $(if ($lang -eq "en") { "Auto-install is enabled but no emulator target is selected." } else { "L'installation auto est activee mais aucune cible emulateur n'est cochee." })
-    }
-
-    return [pscustomobject]@{
-        Errors = $errors
-        Warnings = $warnings
-        Infos = $infos
-    }
-}
-
-function Format-GuiBuildValidationResult {
-    param(
-        [object]$Validation,
-        [string]$Language = "fr"
-    )
-
-    $lang = if ($Language -eq "en") { "en" } else { "fr" }
-    $lines = New-Object System.Collections.Generic.List[string]
-    if ($Validation.Errors.Count -eq 0 -and $Validation.Warnings.Count -eq 0) {
-        [void]$lines.Add($(if ($lang -eq "en") { "Validation OK: the build can start." } else { "Validation OK: la generation peut demarrer." }))
-    } else {
-        [void]$lines.Add($(if ($lang -eq "en") { "Validation result:" } else { "Resultat de validation:" }))
-    }
-    foreach ($message in @($Validation.Errors)) {
-        [void]$lines.Add("ERREUR: $message")
-    }
-    foreach ($message in @($Validation.Warnings)) {
-        [void]$lines.Add($(if ($lang -eq "en") { "WARNING: $message" } else { "AVERTISSEMENT: $message" }))
-    }
-    foreach ($message in @($Validation.Infos | Select-Object -First 8)) {
-        [void]$lines.Add("OK: $message")
-    }
-    return ($lines -join [Environment]::NewLine)
-}
-
-function Confirm-GuiBuildValidationResult {
-    param(
-        [System.Windows.Forms.Form]$Owner,
-        [object]$Validation,
-        [string]$Language = "fr",
-        [bool]$ConfirmWarnings = $true
-    )
-
-    $lang = if ($Language -eq "en") { "en" } else { "fr" }
-    $text = Format-GuiBuildValidationResult -Validation $Validation -Language $lang
-    if ($Validation.Errors.Count -gt 0) {
-        $title = if ($lang -eq "en") { "Build blocked" } else { "Generation bloquee" }
-        [void][System.Windows.Forms.MessageBox]::Show($Owner, $text, $title, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-        return $false
-    }
-    if ($ConfirmWarnings -and $Validation.Warnings.Count -gt 0) {
-        $title = if ($lang -eq "en") { "Continue with warnings?" } else { "Continuer avec avertissements ?" }
-        $question = if ($lang -eq "en") { "$text`r`n`r`nContinue generation anyway?" } else { "$text`r`n`r`nContinuer la generation quand meme ?" }
-        $answer = [System.Windows.Forms.MessageBox]::Show($Owner, $question, $title, [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Warning)
-        return ($answer -eq [System.Windows.Forms.DialogResult]::Yes)
-    }
-    return $true
-}
-
-function Get-GuiBuildSummaryText {
-    param(
-        [System.Collections.Hashtable]$Controls,
-        [object]$Validation = $null,
-        [string]$Language = "fr"
-    )
-
-    $lang = if ($Language -eq "en") { "en" } else { "fr" }
-    $lines = New-Object System.Collections.Generic.List[string]
-    $changed = 0
-
-    $textOf = {
-        param([string]$Name)
-        if ($Controls.ContainsKey($Name) -and $Controls[$Name] -is [System.Windows.Forms.TextBox]) {
-            return ([string]$Controls[$Name].Text).Trim()
-        }
-        return ""
-    }
-    $checkedOf = {
-        param([string]$Name)
-        return ($Controls.ContainsKey($Name) -and $Controls[$Name] -is [System.Windows.Forms.CheckBox] -and [bool]$Controls[$Name].Checked)
-    }
-    $comboValue = {
-        param([string]$Name)
-        if ($Controls.ContainsKey($Name) -and $Controls[$Name] -is [System.Windows.Forms.ComboBox]) {
-            return [string](Get-ComboValue -Combo $Controls[$Name])
-        }
-        return ""
-    }
-    $comboLabel = {
-        param([string]$Name)
-        if ($Controls.ContainsKey($Name) -and $Controls[$Name] -is [System.Windows.Forms.ComboBox] -and $Controls[$Name].SelectedItem) {
-            return [string]$Controls[$Name].SelectedItem.Label
-        }
-        return (& $comboValue $Name)
-    }
-    $yesNo = {
-        param([bool]$Value)
-        if ($lang -eq "en") {
-            return $(if ($Value) { "YES" } else { "NO" })
-        }
-        return $(if ($Value) { "OUI" } else { "NON" })
-    }
-    $addLine = {
-        param([string]$Text = "")
-        [void]$lines.Add($Text)
-    }
-    $addSection = {
-        param([string]$Title)
-        & $addLine ""
-        & $addLine ("=== {0} ===" -f $Title)
-    }
-    $addChange = {
-        param(
-            [string]$Label,
-            [string]$Value
-        )
-        if (-not [string]::IsNullOrWhiteSpace($Label) -and -not [string]::IsNullOrWhiteSpace($Value)) {
-            [void]$lines.Add(("- {0}: {1}" -f $Label, $Value))
-            $script:GuiBuildSummaryChangedCount++
-        }
-    }
-    $addIfComboChanged = {
-        param(
-            [string]$Name,
-            [string]$Label,
-            [string[]]$UnchangedValues = @("Unchanged")
-        )
-        $value = & $comboValue $Name
-        if (-not [string]::IsNullOrWhiteSpace($value) -and ($UnchangedValues -notcontains $value)) {
-            & $addChange $Label (& $comboLabel $Name)
-        }
-    }
-    $addIfChecked = {
-        param(
-            [string]$Name,
-            [string]$Label,
-            [string]$Value = ""
-        )
-        if (& $checkedOf $Name) {
-            if ([string]::IsNullOrWhiteSpace($Value)) {
-                $Value = & $yesNo $true
-            }
-            & $addChange $Label $Value
-        }
-    }
-
-    $script:GuiBuildSummaryChangedCount = 0
-    $title = if ($lang -eq "en") { "What will be modified" } else { "Ce qui va etre modifie" }
-    & $addLine $title
-    & $addLine ("=" * $title.Length)
-
-    & $addSection $(if ($lang -eq "en") { "Source and output" } else { "Source et sortie" })
-    & $addChange $(if ($lang -eq "en") { "Target game" } else { "Jeu cible" }) (& $comboLabel "GameVersion")
-    & $addChange "ROMFS" (& $textOf "Source")
-    & $addChange "ExeFS" (& $textOf "SourceExefs")
-    & $addChange $(if ($lang -eq "en") { "Generated mod folder" } else { "Dossier genere" }) (& $textOf "Output")
-    & $addChange "Seed" (& $textOf "Seed")
-    & $addChange $(if ($lang -eq "en") { "Difficulty profile" } else { "Profil de difficulte" }) (& $comboLabel "DifficultyProfile")
-
-    & $addSection $(if ($lang -eq "en") { "Runtime / ExLaunch" } else { "Runtime / ExLaunch" })
-    & $addIfChecked "DisableExpShare" $(if ($lang -eq "en") { "Default EXP Share" } else { "EXP Share par defaut" }) "OFF"
-    & $addIfChecked "RuntimePcControls" $(if ($lang -eq "en") { "Pokemon Center PC menu" } else { "Menu PC Centre Pokemon" }) $(if ($lang -eq "en") { "runtime toggles enabled" } else { "options modifiables en jeu" })
-    & $addIfChecked "GymLeagueStoryLevelCap" $(if ($lang -eq "en") { "Gym/Champion EXP cap" } else { "Cap EXP arenes/Tarak" }) $(if ($lang -eq "en") { "enabled" } else { "active" })
-    $expMultiplierText = & $textOf "ExpYieldMultiplier"
-    $expMultiplierValue = 1.0
-    if ((Try-ParseInvariantDouble -Text $expMultiplierText -Value ([ref]$expMultiplierValue)) -and [Math]::Abs($expMultiplierValue - 1.0) -gt 0.0001 -and -not (& $checkedOf "ForceOneExpYield")) {
-        & $addChange $(if ($lang -eq "en") { "Runtime EXP boost" } else { "Boost EXP runtime" }) ("x{0}" -f $expMultiplierValue.ToString("0.##", [System.Globalization.CultureInfo]::InvariantCulture))
-    }
-    $visibleBehavior = Get-NormalizedVisibleEncounterBehavior -Value (& $comboValue "VisibleEncounterBehavior")
-    if ($visibleBehavior -ne "RomfsMatch") {
-        & $addChange $(if ($lang -eq "en") { "Visible Pokemon hook" } else { "Hook Pokemon visibles" }) (& $comboLabel "VisibleEncounterBehavior")
-    }
-    if ($script:GuiBuildSummaryChangedCount -le 6) {
-        & $addLine $(if ($lang -eq "en") { "- No runtime option selected, unless another tab requires ExLaunch." } else { "- Aucune option runtime selectionnee, sauf si une autre option exige ExLaunch." })
-    }
-
-    & $addSection $(if ($lang -eq "en") { "Trainer battles" } else { "Combats de dresseurs" })
-    & $addIfComboChanged "TrainerSpeciesMode" $(if ($lang -eq "en") { "Trainer Pokemon" } else { "Pokemon des dresseurs" })
-    & $addIfComboChanged "TrainerMoveMode" $(if ($lang -eq "en") { "Trainer moves" } else { "Attaques des dresseurs" })
-    if (Test-TrainerModeUsesSmogon (& $comboValue "TrainerMoveMode")) {
-        & $addChange $(if ($lang -eq "en") { "Smogon move fallback" } else { "Backup moves Smogon" }) (& $comboLabel "TrainerSmogonMoveFallbackMode")
-    }
-    & $addIfComboChanged "TrainerItemMode" $(if ($lang -eq "en") { "Trainer held items" } else { "Objets tenus dresseurs" })
-    if ((Normalize-Mode (& $comboValue "TrainerItemMode")) -in @("randomwhenpresent", "forceall") -or (Test-TrainerModeUsesSmogon (& $comboValue "TrainerItemMode"))) {
-        & $addChange $(if ($lang -eq "en") { "Held item pool" } else { "Pool objets tenus" }) (& $comboLabel "TrainerItemPoolMode")
-    }
-    & $addIfComboChanged "TrainerAbilityMode" $(if ($lang -eq "en") { "Trainer abilities" } else { "Talents dresseurs" })
-    & $addIfComboChanged "TrainerIVMode" "IV"
-    & $addIfComboChanged "TrainerEVMode" "EV"
-    $levelMultiplierText = & $textOf "TrainerLevelMultiplier"
-    $levelMultiplierValue = 1.0
-    if ((Try-ParseInvariantDouble -Text $levelMultiplierText -Value ([ref]$levelMultiplierValue)) -and [Math]::Abs($levelMultiplierValue - 1.0) -gt 0.0001) {
-        & $addChange $(if ($lang -eq "en") { "Trainer level multiplier" } else { "Multiplicateur niveaux dresseurs" }) ("x{0}" -f $levelMultiplierValue.ToString("0.##", [System.Globalization.CultureInfo]::InvariantCulture))
-    }
-    if ((& $textOf "TrainerTeamMin") -ne "-1" -or (& $textOf "TrainerTeamMax") -ne "-1") {
-        & $addChange $(if ($lang -eq "en") { "Trainer team size clamp" } else { "Limite taille equipes" }) ("min {0} / max {1}" -f (& $textOf "TrainerTeamMin"), (& $textOf "TrainerTeamMax"))
-    }
-    & $addIfChecked "ForceAllTeamsToSix" $(if ($lang -eq "en") { "All trainer teams" } else { "Toutes les equipes dresseurs" }) "6 Pokemon"
-    if (& $checkedOf "ForceBossTeamsToSix") {
-        & $addChange $(if ($lang -eq "en") { "Selected boss teams" } else { "Boss selectionnes" }) ("6 Pokemon - {0}" -f (& $comboLabel "BossTeamsToSixScope"))
-        & $addChange $(if ($lang -eq "en") { "Added boss slots" } else { "Slots boss ajoutes" }) (& $comboLabel "TrainerAddedSlotSpeciesMode")
-    }
-    & $addChange $(if ($lang -eq "en") { "Team duplicate rule" } else { "Regle doublons equipes" }) (& $comboLabel "TrainerDuplicateMode")
-    & $addIfChecked "TrainerTypeThemed" $(if ($lang -eq "en") { "Type-themed teams" } else { "Equipes themees par type" })
-    & $addIfChecked "ForceTrainerFullyEvolved" $(if ($lang -eq "en") { "Force final evolutions" } else { "Forcer evolutions finales" }) ("Lv. {0}+" -f (& $textOf "TrainerFullyEvolvedLevel"))
-    & $addIfComboChanged "TrainerNatureMode" $(if ($lang -eq "en") { "Trainer natures" } else { "Natures dresseurs" })
-    & $addIfChecked "MaxTrainerAI" $(if ($lang -eq "en") { "Trainer AI" } else { "IA dresseurs" }) $(if ($lang -eq "en") { "maximum" } else { "maximum" })
-    & $addIfComboChanged "TrainerDynamaxLevelMode" $(if ($lang -eq "en") { "Trainer Dynamax level" } else { "Niveau Dynamax dresseurs" })
-    & $addIfChecked "ForceTrainerCanDynamax" $(if ($lang -eq "en") { "Trainer Dynamax flag" } else { "Flag CanDynamax dresseurs" })
-    & $addIfChecked "AllowLegendaryTrainers" $(if ($lang -eq "en") { "Trainer legendary pool" } else { "Legendaires chez les dresseurs" }) $(if ($lang -eq "en") { "allowed" } else { "autorises" })
-    $trainerShinyText = & $textOf "TrainerShinyChancePercent"
-    $trainerShinyValue = 0.0
-    if ((Try-ParseInvariantDouble -Text $trainerShinyText -Value ([ref]$trainerShinyValue)) -and $trainerShinyValue -gt 0.0) {
-        & $addChange $(if ($lang -eq "en") { "Trainer shiny rate" } else { "Taux shiny dresseurs" }) ("{0}%" -f $trainerShinyValue.ToString("0.##", [System.Globalization.CultureInfo]::InvariantCulture))
-    }
-
-    & $addSection $(if ($lang -eq "en") { "Pokemon species data and moves" } else { "Donnees Pokemon et attaques" })
-    & $addIfComboChanged "TypeMode" $(if ($lang -eq "en") { "Species types" } else { "Types des especes" })
-    & $addIfChecked "TypesMonotypeOnly" $(if ($lang -eq "en") { "Monotype types" } else { "Types monotype" })
-    & $addIfComboChanged "AbilityMode" $(if ($lang -eq "en") { "Species abilities" } else { "Talents des especes" })
-    & $addIfChecked "AllowWonderGuard" "Wonder Guard" $(if ($lang -eq "en") { "allowed" } else { "autorise" })
-    & $addIfComboChanged "StatMode" $(if ($lang -eq "en") { "Base stats" } else { "Stats de base" })
-    & $addIfChecked "ForceOneExpYield" $(if ($lang -eq "en") { "EXP yield" } else { "EXP donne" }) "1"
-    & $addIfChecked "RandomizeMoveTypes" $(if ($lang -eq "en") { "Move types" } else { "Types d'attaques" })
-    & $addIfChecked "RandomizeMovePower" $(if ($lang -eq "en") { "Move power" } else { "Puissance attaques" }) ("{0}-{1}" -f (& $textOf "MovePowerMin"), (& $textOf "MovePowerMax"))
-    & $addIfChecked "RandomizeMovePP" "PP" ("{0}-{1}" -f (& $textOf "MovePPMin"), (& $textOf "MovePPMax"))
-    & $addIfChecked "RandomizeMoveAccuracy" $(if ($lang -eq "en") { "Move accuracy" } else { "Precision attaques" }) ("{0}-{1}" -f (& $textOf "MoveAccuracyMin"), (& $textOf "MoveAccuracyMax"))
-    & $addIfChecked "RandomizeMoveCategory" $(if ($lang -eq "en") { "Move category" } else { "Categorie physique/special" })
-    & $addIfChecked "RandomizePickupItems" $(if ($lang -eq "en") { "Pickup / field items" } else { "Objets ramassables" })
-    & $addIfChecked "RandomizeShopItems" $(if ($lang -eq "en") { "Shop items" } else { "Objets boutiques" })
-    & $addIfChecked "RandomizeTechnicalRecords" $(if ($lang -eq "en") { "TM/TR item IDs" } else { "CT/TR objets" })
-
-    & $addSection $(if ($lang -eq "en") { "Evolutions, gifts, starters, trades" } else { "Evolutions, cadeaux, starters, trades" })
-    & $addIfComboChanged "EvolutionMode" $(if ($lang -eq "en") { "Evolution targets" } else { "Cibles d'evolution" })
-    & $addIfChecked "AllowLegendaryEvolutions" $(if ($lang -eq "en") { "Legendary evolutions" } else { "Legendaires en evolution" }) $(if ($lang -eq "en") { "allowed" } else { "autorises" })
-    & $addIfChecked "NormalizeFriendshipEvolutions" $(if ($lang -eq "en") { "Friendship evolutions" } else { "Evolutions amitie" }) ("Lv. {0}" -f (& $textOf "FriendshipEvolutionLevel"))
-    & $addIfChecked "NormalizeTradeEvolutions" $(if ($lang -eq "en") { "Trade evolutions" } else { "Evolutions echange" }) ("Lv. {0}" -f (& $textOf "TradeEvolutionLevel"))
-    & $addIfChecked "NormalizeSpecialEvolutions" $(if ($lang -eq "en") { "Special evolutions" } else { "Evolutions speciales" }) ("Lv. {0}" -f (& $textOf "SpecialEvolutionLevel"))
-    & $addIfComboChanged "GiftMode" $(if ($lang -eq "en") { "Gift Pokemon" } else { "Pokemon cadeaux" })
-    & $addIfComboChanged "StarterMode" $(if ($lang -eq "en") { "Starters" } else { "Starters" })
-    $manualStarters = @(@((& $textOf "Starter1"), (& $textOf "Starter2"), (& $textOf "Starter3")) | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-    if ($manualStarters.Count -gt 0) {
-        & $addChange $(if ($lang -eq "en") { "Manual starters" } else { "Starters manuels" }) ($manualStarters -join " / ")
-    }
-    & $addIfChecked "PatchStarterRelatedTrainers" $(if ($lang -eq "en") { "Starter-related trainer patch" } else { "Patch dresseurs lies aux starters" })
-    & $addIfChecked "AllowLegendaryGifts" $(if ($lang -eq "en") { "Legendary gifts/starters" } else { "Legendaires cadeaux/starters" }) $(if ($lang -eq "en") { "allowed" } else { "autorises" })
-    & $addIfComboChanged "TradeMode" $(if ($lang -eq "en") { "NPC trades" } else { "Trades PNJ" })
-    & $addIfChecked "AllowLegendaryTrades" $(if ($lang -eq "en") { "Legendary NPC trades" } else { "Legendaires trades PNJ" }) $(if ($lang -eq "en") { "allowed" } else { "autorises" })
-
-    & $addSection $(if ($lang -eq "en") { "Encounters" } else { "Rencontres" })
-    & $addIfComboChanged "StaticEncounterMode" $(if ($lang -eq "en") { "Static/scripted encounters" } else { "Rencontres fixes/scriptes" })
-    if ((Normalize-Mode (& $comboValue "StaticEncounterMode")) -ne "unchanged") {
-        & $addChange $(if ($lang -eq "en") { "Static mapping" } else { "Mapping statiques" }) (& $comboLabel "StaticEncounterStableMapping")
-    }
-    & $addIfChecked "AllowLegendaryStaticEncounters" $(if ($lang -eq "en") { "Static legendary pool" } else { "Legendaires rencontres fixes" }) $(if ($lang -eq "en") { "allowed" } else { "autorises" })
-    & $addIfComboChanged "GrassEncounterMode" $(if ($lang -eq "en") { "Wild encounter species" } else { "Rencontres sauvages" })
-    if ((Normalize-Mode (& $comboValue "GrassEncounterMode")) -ne "unchanged") {
-        & $addChange $(if ($lang -eq "en") { "Wild mapping" } else { "Mapping sauvage" }) (& $comboLabel "GrassEncounterStableMapping")
-    }
-    & $addIfChecked "AllowLegendaryGrassEncounters" $(if ($lang -eq "en") { "Wild/visible legendary pool" } else { "Legendaires herbes/visibles" }) $(if ($lang -eq "en") { "allowed" } else { "autorises" })
-    & $addIfComboChanged "VisibleEncounterBehavior" $(if ($lang -eq "en") { "Visible Pokemon behavior" } else { "Comportement Pokemon visibles" }) @("RomfsMatch")
-    & $addIfComboChanged "UndergroundMode" $(if ($lang -eq "en") { "Underground encounters" } else { "Underground" })
-    & $addIfChecked "AllowLegendaryUnderground" $(if ($lang -eq "en") { "Underground legendary pool" } else { "Legendaires underground" }) $(if ($lang -eq "en") { "allowed" } else { "autorises" })
-
-    & $addSection $(if ($lang -eq "en") { "Installation" } else { "Installation" })
-    if (& $checkedOf "AutoInstallToEden") {
-        $targets = New-Object System.Collections.Generic.List[string]
-        foreach ($target in @(
-            @{ Name = "InstallToEden"; Label = "Eden" },
-            @{ Name = "InstallToRyujinx"; Label = "Ryujinx" },
-            @{ Name = "InstallToYuzu"; Label = "Yuzu" },
-            @{ Name = "InstallToSudachi"; Label = "Sudachi" },
-            @{ Name = "InstallToCitron"; Label = "Citron" },
-            @{ Name = "InstallToSuyu"; Label = "Suyu" },
-            @{ Name = "InstallToCitronNeo"; Label = "Citron Neo" }
-        )) {
-            if (& $checkedOf ([string]$target["Name"])) {
-                [void]$targets.Add([string]$target["Label"])
-            }
-        }
-        & $addChange $(if ($lang -eq "en") { "Auto-install targets" } else { "Cibles installation auto" }) ($targets.ToArray() -join ", ")
-        & $addChange $(if ($lang -eq "en") { "Installed mod folder" } else { "Dossier de mod installe" }) (& $textOf "EdenModName")
-    } else {
-        & $addLine $(if ($lang -eq "en") { "- Auto-install disabled: files are generated only in the output folder." } else { "- Installation auto desactivee: les fichiers sont seulement generes dans le dossier de sortie." })
-    }
-
-    if ($Validation -and $Validation.Warnings.Count -gt 0) {
-        & $addSection $(if ($lang -eq "en") { "Validation warnings" } else { "Avertissements de validation" })
-        foreach ($warning in @($Validation.Warnings)) {
-            & $addLine "- $warning"
-        }
-    }
-
-    if ($script:GuiBuildSummaryChangedCount -lt 1) {
-        & $addLine ""
-        & $addLine $(if ($lang -eq "en") { "No major randomization option is enabled. The build will mostly copy required files and reports." } else { "Aucune option majeure de randomisation n'est activee. Le build va surtout copier les fichiers requis et les rapports." })
-    }
-
-    Remove-Variable -Name GuiBuildSummaryChangedCount -Scope Script -ErrorAction SilentlyContinue
-    return ($lines -join [Environment]::NewLine)
-}
-
-function Show-GuiBuildSummaryDialog {
-    param(
-        [System.Windows.Forms.Form]$Owner,
-        [string]$SummaryText,
-        [string]$Language = "fr",
-        [bool]$ConfirmGeneration = $true
-    )
-
-    $lang = if ($Language -eq "en") { "en" } else { "fr" }
-    $dialog = New-Object System.Windows.Forms.Form
-    $dialog.Text = if ($lang -eq "en") { "What will be modified" } else { "Ce qui va etre modifie" }
-    $dialog.ClientSize = New-Object System.Drawing.Size(780, 620)
-    $dialog.MinimumSize = New-Object System.Drawing.Size(720, 520)
-    $dialog.StartPosition = "CenterParent"
-    $dialog.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::Sizable
-    $dialog.Font = New-GuiFont -Size 9.5
-
-    $summaryBox = New-Object System.Windows.Forms.TextBox
-    $summaryBox.Multiline = $true
-    $summaryBox.ReadOnly = $true
-    $summaryBox.ScrollBars = "Vertical"
-    $summaryBox.WordWrap = $false
-    $summaryBox.Location = New-Object System.Drawing.Point(12, 12)
-    $summaryBox.Size = New-Object System.Drawing.Size(756, 548)
-    $summaryBox.Anchor = [System.Windows.Forms.AnchorStyles]::Top -bor [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Left -bor [System.Windows.Forms.AnchorStyles]::Right
-    $summaryBox.Text = $SummaryText
-    $dialog.Controls.Add($summaryBox)
-
-    $okButton = New-Object System.Windows.Forms.Button
-    $okButton.Size = New-Object System.Drawing.Size(170, 34)
-    $okButton.Location = New-Object System.Drawing.Point(416, 574)
-    $okButton.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Right
-    $okButton.Text = if ($ConfirmGeneration) {
-        if ($lang -eq "en") { "Generate" } else { "Generer" }
-    } else {
-        if ($lang -eq "en") { "Close" } else { "Fermer" }
-    }
-    $okButton.DialogResult = [System.Windows.Forms.DialogResult]::OK
-    $dialog.AcceptButton = $okButton
-    $dialog.Controls.Add($okButton)
-
-    if ($ConfirmGeneration) {
-        $cancelButton = New-Object System.Windows.Forms.Button
-        $cancelButton.Size = New-Object System.Drawing.Size(170, 34)
-        $cancelButton.Location = New-Object System.Drawing.Point(598, 574)
-        $cancelButton.Anchor = [System.Windows.Forms.AnchorStyles]::Bottom -bor [System.Windows.Forms.AnchorStyles]::Right
-        $cancelButton.Text = if ($lang -eq "en") { "Cancel" } else { "Annuler" }
-        $cancelButton.DialogResult = [System.Windows.Forms.DialogResult]::Cancel
-        $dialog.CancelButton = $cancelButton
-        $dialog.Controls.Add($cancelButton)
-    }
-
-    try {
-        Apply-GuiTheme -Root $dialog -Theme $script:GuiTheme
-    } catch {
-    }
-
-    return ($dialog.ShowDialog($Owner) -eq [System.Windows.Forms.DialogResult]::OK)
-}
-
-function Get-LocalizedDescriptionText {
-    param([object]$Description)
-
-    if ($Description -is [System.Collections.IDictionary]) {
-        $lang = if ($script:UiLanguage -eq "en") { "en" } else { "fr" }
-        if ($Description.ContainsKey($lang)) {
-            return [string]$Description[$lang]
-        }
-        if ($Description.ContainsKey("fr")) {
-            return [string]$Description["fr"]
-        }
-        if ($Description.ContainsKey("en")) {
-            return [string]$Description["en"]
-        }
-        return [string]($Description.Values | Select-Object -First 1)
-    }
-
-    return [string]$Description
-}
-
-function Register-ControlDescription {
-    param(
-        [System.Windows.Forms.Control]$Control,
-        [System.Windows.Forms.TextBox]$DetailsBox,
-        [object]$Description
-    )
-
-    if (-not $Control -or -not $DetailsBox) {
-        return
-    }
-
-    $getLocalizedDescriptionText = (Get-Item -LiteralPath function:\Get-LocalizedDescriptionText).ScriptBlock
-    $update = {
-        param($sender, $args)
-        $script:LastDetailsDescription = $Description
-        $DetailsBox.Text = & $getLocalizedDescriptionText -Description $Description
-    }.GetNewClosure()
-
-    $Control.Add_Enter($update)
-    $Control.Add_MouseEnter($update)
-}
-
-function Add-ConcreteDescriptionExamples {
-    param(
-        [hashtable]$Ui,
-        [string]$Language = "fr"
-    )
-
-    if (-not $Ui -or -not $Ui.Descriptions) {
-        return
-    }
-
-    if ($Language -eq "en") {
-        $Ui.Descriptions.TrainerSpecies = "Trainer Pokemon species. Example: if a trainer originally has Victreebel Lv.12, Full random can turn it into Empoleon; Balanced random tries to keep similar overall power; Keep vanilla leaves Victreebel."
-        $Ui.Descriptions.TrainerMoves = "Trainer Pokemon moves. Example: Smogon strategic downloads and caches Gen 8 strategy sets, then gives Empoleon or Victreebel moves from those sets when available. If Smogon has several moves, the tool picks randomly; if no set exists, the fallback dropdown decides whether to use natural level-up moves, random moves, or the current vanilla moves."
-        $Ui.Descriptions.TrainerSmogonMoveFallback = "Smogon move fallback. Example: if Empoleon has no usable Smogon moves in the local move list, Natural level uses level-up moves, Random gives four random legal moves, and Keep vanilla leaves its current trainer moves."
-        $Ui.Descriptions.TrainerItems = "Trainer held items. Example: Smogon strategic gives Empoleon or Victreebel an item from Gen 8 Smogon sets when available; if no set item exists, it falls back to useful battle items such as berries, Leftovers, Choice items, plates or type boosters."
-        $Ui.Descriptions.TrainerItemPool = "Held item pool. Example: Battle pool is curated for useful battle held items such as berries, Leftovers, Choice items, plates and type boosters. Wide safe pool is broader and can also roll balls, medicine, mints, candies, fossils and other non-key items for a more chaotic run."
-        $Ui.Descriptions.TrainerAddedSlotSpecies = "Added slot species. Example: if a Gym or league boss stays vanilla and is expanded to 6 Pokemon, Full random can add Empoleon anywhere, Similar BST keeps comparable power, Same type keeps the leader theme such as Grass for Milo, and Same type + BST keeps both theme and similar power. Leon/Tarak stays balanced instead of being forced to one type."
-        $Ui.Descriptions.TrainerDuplicateMode = "Duplicate handling. Example: Block duplicates prevents two Empoleon in the same generated team; Normal random allows that rare roll if the randomizer naturally lands on Empoleon twice."
-        $Ui.Descriptions.TrainerAbility = "Trainer ability slot. Example: Smogon strategic tries to select the ability slot used by a Gen 8 Smogon set for Empoleon or Victreebel. If no matching Smogon ability is available, it chooses a legal ability slot for that species."
-        $Ui.Descriptions.TrainerIV = "Trainer IVs. Example: Max31 makes every trainer Pokemon have perfect IVs; Random rolls each stat from 0 to 31. Special SWSH flags such as shiny and CanDynamax are preserved."
-        $Ui.Descriptions.TrainerEV = "Trainer EVs. Example: Smogon strategic copies the EV spread from the same Gen 8 Smogon set used for moves/items when available, such as 56 HP / 236 Def / 216 Spe on Kyurem; Random legal falls back to a valid 510-EV spread, and Zero removes EV investment."
-        $Ui.Descriptions.TrainerLevel = "Trainer level multiplier. Example: 1.20 turns a Lv.25 Victreebel into about Lv.30; 0.80 turns it into about Lv.20. Use 1.0 for vanilla levels."
-        $Ui.Descriptions.TrainerTeamSize = "Trainer team size. Example: min 3 and max 6 forces tiny teams upward and prevents teams above 6. -1 means keep the vanilla size limit for that side."
-        $Ui.Descriptions.TrainerTypeThemed = "Type-themed trainer teams. Example: a trainer can become Water-themed, so Empoleon fits that team while Victreebel would fit a Grass-themed team."
-        $Ui.Descriptions.RandomizeNatures = "Trainer natures. Example: Smogon strategic can give Empoleon Modest or Victreebel Adamant when that exact Smogon set asks for it; if Smogon offers Adamant / Jolly, the tool picks one and keeps that same set for moves, item, ability and EVs. Random nature ignores Smogon and rolls any legal nature."
-        $Ui.Descriptions.ForceAllTeams = "Force every trainer team to six Pokemon. Example: a route trainer with 2 Pokemon receives 4 added slots based on the original team's level range, then those added slots still follow your randomizer settings."
-        $Ui.Descriptions.ForceBossTeams = "Enable the boss 6-Pokemon helper. Example: if this is checked, selected boss fights can be expanded to 6 Pokemon; the dropdown below decides which boss group is affected."
-        $Ui.Descriptions.BossTeamsScope = "Choose which bosses are expanded when the boss 6-Pokemon helper is enabled. Example: Major bosses includes rivals and story bosses; Gyms + league focuses on Gym Leaders, Champion Cup / league-style fights and Leon."
-        $Ui.Descriptions.TypeMode = "Pokemon types. Example: Empoleon can become Grass/Poison like Victreebel, or Victreebel can become pure Water if monotype is enabled."
-        $Ui.Descriptions.TypesMonotypeOnly = "Force monotype. Example: instead of rolling Fire/Water, a Pokemon rolls only Fire/Fire, displayed as one Fire type in practice."
-        $Ui.Descriptions.AbilityMode = "Species abilities. Example: Pikachu's ability slots can be replaced globally, so every Pikachu using that slot follows the new ability data."
-        $Ui.Descriptions.StatMode = "Base stats. Example: Shuffle can swap a fast Pokemon's Speed with Defense; Redistribute keeps the same BST but builds a new stat spread."
-        $Ui.Descriptions.ExpYieldMultiplier = "EXP multiplier. Example: 2.5 makes a 400 EXP gain become about 1000 EXP when the runtime boost is active. 1.0 is vanilla."
-        $Ui.Descriptions.ForceOneExpYield = "No EXP mode. Example: a Pokemon that normally gives 350 EXP gives 1 EXP. Use this for challenge runs where levels should barely move."
-        $Ui.Descriptions.MoveTypeMode = "Move types. Example: Thunderbolt can become Fire-type, so it uses the new type for effectiveness and STAB."
-        $Ui.Descriptions.MovePowerMode = "Move power. Example: a 60-power move can roll 95 power if your selected range allows it. Status moves with 0 power stay non-damaging."
-        $Ui.Descriptions.MovePPMode = "Move PP. Example: a move with 15 PP can become 8 or 30 PP depending on your min/max range."
-        $Ui.Descriptions.MoveAccuracyMode = "Move accuracy. Example: Hydro Pump can become more reliable, or Tackle can become less accurate, within your selected range."
-        $Ui.Descriptions.MoveCategoryMode = "Move category. Example: Flamethrower can become physical, or Iron Head can become special. Status moves stay status."
-        $Ui.Descriptions.StarterMode = "Starter Pokemon mode. Example: Grookey / Scorbunny / Sobble can become Victreebel / Empoleon / Victreebel. Manual starter boxes override this if all three are filled."
-        $Ui.Descriptions.Starter1 = "Manual starter slot 1. Example: type Victreebel here, Empoleon in slot 2 and Victreebel in slot 3 to force exactly that starter trio."
-        $Ui.Descriptions.Starter2 = "Manual starter slot 2. Example: leave all three boxes empty to use random starter mode; fill all three boxes to force exact species."
-        $Ui.Descriptions.Starter3 = "Manual starter slot 3. Example: French and English names are accepted, such as Evoli, Eevee, Bulbizarre or Bulbasaur."
-        $Ui.Descriptions.PatchStarters = "Patch starter-linked trainer teams. Example: if Hop's team would normally react to your starter choice, this tries to keep that relationship coherent after your custom starter trio."
-        $Ui.Descriptions.EvolutionMode = "Evolution targets. Example: Pikachu can evolve into Empoleon, and Victreebel can evolve into another random Pokemon, depending on the selected mode."
-        $Ui.Descriptions.NormalizeFriendship = "Friendship evolutions. Example: instead of raising friendship for Eevee or Riolu, they evolve at the fixed level you choose."
-        $Ui.Descriptions.NormalizeTrade = "Trade evolutions. Example: Machoke, Haunter or trade-with-item evolutions become regular level-up evolutions at the chosen level."
-        $Ui.Descriptions.NormalizeSpecial = "Special evolutions. Example: location, time, weather, item/stone or known-move conditions become a simple fixed-level evolution."
-        $Ui.Descriptions.GiftMode = "Gift Pokemon. Example: a gift Toxel can become a random Pokemon, while starters are controlled separately by the starter options."
-        $Ui.Descriptions.TradeMode = "NPC trades. Example: an NPC asking for one Pokemon and giving another can have either side changed when the table exposes it."
-        $Ui.Descriptions.StaticMode = "Static/scripted encounters. Example: a fixed overworld legendary or story encounter can stay unchanged, become balanced random, or become full random."
-        $Ui.Descriptions.StaticStableMapping = "Static mapping. Example: Stable by species makes every static Pikachu become the same replacement; Stable by slot randomizes each fixed encounter separately."
-        $Ui.Descriptions.GrassMode = "Wild encounter species. Example: if Route 1 has Skwovet and Rookidee in the table, this controls whether those table species are replaced in ROMFS."
-        $Ui.Descriptions.GrassStableMapping = "Wild mapping rule. Example: Stable by species means every vanilla Victreebel becomes Empoleon everywhere. Stable by slot means a Victreebel in one area can become Empoleon while a Victreebel elsewhere can become another roll. True random per spawn rerolls visible/battle hooks with each spawn seed."
-        $Ui.Descriptions.VisibleEncounterBehavior = "REQUIRES EXEFS outside Classic. Overworld Pokemon behavior. Example: Classic means seeing Victreebel starts a Victreebel battle. Vanilla visible + hidden battle keeps Victreebel visible everywhere but can start an Empoleon battle. Random visible + hidden battle randomizes visible tables too, so you can see Empoleon outside and still fight Victreebel or another hidden roll."
-        $Ui.Descriptions.UndergroundMode = "Underground encounters. Example: underground species slots are separate from normal route grass, so this option controls that pool independently."
-        $Ui.Descriptions.DisableExpShare = "REQUIRES EXEFS. Default EXP Share state. Example: checked means the generated config starts with EXP Share OFF, so only participating Pokemon should receive EXP. If the PC runtime menu is enabled, this remains the default state but you can toggle it in game."
-        $Ui.Descriptions.EarlyBike = "REQUIRES EXEFS. Rotom Bike from the start. Example: after loading the field early in the save, the module grants the real Rotom Bike key item once."
-        $Ui.Descriptions.RuntimePcControls = "REQUIRES EXEFS. Pokemon Center PC runtime menu. Example: this does not choose EXP Share by itself; it only adds the in-game PC menu that can toggle EXP Share / EXP boost without rebuilding the mod."
-        $Ui.Descriptions.DynamicExpLevelCap = "REQUIRES EXEFS. Dynamic EXP cap. Example: if the current cap is 36, a Pokemon at level 36 receives 1 EXP instead of normal EXP, while lower-level Pokemon still gain EXP."
-        $Ui.Descriptions.StrictBossMaxLevelCap = "REQUIRES EXEFS. Strict boss cap. Example: if the next listed boss's highest Pokemon is Lv.28, the cap can use 28 as the limit."
-        $Ui.Descriptions.MainStorySoftLevelCap = "REQUIRES EXEFS. Soft story cap. Example: the cap follows badge/story blocks, so it changes at major milestones rather than after every small rival fight."
-        $Ui.Descriptions.GymLeagueStoryLevelCap = "REQUIRES EXEFS. Gym/Champion story cap. Example: after teams are generated, the tool reads the actual gym and Leon levels and builds caps from those generated teams."
-        $Ui.Descriptions.StoryMajorBattleOrderLevelCap = "REQUIRES EXEFS. Major battle order cap. Example: Hop, Bede, Marnie, Gym Leaders, Rose and Leon are placed in story order, then caps follow that sequence."
-        $Ui.Descriptions.AutoInstallToEden = "Auto-install. Example: after generation, the tool can copy the finished mod to Eden/Ryujinx/Yuzu/Sudachi/Citron/Suyu/Citron Neo targets you checked, using the detected title ID."
-        $Ui.Descriptions.EdenModName = "Installed mod folder name. Example: Randomizer replaces the previous Randomizer folder; MyRun_Seed123 keeps a separate named mod folder."
-        foreach ($key in @($Ui.Descriptions.Keys)) {
-            if ([string]$Ui.Descriptions[$key] -notmatch "Example:") {
-                $Ui.Descriptions[$key] = ([string]$Ui.Descriptions[$key]).TrimEnd() + " Example: if the option affects a species, think Victreebel becoming Empoleon; if it affects a rule, Victreebel and Empoleon are the reference pair used to understand the result."
-            }
-        }
-        return
-    }
-
-    $Ui.Descriptions.TrainerSpecies = "Especes des Pokemon de dresseurs. Exemple: un Empiflor niveau 12 peut devenir Pingoleon en Random complet; le mode BST proche cherche une puissance similaire; Garder vanilla laisse Empiflor."
-    $Ui.Descriptions.TrainerMoves = "Attaques des dresseurs. Exemple: Strategique Smogon telecharge et met en cache les sets strategiques Gen 8, puis donne a Pingoleon ou Empiflor des attaques issues de ces sets quand elles existent. S'il y a plusieurs attaques Smogon, le logiciel tire au hasard; si aucun set n'existe, le menu backup choisit attaques naturelles, attaques random ou moves vanilla."
-    $Ui.Descriptions.TrainerSmogonMoveFallback = "Backup des attaques Smogon. Exemple: si Pingoleon n'a aucune attaque Smogon utilisable dans les donnees du jeu, Backup niveau prend ses attaques naturelles, Backup random donne quatre attaques legales random, et Backup vanilla garde les attaques deja presentes sur le dresseur."
-    $Ui.Descriptions.TrainerItems = "Objets tenus des dresseurs. Exemple: Strategique Smogon donne a Pingoleon ou Empiflor un objet tenu tire de ses sets Gen 8 quand il existe; s'il n'y a rien, le logiciel retombe sur des objets utiles comme baies, Restes, Choice items, plaques ou boosts de type."
-    $Ui.Descriptions.TrainerItemPool = "Pool d'objets tenus. Exemple: le pool Combat est trie pour les objets utiles en combat comme baies, Restes, Choice items, plaques et boosts de type. Le pool large safe est plus large et peut aussi tirer balls, soins, mints, bonbons, fossiles et autres objets non-cle pour une run plus chaotique."
-    $Ui.Descriptions.TrainerAddedSlotSpecies = "Especes des slots ajoutes. Exemple: si un champion d'arene ou de ligue reste vanilla et passe a 6 Pokemon, Random complet peut ajouter Pingoleon n'importe ou, BST proche garde une puissance comparable, Meme type garde le theme du champion comme Plante pour Milo, et Meme type + BST garde a la fois le theme et la puissance. Tarak reste equilibre au lieu d'etre force sur un seul type."
-    $Ui.Descriptions.TrainerDuplicateMode = "Gestion des doublons. Exemple: Bloquer les doublons empeche deux Pingoleon dans la meme equipe generee; Random normal autorise ce tirage rare si le randomizer tombe naturellement deux fois sur Pingoleon."
-    $Ui.Descriptions.TrainerAbility = "Slot de talent des dresseurs. Exemple: Strategique Smogon essaie d'utiliser le slot de talent conseille par un set Gen 8 pour Pingoleon ou Empiflor. Si aucun talent Smogon ne correspond a l'espece, il choisit un slot de talent legal de cette espece."
-    $Ui.Descriptions.TrainerIV = "IV des dresseurs. Exemple: 31 partout rend les IV parfaits; Aleatoire tire chaque stat entre 0 et 31. Les flags speciaux SWSH comme shiny et CanDynamax sont preserves."
-    $Ui.Descriptions.TrainerEV = "EV des dresseurs. Exemple: Strategique Smogon copie les EV du meme set Gen 8 Smogon que les moves/objets quand il existe, comme 56 PV / 236 Defense / 216 Vitesse sur Kyurem; EV legaux aleatoires sert de backup valide, et Zero retire les EV."
-    $Ui.Descriptions.TrainerLevel = "Multiplicateur de niveau dresseurs. Exemple: 1.20 transforme un Empiflor niveau 25 en environ niveau 30; 0.80 le descend environ niveau 20. Mets 1.0 pour garder les niveaux vanilla."
-    $Ui.Descriptions.TrainerTeamSize = "Taille des equipes. Exemple: min 3 et max 6 remonte les petites equipes et bloque tout au maximum legal de 6. -1 signifie garder la valeur vanilla de ce cote."
-    $Ui.Descriptions.TrainerTypeThemed = "Equipes themees par type. Exemple: un dresseur theme Eau peut recevoir Pingoleon; un dresseur theme Plante peut recevoir Empiflor."
-    $Ui.Descriptions.RandomizeNatures = "Natures des dresseurs. Exemple: Strategique Smogon peut donner Modeste a Pingoleon ou Rigide a Empiflor quand le set Smogon choisi le demande; si Smogon propose Rigide / Jovial, le logiciel en tire une et garde le meme set pour attaques, objet, talent et EV. Nature aleatoire ignore Smogon et tire une nature legale."
-    $Ui.Descriptions.ForceAllTeams = "Forcer tous les dresseurs a 6 Pokemon. Exemple: un dresseur de route avec 2 Pokemon recoit 4 slots ajoutes autour de la plage de niveaux de son equipe, puis ces slots suivent aussi tes options de randomisation."
-    $Ui.Descriptions.ForceBossTeams = "Active l'aide boss a 6 Pokemon. Exemple: si cette case est cochee, les combats boss selectionnes peuvent passer a 6 Pokemon; le menu juste a cote choisit quel groupe de boss est touche."
-    $Ui.Descriptions.BossTeamsScope = "Choisit quels boss passent a 6 Pokemon quand l'aide boss a 6 est activee. Exemple: Boss importants inclut rivaux et boss d'histoire; Arenes + ligue vise surtout champions d'arene, combats type Champion Cup / ligue et Tarak."
-    $Ui.Descriptions.TypeMode = "Types des Pokemon. Exemple: Pingoleon peut devenir Plante/Poison comme Empiflor, ou Empiflor peut devenir pur Eau si le monotype est active."
-    $Ui.Descriptions.TypesMonotypeOnly = "Forcer monotype. Exemple: au lieu de tirer Feu/Eau, le Pokemon tire Feu/Feu, ce qui revient a un seul type Feu en jeu."
-    $Ui.Descriptions.AbilityMode = "Talents des especes. Exemple: les slots de talent de Pikachu peuvent changer globalement; tous les Pikachu qui utilisent ce slot suivent ensuite la nouvelle donnee."
-    $Ui.Descriptions.StatMode = "Stats de base. Exemple: Melanger peut echanger la Vitesse d'un Pokemon rapide avec sa Defense; Redistribuer garde le meme BST total mais cree une autre repartition."
-    $Ui.Descriptions.ExpYieldMultiplier = "NECESSITE EXEFS si different de 1.0. Multiplicateur EXP. Exemple: 2.5 transforme environ 400 EXP en 1000 EXP quand le boost runtime est actif. 1.0 garde l'EXP vanilla."
-    $Ui.Descriptions.ForceOneExpYield = "Mode No EXP. Exemple: un Pokemon qui donne normalement 350 EXP donne 1 EXP. Utile pour une run challenge ou les niveaux doivent tres peu monter."
-    $Ui.Descriptions.MoveTypeMode = "Types des attaques. Exemple: Tonnerre peut devenir de type Feu, donc l'efficacite et le STAB suivent le nouveau type."
-    $Ui.Descriptions.MovePowerMode = "Puissance des attaques. Exemple: une attaque a 60 de puissance peut passer a 95 si ta plage min/max l'autorise. Les attaques de statut a 0 restent non offensives."
-    $Ui.Descriptions.MovePPMode = "PP des attaques. Exemple: une attaque a 15 PP peut devenir 8 ou 30 PP selon ta plage min/max."
-    $Ui.Descriptions.MoveAccuracyMode = "Precision des attaques. Exemple: Hydrocanon peut devenir plus fiable, ou Charge peut devenir moins precise, toujours dans la plage choisie."
-    $Ui.Descriptions.MoveCategoryMode = "Categorie des attaques. Exemple: Lance-Flammes peut devenir physique, ou Tete de Fer peut devenir special. Les attaques de statut restent statut."
-    $Ui.Descriptions.StarterMode = "Mode starters. Exemple: Ouistempo / Flambino / Larmeleon peuvent devenir Empiflor / Pingoleon / Empiflor. Les trois champs manuels prennent le dessus s'ils sont tous remplis."
-    $Ui.Descriptions.Starter1 = "Starter manuel slot 1. Exemple: tape Empiflor ici, Pingoleon en slot 2 et Empiflor en slot 3 pour forcer exactement ce trio."
-    $Ui.Descriptions.Starter2 = "Starter manuel slot 2. Exemple: laisse les trois champs vides pour utiliser le mode random; remplis les trois champs pour imposer des especes precises."
-    $Ui.Descriptions.Starter3 = "Starter manuel slot 3. Exemple: les noms FR et EN sont acceptes, comme Evoli, Eevee, Bulbizarre ou Bulbasaur."
-    $Ui.Descriptions.PatchStarters = "Repatch des equipes liees aux starters. Exemple: si l'equipe de Nabil depend normalement de ton choix de starter, cette option essaie de garder cette logique coherente apres ton trio custom."
-    $Ui.Descriptions.EvolutionMode = "Cibles d'evolution. Exemple: Pikachu peut evoluer en Pingoleon, et Empiflor peut evoluer vers un autre Pokemon random selon le mode choisi."
-    $Ui.Descriptions.NormalizeFriendship = "Evolutions par amitie. Exemple: au lieu de monter l'amitie d'Evoli ou Riolu, ils evoluent au niveau fixe que tu choisis."
-    $Ui.Descriptions.NormalizeTrade = "Evolutions par echange. Exemple: Machopeur, Spectrum ou les evolutions echange + objet deviennent des evolutions par niveau au niveau choisi."
-    $Ui.Descriptions.NormalizeSpecial = "Evolutions speciales. Exemple: conditions de lieu, heure, meteo, pierre/objet ou attaque connue deviennent une evolution simple par niveau fixe."
-    $Ui.Descriptions.GiftMode = "Pokemon cadeaux. Exemple: un Toxizap offert peut devenir un Pokemon random, tandis que les starters restent controles par les options starters."
-    $Ui.Descriptions.TradeMode = "Trades PNJ. Exemple: un PNJ qui demande un Pokemon et en donne un autre peut voir le Pokemon demande ou recu changer quand la table l'expose."
-    $Ui.Descriptions.StaticMode = "Rencontres fixes/scriptes. Exemple: un legendaire fixe ou une rencontre d'histoire peut rester vanilla, devenir random equilibre ou devenir random complet."
-    $Ui.Descriptions.StaticStableMapping = "Mapping des rencontres fixes. Exemple: Stable par espece transforme tous les Pikachu fixes en meme remplacement; Stable par slot randomise chaque rencontre fixe separement."
-    $Ui.Descriptions.GrassMode = "Especes des rencontres sauvages. Exemple: si la Route 1 contient Rongourmand et Minisange dans sa table, cette option controle si ces especes de table sont remplacees dans le ROMFS."
-    $Ui.Descriptions.GrassStableMapping = "Regle de mapping sauvage. Exemple: Stable par espece veut dire que tous les Empiflor vanilla deviennent Pingoleon partout. Stable par slot permet a un Empiflor d'une zone de devenir Pingoleon et a un Empiflor d'une autre zone de tirer autre chose. Vrai random par spawn reroll les hooks visible/combat avec le seed de chaque apparition."
-    $Ui.Descriptions.VisibleEncounterBehavior = "NECESSITE EXEFS hors mode Classique. Comportement des Pokemon visibles. Exemple: Classique signifie voir Empiflor puis combattre Empiflor. Visuel vanilla + combat cache garde Empiflor visible partout mais peut lancer un combat contre Pingoleon. Visuel random + combat cache randomise aussi les tables visibles: tu peux voir Pingoleon dehors et combattre Empiflor ou un autre tirage cache."
-    $Ui.Descriptions.UndergroundMode = "Rencontres underground. Exemple: les slots du souterrain sont separes des hautes herbes classiques; cette option controle donc ce pool independamment."
-    $Ui.Descriptions.DisableExpShare = "NECESSITE EXEFS. Etat par defaut de l'EXP Share. Exemple: coche = la config generee demarre avec EXP Share OFF, donc seuls les Pokemon participants doivent recevoir l'EXP. Si le menu PC runtime est actif, ca reste l'etat par defaut mais tu peux le changer en jeu."
-    $Ui.Descriptions.EarlyBike = "NECESSITE EXEFS. Velo Rotom des le debut. Exemple: apres chargement du terrain au debut d'une sauvegarde, le module donne une seule fois le vrai objet rare Velo Rotom."
-    $Ui.Descriptions.RuntimePcControls = "NECESSITE EXEFS. Menu runtime via le PC du Centre Pokemon. Exemple: cette option ne choisit pas l'etat EXP Share toute seule; elle ajoute seulement le menu en jeu pour changer EXP Share / boost EXP sans regenerer le mod."
-    $Ui.Descriptions.DynamicExpLevelCap = "NECESSITE EXEFS. Cap EXP dynamique. Exemple: si le cap actuel est 36, un Pokemon niveau 36 recoit 1 EXP au lieu de l'EXP normale, tandis qu'un Pokemon sous le cap continue de gagner de l'EXP."
-    $Ui.Descriptions.StrictBossMaxLevelCap = "NECESSITE EXEFS. Cap boss strict. Exemple: si le prochain boss liste a un Pokemon max niveau 28, le cap peut utiliser 28 comme limite."
-    $Ui.Descriptions.MainStorySoftLevelCap = "NECESSITE EXEFS. Cap histoire souple. Exemple: le cap suit des blocs badges/histoire, donc il change aux gros paliers plutot qu'apres chaque petit combat rival."
-    $Ui.Descriptions.GymLeagueStoryLevelCap = "NECESSITE EXEFS. Cap arenes/Tarak. Exemple: apres generation des equipes, l'outil lit les vrais niveaux generes des arenes et de Tarak, puis construit les caps depuis ces equipes."
-    $Ui.Descriptions.StoryMajorBattleOrderLevelCap = "NECESSITE EXEFS. Cap ordre des combats majeurs. Exemple: Nabil, Travis, Rosemary, champions, Shehroz et Tarak sont places dans l'ordre de l'histoire, puis les caps suivent cette sequence."
-    $Ui.Descriptions.AutoInstallToEden = "Installation auto. Exemple: apres generation, l'outil peut copier le mod fini vers Eden/Ryujinx/Yuzu/Sudachi/Citron/Suyu/Citron Neo selon les cibles cochees et detectees."
-    $Ui.Descriptions.EdenModName = "Nom du dossier de mod installe. Exemple: Randomizer remplace l'ancien dossier Randomizer; MaRun_Seed123 garde un dossier de mod separe."
-    $exampleNeedle = if ($Language -eq "en") { "Example:" } else { "Exemple:" }
-    $genericExample = if ($Language -eq "en") {
-        " Example: if the option changes a species, imagine Victreebel becoming Empoleon; if it changes a rule, Victreebel and Empoleon are the reference pair for understanding the result."
-    } else {
-        " Exemple: si l'option touche une espece, imagine Empiflor qui devient Pingoleon; si elle touche une regle, Empiflor et Pingoleon servent de duo de reference pour comprendre le resultat."
-    }
-    foreach ($key in @($Ui.Descriptions.Keys)) {
-        if ([string]$Ui.Descriptions[$key] -notmatch [regex]::Escape($exampleNeedle)) {
-            $Ui.Descriptions[$key] = ([string]$Ui.Descriptions[$key]).TrimEnd() + $genericExample
-        }
-    }
-}
-
-function Get-UiStrings {
-    param([string]$Language = "fr")
-
-    if ($Language -eq "en") {
-        return @{
-            FormTitle = "PokeFeur Randomizer SWSH V4.17"
-            SourceLabel = "Original ROMFS folder"
-            SourceExefsLabel = "Original ExeFS folder"
-            OutputLabel = "Generated mod folder"
-            GameVersion = "Target game"
-            Browse = "Browse"
-            Seed = "Seed (-1 = auto)"
-            UiLanguage = "Software language"
-            ReportLanguage = "JSON report language"
-            Theme = "Theme"
-            DifficultyProfile = "Difficulty profile"
-            ApplyDifficultyProfile = "Apply profile"
-            ValidateBuild = "Check config"
-            BuildSummary = "Build summary"
-            Generate = "Generate mod"
-            Tabs = @{ General = "Build"; Trainers = "Trainers"; Pokemon = "Pokemon"; Evolutions = "Evolutions"; Gifts = "Starters / gifts"; Encounters = "Encounters"; Help = "Help"; Reset = "Clean install" }
-            GeneralLines = @(
-                "Complete build: user ROMFS + user ExeFS, ExLaunch, JSON presets, detailed reports, and emulator auto-install.",
-                "BST = the sum of the 6 base stats. Similar BST keeps replacements in a comparable power range.",
-                "Trainers: species, moves, items, IV/EV, shiny, AI, Dynamax, team size, and boss teams at 6.",
-                "Pokemon: types, abilities, stats, EXP yield, global moves, and evolutions.",
-                "Encounters: static, wild, visible, underground, stable mappings, and hidden battle rolls.",
-                "Starters: French/English names accepted, example Victreebel / Empoleon / Victreebel.",
-                "EXP caps: runtime modes require ExLaunch and export their JSON cap tables."
-            )
-            ModeRandom = "Full random"
-            ModeSimilarBST = "Balanced random (similar BST)"
-            ModeUnchanged = "Keep vanilla"
-            MappingSlot = "Stable by slot"
-            MappingSpecies = "Stable by species"
-            MappingTrueRandom = "Fresh roll per encounter entry"
-            TrainerMoveRandom4 = "4 random moves"
-            TrainerMoveLevel4 = "Natural moves for its level"
-            TrainerMoveSmogon = "Smogon strategic"
-            TrainerMoveSmogonLegacy = "Smogon + older gens"
-            TrainerSmogonMoveFallbackLevel = "Fallback: natural level moves"
-            TrainerSmogonMoveFallbackRandom = "Fallback: random moves"
-            TrainerSmogonMoveFallbackUnchanged = "Fallback: keep vanilla"
-            TrainerItemRandomPresent = "Random when an item is already present"
-            TrainerItemForceAll = "Random item on every trainer Pokemon"
-            TrainerItemSmogon = "Smogon strategic item"
-            TrainerItemSmogonLegacy = "Smogon item + older gens"
-            TrainerItemRemoveAll = "Remove all held items"
-            TrainerItemPoolBattle = "Battle pool (useful held items)"
-            TrainerItemPoolFull = "Wide safe pool (chaotic)"
-            TrainerAddedSlotRandom = "Added slots: full random"
-            TrainerAddedSlotSimilarBST = "Added slots: similar BST"
-            TrainerAddedSlotSameType = "Added slots: same type"
-            TrainerAddedSlotSameTypeBST = "Added slots: same type + BST"
-            TrainerDuplicateNoDuplicates = "Block duplicates"
-            TrainerDuplicateNormal = "Normal random (duplicates possible)"
-            BossScopeMajor = "Major bosses"
-            BossScopeGymLeague = "Gyms + league only"
-            TrainerAbilityRandom = "Randomize trainer ability slot"
-            TrainerAbilitySmogon = "Smogon strategic ability"
-            TrainerAbilitySmogonLegacy = "Smogon ability + older gens"
-            TrainerIVMax = "31 in every IV"
-            TrainerIVRandom = "Random"
-            TrainerEVSmogon = "Smogon strategic EVs"
-            TrainerEVSmogonLegacy = "Smogon EVs + older gens"
-            TrainerEVRandom = "Random legal EVs"
-            TrainerEVZero = "Set EVs to zero"
-            TrainerNatureUnchanged = "Keep vanilla nature"
-            TrainerNatureRandom = "Random nature"
-            TrainerNatureSmogon = "Smogon strategic nature"
-            TrainerNatureSmogonLegacy = "Smogon nature + older gens"
-            StarterRandom = "Random starter Pokemon"
-            StarterSimilarBST = "Similar BST starter Pokemon"
-            StarterUnchanged = "Do not change starter Pokemon"
-            StatShuffle = "Shuffle the 6 stats"
-            StatRedistribute = "Redistribute BST"
-            ReportLanguageFrench = "French"
-            ReportLanguageEnglish = "English"
-            UiLanguageFrench = "Francais"
-            UiLanguageEnglish = "English"
-            ThemeLight = "Light"
-            ThemeDark = "Dark"
-            Labels = @{
-                TrainerSpecies = "Trainer Pokemon species"
-                TrainerMoves = "Trainer Pokemon moves"
-                TrainerSmogonMoveFallback = "Smogon move fallback"
-                TrainerItems = "Trainer held items"
-                TrainerItemPool = "Random item pool"
-                TrainerAddedSlotSpecies = "Pokemon added to 6-slot teams"
-                TrainerDuplicateMode = "Team duplicates"
-                TrainerAbility = "Trainer Pokemon abilities"
-                TrainerIV = "Trainer IVs"
-                TrainerEV = "Trainer EVs"
-                TrainerLevel = "Trainer level multiplier"
-                TrainerTeamMin = "Minimum team size"
-                TrainerTeamMax = "Maximum team size"
-                TrainerTypeThemed = "Type-themed trainer teams"
-                TrainerShinyChance = "Trainer shiny rate (%)"
-                ForceTrainerFullyEvolved = "Force final evolutions"
-                TrainerFullyEvolvedLevel = "Final evolution level"
-                MaxTrainerAI = "Max trainer AI"
-                TrainerDynamaxLevel = "Trainer Dynamax level"
-                TrainerDynamaxUnchanged = "Do not change"
-                TrainerDynamaxMax = "Dynamax level 10"
-                TrainerDynamaxRandom = "Random 0-10"
-                ForceTrainerCanDynamax = "Allow every trainer Pokemon to Dynamax"
-                ForceAllTeams = "Set every trainer to 6 Pokemon"
-                ForceBossTeams = "Set selected bosses to 6 Pokemon"
-                BossTeamsScope = "Boss list used for 6v6"
-                AllowLegendaryTrainers = "Allow legendary Pokemon for trainers"
-                RandomizeNatures = "Trainer natures"
-                TypeMode = "Species types"
-                ForceMonotype = "Force one type only"
-                AbilityMode = "Global species abilities"
-                AllowWonderGuard = "Allow Wonder Guard in the pool"
-                StatMode = "Species base stats"
-                ExpYieldMultiplier = "EXP yield multiplier [REQUIRES EXEFS if not 1.0]"
-                ForceOneExpYield = "No EXP mode: force 1 EXP from every Pokemon"
-                MoveTypeMode = "Move type randomization"
-                MovePowerMode = "Move power randomization"
-                MovePPMode = "Move PP randomization"
-                MovePowerMin = "Power min"
-                MovePowerMax = "Power max"
-                MovePPMin = "PP min"
-                MovePPMax = "PP max"
-                MoveAccuracyMode = "Move accuracy randomization"
-                MoveAccuracyMin = "Accuracy min"
-                MoveAccuracyMax = "Accuracy max"
-                MoveCategoryMode = "Move physical/special split"
-                EvolutionMode = "Evolution targets"
-                AllowLegendaryEvo = "Allow legendary Pokemon in evolutions"
-                NormalizeFriendship = "Convert friendship evolutions to a fixed level"
-            FriendshipLevel = "Friendship level"
-            NormalizeTrade = "Convert trade evolutions to a fixed level"
-            TradeLevel = "Trade level"
-            NormalizeSpecial = "Convert weird evolutions to a fixed level"
-            SpecialLevel = "Special evolution level"
-                GiftMode = "Gift Pokemon mode"
-                StarterMode = "Starter Pokemon mode"
-                AllowLegendaryGifts = "Allow legendary Pokemon for gifts and starters"
-                ManualStarterGroup = "Manual starters: leave the 3 boxes empty for the mode above, or fill all 3 to force a trio."
-                Slot1 = "Slot 1"
-                Slot2 = "Slot 2"
-                Slot3 = "Slot 3"
-                PatchStarters = "May be broken, do not use Patch early trainer teams tied to the starter choice"
-                TradeMode = "In-game trades"
-                AllowLegendaryTrades = "Allow legendary Pokemon in in-game trades"
-                StaticMode = "Static / scripted encounters"
-                AllowLegendaryStatic = "Allow legendary Pokemon in static encounters"
-                StaticStableMapping = "Static stable mapping"
-                GrassMode = "Wild encounter species"
-                AllowLegendaryGrass = "Allow legendary Pokemon in grass / visible encounters"
-                GrassStableMapping = "Wild encounter mapping rule"
-                VisibleEncounterBehavior = "Overworld Pokemon behavior [REQUIRES EXEFS outside Classic]"
-                UndergroundMode = "Underground encounters"
-                AllowLegendaryUnderground = "Allow legendary Pokemon in underground"
-                DisableExpShare = "Default EXP Share: OFF [REQUIRES EXEFS]"
-                EarlyBike = "Rotom Bike from the start [REQUIRES EXEFS]"
-                RuntimePcControls = "PC menu: change options in game [REQUIRES EXEFS]"
-                DynamicExpLevelCap = "Dynamic EXP cap (ExLaunch) [REQUIRES EXEFS]"
-                StrictBossMaxLevelCap = "Strict boss max level cap for listed bosses [REQUIRES EXEFS]"
-                MainStorySoftLevelCap = "Soft main-story progression EXP cap [REQUIRES EXEFS]"
-                GymLeagueStoryLevelCap = "Gym/Champion EXP cap [REQUIRES EXEFS]"
-                StoryMajorBattleOrderLevelCap = "Ordered main-story major battle mode [REQUIRES EXEFS]"
-                AutoInstallToEden = "Auto-install"
-                EdenModName = "Mod folder"
-                InstallTargetEden = "Eden"
-                InstallTargetRyujinx = "Ryujinx"
-                InstallTargetYuzu = "Yuzu"
-                InstallTargetSudachi = "Sudachi"
-                InstallTargetCitron = "Citron"
-                InstallTargetSuyu = "Suyu"
-                InstallTargetCitronNeo = "Citron Neo"
-                HelpBox = "Help"
-                ResetTargets = "Reset targets"
-                ResetButton = "Reset emulator install"
-                ResetDefault = "This removes only the generated mod folder and the swsh-mods-exl config file when that config was generated by this randomizer."
-                DetailsDefault = "Hover or focus any option to see exactly what it changes and where it is applied."
-                StatusDefault = "Ready. Pick the user's ROMFS dump folder, add ExeFS only if a runtime/ExLaunch option needs it, choose your options, then generate the mod. The output includes ROMFS, ExLaunch files, config, and JSON reports when relevant."
-                StatusRunning = "Building mod..."
-                SeedError = "Seed must be a numeric integer. Use -1 for auto."
-            }
-            Descriptions = @{
-                TrainerSpecies = "Trainer Pokemon: Completely random replaces each slot with any allowed Pokemon. Similar BST aims for comparable overall power using Base Stat Total. Do not change keeps vanilla species."
-                TrainerMoves = "Trainer Pokemon moves: Random4 picks 4 attacks from the global move pool. Last 4 level-up moves uses the species' last 4 moves learned by level at the Pokemon's actual level."
-                TrainerItems = "Items held by trainer Pokemon: Random only if present touches only slots that already had an item. Random item on everyone gives every trainer Pokemon one random held item. Remove all clears held items. Both random modes use the pool chosen on the right."
-                TrainerItemPool = "Held item pool: Battle pool is curated for useful battle held items such as berries, Leftovers, Choice items, plates and type boosters. Wide safe pool is broader: it keeps key/problem items out, but can also roll balls, medicine, fossils, mints, candies and other safe non-key items for chaotic runs."
-                TrainerAddedSlotSpecies = "Species for added slots: used only when a team is expanded to 6 while trainer species mode is Keep vanilla. Full random can add Empoleon to a Victreebel team; Similar BST tries comparable power; Same type keeps Gym/league themes such as Grass for Milo; Same type + BST keeps both. Leon/Tarak stays balanced."
-                TrainerDuplicateMode = "Duplicate handling: Block duplicates is the current clean mode and repairs trainer teams so the same Pokemon or held item does not repeat. Normal random removes that repair; duplicates can happen naturally but are just random chance."
-                TrainerAbility = "Trainer ability slot: randomizes the ability selector stored on each trainer Pokemon. It changes which normal/hidden ability slot is used, not the species' global ability data."
-                TrainerIV = "IV mode: Max31 writes perfect IVs while preserving SWSH special flags. Random rolls each IV from 0 to 31 and also preserves shiny / CanDynamax flags."
-                TrainerEV = "EV mode: Smogon strategic uses the EV spread from the selected Smogon set when available, then falls back to random legal EVs. Random legal distributes up to 510 EVs with the per-stat 252 cap. Zero removes EVs from every trainer Pokemon."
-                TrainerLevel = "Level multiplier: multiplies trainer Pokemon levels and clamps the result to 1-100. Use 1.0 to leave levels untouched."
-                TrainerTeamSize = "Team size: -1 means keep vanilla. Min / max clamp team size from 1 to 6. Force all teams to 6 overrides this by targeting 6 first, then the clamp still applies."
-                TrainerTypeThemed = "Type-themed trainer teams: when trainer species are randomized, each trainer gets one random type and replacement Pokemon are pulled from that type's species pool. This is inspired by pkNX's TeamTypeThemed option."
-                RandomizeNatures = "Trainer natures: Keep vanilla leaves each nature untouched, Random rolls one of the 25 legal natures, and Smogon strategic takes the nature from the same Smogon set as moves, item, ability and EVs."
-                AllowLegendaryTrainers = "Allow legendary Pokemon for trainers: when disabled, legendary and mythical species are excluded from trainer replacement pools. This does not delete vanilla legendaries if species mode is unchanged."
-                TrainerShinyChance = "Trainer shiny rate: 0 leaves trainer shininess untouched. Any value above 0 rolls that percentage on every trainer Pokemon and writes the verified SWSH shiny bit in trainer_poke."
-                ForceTrainerFullyEvolved = "Force fully evolved after level: if a trainer Pokemon is at least this level, the tool follows its evolution chain and replaces it with a final-stage evolution. Branching evolutions pick one allowed branch."
-                MaxTrainerAI = "Maximize trainer AI: sets the trainer AI flag field to all enabled flags. This is based on pkNX's TrainerMaxAI option and makes battles less passive."
-                TrainerDynamaxLevel = "Trainer Dynamax level: changes the Dynamax level byte in each trainer Pokemon record. Max10 makes Dynamax HP boost strongest; Random0-10 varies it."
-                ForceTrainerCanDynamax = "Allow every trainer Pokemon to Dynamax: sets the verified SWSH CanDynamax bit in trainer_poke. This does not force Gigantamax forms."
-                ForceAllTeams = "Force all trainer teams to 6 Pokemon: expands every trainer party up to six slots by cloning a random existing slot to keep a coherent level/template. Added slots are then re-leveled toward the team's real level range and still go through the normal trainer options afterward: species mode, trainer move mode, held item mode, IV/EV mode, shiny rate, Dynamax settings, and so on. When trainer species randomization is active, duplicate species inside the final team are now blocked: uniqueness takes priority, and if the current mode pool runs out the randomizer broadens the candidate pool instead of accepting duplicates."
-                ForceBossTeams = "Listed champion / league / major boss teams to 6 Pokemon: expands only the important fights detected from vanilla trainer metadata. Added slots no longer duplicate only the last Pokemon: each extra slot takes a random existing slot as level template, is re-leveled toward the real team range, then still follows the usual trainer options afterward, including species mode and trainer move mode. When trainer species randomization is active, duplicate species inside the final team are now blocked: uniqueness takes priority, and if the current mode pool runs out the randomizer broadens the candidate pool instead of accepting duplicates. The very first Hop starter-choice battle is intentionally excluded so that opening fight keeps its special 2-Pokemon structure. The visible list shows unique characters; randomizer-report.json and trainer-changes.json export the exact trainer IDs and before/after team sizes."
-                BossTeamsScope = "Boss 6v6 scope: Major bosses is the broad mode and can include rivals plus story/DLC bosses such as Hop, Bede, Marnie, Leon, Rose, Oleana, Sordward, Shielbert, Mustard, Klara, Avery and Peony. Gyms + league only is narrower: it targets Gym Leaders, Champion Cup / league-style entries and Leon, so the 6-Pokemon helper behaves more like a classic Gyms + Elite Four style run."
-                ForceBossTargets = "Boss target list: includes rivals and story bosses such as Hop, Bede, Marnie, Leon, Rose, Oleana, Sordward, Shielbert, DLC bosses such as Mustard, Klara, Avery, Peony, Peonia, plus Gym Leader / Champion Cup / league fights detected in vanilla data. The very first Hop starter-choice battle is intentionally excluded from the 6-Pokemon helper. Generic Macro Cosmos employees are intentionally not included."
-                TypeMode = "Pokemon types: Random changes types for all species. With monotype enabled, type 2 is copied from type 1."
-                TypesMonotypeOnly = "Force monotype: when Pokemon types are randomized, the second type is forced to match the first type instead of rolling a dual type."
-                AbilityMode = "Pokemon abilities: randomizes species ability slots in personal data. Wonder Guard is blocked unless explicitly allowed."
-                AllowWonderGuard = "Allow Wonder Guard: includes Wonder Guard in the ability pool. This can create very strong or unfair Pokemon, so it is opt-in."
-                StatMode = "Base stats: Shuffle permutes the 6 stats. Redistribute keeps the same BST total but builds a different spread."
-                ExpYieldMultiplier = "EXP yield multiplier: when different from 1.0, the generated ExLaunch config applies it to the final EXP gain at runtime instead of editing personal_total.bin. 0.6 matches the idea of the 60_sw mod, and 5.0 makes a true x5 multiplier. No EXP mode overrides this value."
-                ForceOneExpYield = "No EXP mode: forces every Pokemon species that normally gives EXP to yield 1 EXP. This is the clean ROMFS version of the local no_exp_v132_ mod. It is global and static. Use Dynamic EXP level cap if you want the game to check the receiver Pokemon's level during battle."
-                MoveTypeMode = "Move types: changes the elemental type of global moves. Example: Fire Fang can become Ice-type."
-                MovePowerMode = "Move power: randomizes damaging move power only. Moves with base power 0 are left at 0 to avoid turning pure status moves into broken attacks."
-                MovePPMode = "Move PP: randomizes base PP for global moves inside the selected range."
-                MoveAccuracyMode = "Move accuracy: randomizes accuracy for moves that normally use an accuracy value. Perfect / special-case accuracy 0 is preserved."
-                MoveCategoryMode = "Move category: randomizes damaging moves between physical and special. Status moves are preserved."
-                StarterMode = "Starter Pokemon mode: Random starter Pokemon replaces only the three starter species. Similar BST keeps them close to Grookey / Scorbunny / Sobble power. This global mode is used only when all three manual starter boxes are left empty."
-                Starter1 = "Manual starter slot 1. You can type a French or English species name, for example Pikachu, Bulbizarre or Eevee. If you force manual starters, all 3 boxes must be filled."
-                Starter2 = "Manual starter slot 2. Leave the 3 boxes empty to keep using the starter mode above. Fill the 3 boxes to force an exact visible trio."
-                Starter3 = "Manual starter slot 3. The JSON report exports the chosen trio with both French and English names."
-                PatchStarters = "Patch trainer teams tied to the starter choice: after changing the three visible starters, the script reads vanilla trainer metadata, finds every Grookey / Scorbunny / Sobble family slot, and forces those exact slots to the final starter trio. This still works if trainer Pokemon were randomized first, and the patched slots now rebuild their moves so they stop keeping the previous species move set."
-                ReportLanguage = "JSON report language: chooses the primary language for exported labels. Species name input still accepts French and English."
-                UiLanguage = "Software language: instantly switches the interface text and help descriptions between French and English."
-                EvolutionMode = "Pokemon Evolution: Completely random remaps evolution targets freely. Similar BST prefers targets with comparable power."
-                AllowLegendaryEvo = "Allow legendary Pokemon in evolutions: includes legendary and mythical species in randomized evolution targets. Leave it off for a more regular progression."
-                NormalizeFriendship = "Friendship normalization converts friendship methods into plain level-up evolution. Covered methods: 1, 2, 3."
-                NormalizeTrade = "Trade normalization converts plain trade, trade-with-item, and trade-for-specific-Pokemon methods into plain level-up evolution. Covered methods: 5, 6, 7."
-                NormalizeSpecial = "Weird evolution normalization converts every non-empty evolution method that is not already plain level-up into a fixed level-up evolution. This covers time, beauty, location, item/stone, move-known, gender/weather/party requirements and other special conditions. If you want to keep item or stone evolutions, leave this unchecked."
-                GiftMode = "Gift Pokemon mode: edits non-starter gift Pokemon from add_poke.bin. Completely random ignores power; Similar BST keeps gifts closer to their original strength."
-                AllowLegendaryGifts = "Allow legendary Pokemon for gifts and starters: includes legendary and mythical species in gift and starter replacement pools."
-                TradeMode = "In-game trades: edits NPC trade species. Both the requested Pokemon and the received Pokemon can be randomized where the file exposes them."
-                AllowLegendaryTrades = "Allow legendary Pokemon in in-game trades: includes legendary and mythical species in NPC trade replacement pools."
-                StaticMode = "Static / scripted encounters: edits fixed in-world encounters from event_encount_data.bin."
-                AllowLegendaryStatic = "Allow legendary Pokemon in static encounters: includes legendary and mythical species in fixed/scripted encounter replacement pools."
-                GrassMode = "Wild encounter species: controls the ROMFS encounter tables used by grass, symbols and field encounters. Keep vanilla leaves the species tables untouched; the option below can still add a runtime split between what is seen outside and what starts in battle."
-                AllowLegendaryGrass = "Allow legendary Pokemon in grass / visible encounters: includes legendary and mythical species in hidden grass and visible overworld replacement pools."
-                StaticStableMapping = "Static mapping: Species maps every same vanilla species to the same replacement. Slot maps each static/script table entry independently. True random build rolls every ROMFS entry independently; it does not reroll encounters live in-game."
-                GrassStableMapping = "Wild encounter mapping rule: Stable by species means every vanilla Pikachu becomes the same replacement everywhere. Stable by slot means Route 4 Pikachu and another area Pikachu can become different species. Fresh roll per table entry is less controlled and is mainly for chaotic runs."
-                VisibleEncounterBehavior = "Overworld Pokemon behavior: Classic is what you see is what you fight. Vanilla visible + hidden battle keeps the original overworld model but replaces the battle species at encounter start. Random visible + hidden battle randomizes the visible model and also uses a separate battle roll, so seeing one species does not reveal the fight."
-                UndergroundMode = "Underground encounters: edits the underground encounter species slots stored separately from normal field encounters."
-                AllowLegendaryUnderground = "Allow legendary Pokemon in underground: includes legendary and mythical species in underground encounter replacement pools."
-                DisableExpShare = "Default EXP Share: OFF: writes enabled=false to the generated ExLaunch [exp_share] config. If the PC runtime menu is enabled, this is only the starting state and the player can toggle it in game."
-                EarlyBike = "Rotom Bike from the start: writes active=true to the generated ExLaunch [early_bike] config. The module grants the real Rotom Bike key item once the field is loaded."
-                RuntimePcControls = "PC menu runtime controls: opt-in replacement of the Pokemon Center PC script. This option does not disable EXP Share by itself; it only allows changing runtime options in game. When unchecked, the vanilla PC menu stays intact and the generated config defaults are used directly."
-                DynamicExpLevelCap = "Dynamic EXP level cap: no longer writes the old raw IPS. The reliable path uses ExLaunch at the final EXP calculation point. The tool deploys the project's ExLaunch-compatible main.npdm together with the custom subsdk9 module."
-                StrictBossMaxLevelCap = "Strict boss max level cap: still computes and normalizes the listed boss teams, but in-game EXP enforcement now requires the ExLaunch module. The tool deploys the project's ExLaunch-compatible main.npdm together with the custom subsdk9 module. Without that module, the JSON is a reference and EXP is not blocked."
-                MainStorySoftLevelCap = "Soft main-story progression EXP cap: computes a 9-step badge-based cap table from grouped major progression fights instead of only the next gym. Gyms stay the backbone, and the real villain / endgame bosses in the same progression block are folded into that block's cap. This is meant to reduce overleveling without changing the cap every few minutes. In-game enforcement still requires the ExLaunch module; the generated details are exported in story-main-progression-soft-caps.json."
-                GymLeagueStoryLevelCap = "Gym/champion story EXP cap: computes a 9-step cap table from generated gym/champion teams. In-game enforcement requires ExLaunch. The tool deploys the project's ExLaunch-compatible main.npdm together with the custom subsdk9 module."
-                StoryMajorBattleOrderLevelCap = "Ordered main-story major battle mode: keeps the dynamic EXP patch globally, then normalizes a fixed ordered list of major base-story fights to each team's max level after randomization. It covers the gyms plus major Hop, Bede, Marnie, Oleana, Rose, and Leon battles from the main story, exports them to story-major-battle-caps.json, and uses every starter-dependent or version-dependent variant that exists in trainer data. This is still based on a curated ordered list, not a live hidden story-state reader."
-                AutoInstallToEden = "Auto-install into selected detected emulators: after generation finishes, the tool tries to copy romfs, exefs and the generated sdmc subtree into every checked emulator found on the PC."
-                EdenModName = "Installed mod folder name: controls the final mod folder name under the emulator-specific load/mods path. Keep Randomizer if you simply want the new build to replace the previous run."
-                InstallTargetEden = "Install to Eden: this target uses %AppData%\\eden\\load\\<titleId>\\<modName> plus %AppData%\\eden\\sdmc\\config\\swsh-mods-exl\\config.toml."
-                InstallTargetRyujinx = "Install to Ryujinx: this target uses %AppData%\\Ryujinx\\sdcard\\atmosphere\\contents\\<titleId>\\<modName> plus %AppData%\\Ryujinx\\sdcard\\config\\swsh-mods-exl\\config.toml. Legacy mods\\contents installs are cleaned automatically."
-                InstallTargetYuzu = "Install to Yuzu: this target uses %AppData%\\yuzu\\load\\<titleId>\\<modName> plus %AppData%\\yuzu\\sdmc\\config\\swsh-mods-exl\\config.toml."
-                InstallTargetSudachi = "Install to Sudachi: this target uses %AppData%\\sudachi\\load\\<titleId>\\<modName> plus %AppData%\\sudachi\\sdmc\\config\\swsh-mods-exl\\config.toml."
-                InstallTargetCitron = "Install to Citron: this target uses %AppData%\\citron\\load\\<titleId>\\<modName> plus %AppData%\\citron\\sdmc\\config\\swsh-mods-exl\\config.toml."
-                InstallTargetSuyu = "Install to Suyu: this target uses %AppData%\\suyu\\load\\<titleId>\\<modName> plus %AppData%\\suyu\\sdmc\\config\\swsh-mods-exl\\config.toml."
-                InstallTargetCitronNeo = "Install to Citron Neo: this target checks Citron Neo / Citron Team style folders such as %AppData%\\citron team, then uses load\\<titleId>\\<modName> plus sdmc\\config\\swsh-mods-exl\\config.toml."
-                DifficultyProfile = "Difficulty profile: applies a coherent preset of randomizer options without touching your ROMFS/ExeFS paths, output folder or emulator targets. Example: Smogon strategic switches trainer moves, abilities and held items to Smogon-based choices; Hardcore gyms + league expands selected bosses to 6 Pokemon."
-                ValidateBuild = "Build validation: checks source folders, required ROMFS files, ExeFS needs for runtime options, numeric ranges and obvious option conflicts before generation. Example: if hidden visible battles are enabled without an ExeFS dump, the build is blocked before writing a broken mod."
-                BuildSummary = "Build summary: opens the same 'what will be modified' page used before generation. Example: before writing files, it shows whether trainers, encounters, EXP Share, ExLaunch, Smogon options and emulator install targets will be changed."
-            }
-        }
-    }
-
-    return @{
-        FormTitle = "PokeFeur Randomizer SWSH V4.17"
-            SourceLabel = "Dossier ROMFS original"
-            SourceExefsLabel = "Dossier ExeFS original"
-            OutputLabel = "Dossier du mod genere"
-            GameVersion = "Jeu cible"
-        Browse = "Parcourir"
-        Seed = "Seed (-1 = auto)"
-        UiLanguage = "Langue du logiciel"
-        ReportLanguage = "Langue rapport JSON"
-        Theme = "Theme"
-        DifficultyProfile = "Profil de difficulte"
-        ApplyDifficultyProfile = "Appliquer profil"
-        ValidateBuild = "Verifier config"
-        BuildSummary = "Resume build"
-        Generate = "Generer le mod"
-        Tabs = @{ General = "Generation"; Trainers = "Dresseurs"; Pokemon = "Pokemon"; Evolutions = "Evolutions"; Gifts = "Starters / cadeaux"; Encounters = "Rencontres"; Help = "Aide"; Reset = "Nettoyage" }
-        GeneralLines = @(
-            "Build complet: ROMFS utilisateur + ExeFS utilisateur, ExLaunch, presets JSON, rapports detailles et installation auto emulateurs.",
-            "BST = somme des 6 stats de base. Le mode BST proche garde une puissance comparable.",
-            "Dresseurs: especes, moves, objets, IV/EV, shiny, IA, Dynamax, tailles d'equipe et boss a 6.",
-            "Pokemon: types, talents, stats, EXP donne, attaques globales et evolutions.",
-            "Rencontres: fixes, sauvages, visibles, underground, mappings stables et combats caches.",
-            "Starters: noms FR/EN acceptes, exemple Empiflor / Pingoleon / Empiflor.",
-            "Caps EXP: les modes runtime demandent ExLaunch et exportent leurs tables JSON."
-        )
-            ModeRandom = "Random complet"
-            ModeSimilarBST = "Random equilibre (BST proche)"
-            ModeUnchanged = "Garder vanilla"
-            MappingSlot = "Stable par slot"
-            MappingSpecies = "Stable par espece"
-            MappingTrueRandom = "Tirage frais par entree"
-        TrainerMoveRandom4 = "4 attaques aleatoires"
-        TrainerMoveLevel4 = "Attaques naturelles au niveau"
-        TrainerMoveSmogon = "Strategique Smogon"
-        TrainerMoveSmogonLegacy = "Smogon + anciennes gens"
-        TrainerSmogonMoveFallbackLevel = "Backup: attaques naturelles"
-        TrainerSmogonMoveFallbackRandom = "Backup: attaques random"
-        TrainerSmogonMoveFallbackUnchanged = "Backup: garder vanilla"
-        TrainerItemRandomPresent = "Random si objet deja present"
-        TrainerItemForceAll = "Objet random sur tous"
-        TrainerItemSmogon = "Objet strategique Smogon"
-        TrainerItemSmogonLegacy = "Objet Smogon + anciennes gens"
-        TrainerItemRemoveAll = "Supprimer tous les objets"
-        TrainerItemPoolBattle = "Pool combat (objets utiles)"
-        TrainerItemPoolFull = "Pool large safe (chaotique)"
-        TrainerAddedSlotRandom = "Slots ajoutes: random complet"
-        TrainerAddedSlotSimilarBST = "Slots ajoutes: BST proche"
-        TrainerAddedSlotSameType = "Slots ajoutes: meme type"
-        TrainerAddedSlotSameTypeBST = "Slots ajoutes: meme type + BST"
-        TrainerDuplicateNoDuplicates = "Bloquer les doublons"
-        TrainerDuplicateNormal = "Random normal (doublons possibles)"
-        BossScopeMajor = "Boss importants"
-        BossScopeGymLeague = "Arenes + ligue uniquement"
-        TrainerAbilityRandom = "Randomiser le slot talent dresseur"
-        TrainerAbilitySmogon = "Talent strategique Smogon"
-        TrainerAbilitySmogonLegacy = "Talent Smogon + anciennes gens"
-        TrainerIVMax = "31 partout"
-        TrainerIVRandom = "Aleatoire"
-        TrainerEVSmogon = "EV strategiques Smogon"
-        TrainerEVSmogonLegacy = "EV Smogon + anciennes gens"
-        TrainerEVRandom = "EV legaux aleatoires"
-        TrainerEVZero = "Mettre EV a zero"
-        TrainerNatureUnchanged = "Garder nature vanilla"
-        TrainerNatureRandom = "Nature aleatoire"
-        TrainerNatureSmogon = "Nature strategique Smogon"
-        TrainerNatureSmogonLegacy = "Nature Smogon + anciennes gens"
-        StarterRandom = "Starters aleatoires"
-        StarterSimilarBST = "Starters BST proche"
-        StarterUnchanged = "Ne pas changer les starters"
-        StatShuffle = "Melanger les 6 stats"
-        StatRedistribute = "Redistribuer le BST"
-        ReportLanguageFrench = "Francais"
-        ReportLanguageEnglish = "English"
-        UiLanguageFrench = "Francais"
-        UiLanguageEnglish = "English"
-        ThemeLight = "Clair"
-        ThemeDark = "Sombre"
-        Labels = @{
-            TrainerSpecies = "Pokemon des dresseurs"
-            TrainerMoves = "Attaques des dresseurs"
-            TrainerSmogonMoveFallback = "Backup moves Smogon"
-            TrainerItems = "Objets tenus des dresseurs"
-            TrainerItemPool = "Pool des objets random"
-            TrainerAddedSlotSpecies = "Pokemon ajoutes aux equipes a 6"
-            TrainerDuplicateMode = "Doublons dans les equipes"
-            TrainerAbility = "Talents des dresseurs"
-            TrainerIV = "IV des dresseurs"
-            TrainerEV = "EV des dresseurs"
-            TrainerLevel = "Multiplicateur des niveaux"
-            TrainerTeamMin = "Taille equipe minimum"
-            TrainerTeamMax = "Taille equipe maximum"
-            TrainerTypeThemed = "Equipes random par type"
-            TrainerShinyChance = "Taux shiny dresseurs (%)"
-            ForceTrainerFullyEvolved = "Forcer les evolutions finales"
-            TrainerFullyEvolvedLevel = "Niveau minimum evolution finale"
-            MaxTrainerAI = "IA dresseur au maximum"
-            TrainerDynamaxLevel = "Niveau Dynamax dresseurs"
-            TrainerDynamaxUnchanged = "Ne pas changer"
-            TrainerDynamaxMax = "Dynamax niveau 10"
-            TrainerDynamaxRandom = "Aleatoire 0-10"
-            ForceTrainerCanDynamax = "Autoriser Dynamax chez tous les dresseurs"
-            ForceAllTeams = "Mettre tous les dresseurs a 6 Pokemon"
-            ForceBossTeams = "Mettre certains boss a 6 Pokemon"
-            BossTeamsScope = "Liste de boss utilisee"
-            AllowLegendaryTrainers = "Autoriser les legendaires chez les dresseurs"
-            RandomizeNatures = "Natures des dresseurs"
-            TypeMode = "Types des especes"
-            ForceMonotype = "Forcer un seul type"
-            AbilityMode = "Talents globaux des especes"
-            AllowWonderGuard = "Autoriser Wonder Guard dans le pool"
-            StatMode = "Stats de base des especes"
-            ExpYieldMultiplier = "Multiplicateur EXP donne [NECESSITE EXEFS si != 1.0]"
-            ForceOneExpYield = "Mode No EXP: forcer 1 EXP par Pokemon battu"
-            MoveTypeMode = "Randomiser les types d'attaques"
-            MovePowerMode = "Randomiser la puissance"
-            MovePPMode = "Randomiser les PP"
-            MovePowerMin = "Puissance min"
-            MovePowerMax = "Puissance max"
-            MovePPMin = "PP min"
-            MovePPMax = "PP max"
-            MoveAccuracyMode = "Randomiser la precision"
-            MoveAccuracyMin = "Precision min"
-            MoveAccuracyMax = "Precision max"
-            MoveCategoryMode = "Randomiser physique/special"
-            EvolutionMode = "Cibles d'evolution"
-            AllowLegendaryEvo = "Autoriser legendaires en evolution"
-            NormalizeFriendship = "Convertir les evolutions amitie en niveau fixe"
-            FriendshipLevel = "Niveau amitie"
-            NormalizeTrade = "Convertir les evolutions echange en niveau fixe"
-            TradeLevel = "Niveau echange"
-            NormalizeSpecial = "Convertir les evolutions chelou en niveau fixe"
-            SpecialLevel = "Niveau special"
-            GiftMode = "Pokemon cadeaux"
-            StarterMode = "Starters"
-            AllowLegendaryGifts = "Autoriser les legendaires pour gifts et starters"
-            ManualStarterGroup = "Starters manuels: laisse les 3 champs vides pour le mode ci-dessus, ou remplis les 3 pour forcer un trio."
-            Slot1 = "Slot 1"
-            Slot2 = "Slot 2"
-            Slot3 = "Slot 3"
-            PatchStarters = "Repatcher les equipes liees au choix du starter"
-            TradeMode = "Trades PNJ"
-            AllowLegendaryTrades = "Autoriser legendaires dans les trades PNJ"
-            StaticMode = "Rencontres fixes / scriptes"
-            AllowLegendaryStatic = "Autoriser legendaires en rencontres fixes"
-            StaticStableMapping = "Mapping stable statiques"
-            GrassMode = "Especes des rencontres sauvages"
-            AllowLegendaryGrass = "Autoriser legendaires en herbes / visibles"
-            GrassStableMapping = "Regle de mapping sauvage"
-            VisibleEncounterBehavior = "Pokemon visibles dehors [NECESSITE EXEFS hors Classique]"
-            UndergroundMode = "Underground / chika"
-            AllowLegendaryUnderground = "Autoriser legendaires en underground"
-            DisableExpShare = "EXP Share par defaut: OFF [NECESSITE EXEFS]"
-            EarlyBike = "Velo Rotom des le debut [NECESSITE EXEFS]"
-            RuntimePcControls = "Menu PC: changer en jeu [NECESSITE EXEFS]"
-            DynamicExpLevelCap = "Cap EXP dynamique (ExLaunch) [NECESSITE EXEFS]"
-            StrictBossMaxLevelCap = "Cap boss max strict pour les boss listes [NECESSITE EXEFS]"
-            MainStorySoftLevelCap = "Cap progression principale (souple) [NECESSITE EXEFS]"
-            GymLeagueStoryLevelCap = "Cap EXP arenes/Tarak [NECESSITE EXEFS]"
-            StoryMajorBattleOrderLevelCap = "Mode ordre histoire principale (boss majeurs) [NECESSITE EXEFS]"
-            AutoInstallToEden = "Installation auto"
-            EdenModName = "Dossier du mod"
-            InstallTargetEden = "Eden"
-            InstallTargetRyujinx = "Ryujinx"
-            InstallTargetYuzu = "Yuzu"
-            InstallTargetSudachi = "Sudachi"
-            InstallTargetCitron = "Citron"
-            InstallTargetSuyu = "Suyu"
-            InstallTargetCitronNeo = "Citron Neo"
-            HelpBox = "Aide"
-            ResetTargets = "Cibles du reset"
-            ResetButton = "Reset de l'installation emulateur"
-            ResetDefault = "Le reset supprime seulement le dossier de mod genere et le fichier swsh-mods-exl quand cette config a ete generee par ce randomizer."
-            DetailsDefault = "Survole ou selectionne une option pour voir exactement ce qu'elle modifie et ou c'est applique."
-            StatusDefault = "Pret. Choisis le dossier ROMFS de ton dump, ajoute ExeFS seulement si une option runtime/ExLaunch en a besoin, regle tes options, puis genere le mod. La sortie contient ROMFS, fichiers ExLaunch, config et rapports JSON si necessaire."
-            StatusRunning = "Generation en cours..."
-            SeedError = "Le seed doit etre un entier numerique. Utilise -1 pour auto."
-        }
-        Descriptions = @{
-            TrainerSpecies = "Pokemon des dresseurs: Random complet remplace chaque slot par n'importe quel Pokemon autorise. Random equilibre (BST proche) vise une puissance globale proche. Garder vanilla conserve les especes d'origine."
-            TrainerMoves = "Attaques des dresseurs: 4 attaques aleatoires pioche dans le pool global. Attaques naturelles au niveau reconstruit les attaques apprises normalement par le Pokemon a son niveau."
-            TrainerItems = "Objets tenus dresseurs: Random seulement si present respecte les slots qui ont deja un objet. Objet random sur tous donne un objet tenu aleatoire a chaque Pokemon de dresseur. Supprimer tous les objets vide les objets. Les deux modes random utilisent le pool choisi a droite."
-            TrainerItemPool = "Pool d'objets tenus: Combat pioche surtout dans les objets utiles en combat comme baies, Restes, Choice items, plaques et boosts de type. Pool large safe est plus large: il evite les objets cles/problemes, mais peut aussi tirer balls, soins, fossiles, mints, bonbons et autres objets non-cle pour les runs chaotiques."
-            TrainerAddedSlotSpecies = "Especes des slots ajoutes: utilise seulement quand une equipe passe a 6 alors que le mode Pokemon dresseurs est Garder vanilla. Random complet peut ajouter Pingoleon dans une equipe Empiflor; BST proche cherche une puissance comparable; Meme type garde le theme arene/ligue comme Plante pour Milo; Meme type + BST garde theme et puissance. Tarak reste equilibre."
-            TrainerDuplicateMode = "Gestion des doublons: Bloquer les doublons est le mode propre actuel et repare les equipes pour eviter deux fois le meme Pokemon ou le meme objet tenu. Random normal retire cette reparation: un doublon peut arriver naturellement, mais seulement par hasard."
-            TrainerAbility = "Slot talent dresseur: randomise le selecteur de talent stocke sur chaque Pokemon de dresseur. Ca change le slot utilise, pas les talents globaux de l'espece."
-            TrainerIV = "Mode IV: 31 partout ecrit des IV parfaits tout en preservant les flags speciaux SWSH. Aleatoire lance chaque IV entre 0 et 31 et preserve aussi shiny / CanDynamax."
-            TrainerEV = "Mode EV: Strategique Smogon utilise la repartition EV du set Smogon choisi quand elle existe, puis retombe sur EV legaux aleatoires. EV legaux aleatoires distribue jusqu'a 510 EV avec la limite 252 par stat. Zero retire les EV de tous les Pokemon de dresseurs."
-            TrainerLevel = "Multiplicateur niveau: multiplie les niveaux des Pokemon de dresseurs et limite le resultat entre 1 et 100. Mets 1.0 pour ne pas toucher aux niveaux."
-            TrainerTeamSize = "Taille equipe: -1 garde la valeur vanilla. Min / max limite la taille entre 1 et 6. Forcer toutes les equipes a 6 vise d'abord 6, puis la limite min/max s'applique."
-            TrainerTypeThemed = "Equipes themees par type: quand les especes des dresseurs sont randomisees, chaque dresseur tire un type et les remplacements viennent du pool de ce type. Inspire de l'option TeamTypeThemed de pkNX."
-            RandomizeNatures = "Natures dresseurs: Garder vanilla ne touche pas aux natures, Nature aleatoire tire une des 25 natures legales, et Nature strategique Smogon prend la nature du meme set Smogon que les attaques, l'objet, le talent et les EV."
-            AllowLegendaryTrainers = "Legendaires chez les dresseurs: si cette option est decochee, les legendaires et mythiques sont exclus des pools de remplacement. Ca ne supprime pas les legendaires vanilla si le mode Pokemon reste Ne pas changer."
-            TrainerShinyChance = "Taux shiny dresseurs: 0 ne touche pas au shiny. Une valeur au-dessus de 0 lance ce pourcentage sur chaque Pokemon de dresseur et ecrit le bit shiny SWSH verifie dans trainer_poke."
-            ForceTrainerFullyEvolved = "Forcer stade final apres niveau: si un Pokemon de dresseur atteint au moins ce niveau, l'outil suit sa chaine d'evolution et le remplace par une evolution finale. Les evolutions a branches choisissent une branche autorisee."
-            MaxTrainerAI = "IA dresseur au maximum: active tous les flags d'IA connus dans trainer_data, comme l'option TrainerMaxAI de pkNX. Les combats deviennent moins passifs."
-            TrainerDynamaxLevel = "Niveau Dynamax dresseurs: modifie l'octet de niveau Dynamax de chaque Pokemon de dresseur. Niveau 10 maximise le bonus de PV Dynamax; aleatoire 0-10 varie selon les slots."
-            ForceTrainerCanDynamax = "Autoriser tous les Pokemon de dresseurs a Dynamax: active le bit CanDynamax verifie dans trainer_poke. Ne force pas les formes Gigamax."
-            ForceAllTeams = "Forcer toutes les equipes a 6 Pokemon: etend chaque equipe de dresseur jusqu'a six slots en clonant d'abord un slot existant choisi au hasard pour garder un modele coherent. Les slots ajoutes sont ensuite recales vers la vraie plage de niveaux de l'equipe, puis ils repassent dans les options normales du bloc dresseurs: mode espece, mode moves, objets tenus, IV/EV, shiny, Dynamax, etc. Si la randomisation des especes dresseurs est active, les doublons d'espece dans l'equipe finale sont maintenant bloques: l'unicite passe en priorite, et si le pool du mode courant est trop petit le randomizer elargit la selection au lieu d'accepter un doublon."
-            ForceBossTeams = "Boss listes ci-contre a 6 Pokemon: etend seulement les combats importants detectes depuis les donnees dresseurs vanilla. Les slots ajoutes ne recopient plus juste le dernier Pokemon: chaque slot bonus prend un slot existant au hasard comme modele de niveau, est recale vers la vraie plage de niveaux de l'equipe, puis suit quand meme les options normales ensuite, y compris le mode espece et le mode moves dresseurs. Si la randomisation des especes dresseurs est active, les doublons d'espece dans l'equipe finale sont maintenant bloques: l'unicite passe en priorite, et si le pool du mode courant est trop petit le randomizer elargit la selection au lieu d'accepter un doublon. Le tout premier combat de Nabil au choix du starter est volontairement exclu pour garder sa structure speciale a 2 Pokemon. La liste visible affiche les personnages uniques; randomizer-report.json et trainer-changes.json exportent les IDs exacts des combats et les tailles d'equipe avant/apres."
-            BossTeamsScope = "Liste de boss utilisee pour les equipes a 6: Boss importants est le mode large et peut inclure rivaux, boss histoire et DLC comme Nabil, Travis, Rosemary, Tarak, Shehroz, Liv, Jean-Fleuret, Jean-Targe, Mustar, Sophora, Saturnin et Dhilan. Arenes + ligue uniquement est plus strict: il cible champions d'arene, entrees type Champion Cup / ligue et Tarak, pour une run plus proche du style arenes + conseil 4."
-            ForceBossTargets = "Liste des cibles boss: inclut les rivaux et boss d'histoire comme Nabil, Travis, Rosemary, Tarak, Shehroz, Liv, Jean-Fleuret, Jean-Targe, les boss DLC comme Mustar, Sophora, Saturnin, Dhilan, Pivonia, plus les champions d'arene / Champion Cup / ligue detectes dans les donnees vanilla. Le tout premier combat de Nabil au choix du starter est volontairement exclu de l'aide 6 Pokemon. Les employes Macro Cosmos generiques ne sont volontairement pas inclus."
-            TypeMode = "Types: Random change les types de toutes les especes. Si monotype est coche, le type 2 recopie le type 1."
-            TypesMonotypeOnly = "Forcer monotype: quand les types Pokemon sont randomises, le type 2 recopie le type 1 au lieu de tirer un double type."
-            AbilityMode = "Talents Pokemon: randomise les slots de talents dans les donnees personal. Wonder Guard est bloque sauf si tu l'autorises explicitement."
-            AllowWonderGuard = "Autoriser Wonder Guard: ajoute Wonder Guard au pool de talents. Ca peut creer des Pokemon tres forts ou injustes, donc c'est volontairement separe."
-            StatMode = "Stats: Shuffle permute les 6 stats entre elles. Redistribute conserve le BST total mais recompose une repartition differente."
-            ExpYieldMultiplier = "Multiplicateur EXP donne: quand il est different de 1.0, la config ExLaunch generee l'applique au gain EXP final en jeu au lieu de modifier personal_total.bin. 0.6 reproduit l'idee du mod 60_sw, 5.0 fait un vrai x5. Le mode No EXP prend le dessus sur cette valeur."
-            ForceOneExpYield = "Mode No EXP: force toutes les especes qui donnent normalement de l'EXP a donner exactement 1 EXP. C'est la version ROMFS propre du mod local no_exp_v132_. C'est global et statique. Utilise le levelcap EXP dynamique si tu veux que le jeu verifie le niveau du Pokemon receveur pendant le combat."
-            MoveTypeMode = "Types des attaques: change le type elementaire des attaques globales. Exemple: Crocs Feu peut devenir de type Glace."
-            MovePowerMode = "Puissance attaques: randomise seulement la puissance des attaques offensives. Les attaques a puissance 0 restent a 0 pour eviter de casser les attaques de statut."
-            MovePPMode = "PP attaques: randomise les PP de base des attaques globales dans la plage choisie."
-            MoveAccuracyMode = "Precision attaques: randomise la precision des attaques qui utilisent une valeur de precision. Les cas speciaux a 0 restent a 0."
-            MoveCategoryMode = "Categorie attaques: randomise les attaques offensives entre physique et special. Les attaques de statut sont conservees."
-            StarterMode = "Mode starters: Starters aleatoires remplace uniquement les trois starters. Starters BST proche garde une puissance proche de Ouistempo / Flambino / Larmeleon. Ce mode global n'est utilise que si les 3 champs de starters manuels restent vides."
-            Starter1 = "Starter manuel slot 1. Tu peux taper un nom FR ou EN, par exemple Pikachu, Bulbizarre ou Eevee. Si tu forces des starters manuels, les 3 champs doivent etre remplis."
-            Starter2 = "Starter manuel slot 2. Laisse les 3 champs vides pour continuer a utiliser le mode starters ci-dessus. Renseigne les 3 champs pour imposer exactement le trio visible."
-            Starter3 = "Starter manuel slot 3. Le rapport JSON exporte ensuite le trio choisi avec les noms FR et EN."
-            PatchStarters = "Patch des equipes liees au choix du starter: apres avoir change les 3 starters visibles, le script lit les donnees vanilla, retrouve tous les slots des familles Ouistempo / Flambino / Larmeleon, puis force ces slots vers le trio final. Ca marche meme si les Pokemon des dresseurs ont ete randomises avant, et les slots patches reconstruisent maintenant aussi leurs attaques pour eviter de garder les moves de l'ancienne espece."
-            ReportLanguage = "Langue du JSON: choisit la langue principale des libelles du rapport exporte. La saisie des noms de starters accepte toujours FR et EN."
-            UiLanguage = "Langue du logiciel: change a chaud les textes de l'interface et les descriptions d'aide entre francais et anglais."
-            EvolutionMode = "Cibles d'evolution: Random complet remappe les evolutions librement. Random equilibre (BST proche) garde des cibles de puissance proche. Exemple: Empiflor peut evoluer vers Pingoleon si le mode le permet."
-            AllowLegendaryEvo = "Autoriser legendaires en evolution: ajoute les legendaires et mythiques dans les cibles d'evolution randomisees. Laisse decoche pour une progression plus classique."
-            NormalizeFriendship = "Normalisation amitie: convertit les methodes d'amitie en evolution simple par niveau. Methodes couvertes: 1, 2, 3."
-            NormalizeTrade = "Normalisation echange: convertit echange simple, echange avec objet et echange contre espece specifique en evolution simple par niveau. Methodes couvertes: 5, 6, 7."
-            NormalizeSpecial = "Normalisation des evolutions chelou: convertit toutes les methodes non vides qui ne sont pas deja une evolution niveau pur en evolution par niveau fixe. Ca couvre temps, beaute, lieu, objet/pierre, attaque connue, sexe/meteo/equipe et autres conditions speciales. Si tu veux garder les evolutions par pierre/objet, ne coche pas cette option."
-            GiftMode = "Pokemon cadeaux: modifie les cadeaux non starters dans add_poke.bin. Random complet ignore la puissance; Random equilibre (BST proche) garde une puissance proche."
-            AllowLegendaryGifts = "Autoriser les legendaires pour gifts et starters: ajoute les legendaires et mythiques dans les pools de remplacement des cadeaux et starters."
-            TradeMode = "Trades PNJ: modifie les especes des echanges PNJ. Le Pokemon demande et le Pokemon recu peuvent etre randomises quand le fichier les expose."
-            AllowLegendaryTrades = "Autoriser legendaires dans les trades PNJ: ajoute les legendaires et mythiques dans les pools de remplacement des echanges PNJ."
-            StaticMode = "Rencontres fixes: agit sur les rencontres scriptes et statiques du fichier event_encount_data.bin."
-            AllowLegendaryStatic = "Autoriser legendaires en rencontres fixes: ajoute les legendaires et mythiques dans les pools des rencontres fixes/scriptes."
-            GrassMode = "Especes des rencontres sauvages: controle les tables ROMFS utilisees par les hautes herbes, les symboles visibles et les rencontres de terrain. Garder vanilla ne touche pas aux especes des tables; l'option ci-dessous peut quand meme separer ce que tu vois dehors de ce que tu combats."
-            AllowLegendaryGrass = "Autoriser legendaires en herbes / visibles: ajoute les legendaires et mythiques dans les pools de remplacement des hautes herbes cachees et des Pokemon visibles en overworld."
-            StaticStableMapping = "Mapping statiques: Espece transforme toutes les memes especes vanilla vers le meme remplacement. Slot randomise chaque entree statique/script independamment. Vrai random build tire chaque entree ROMFS independamment; ca ne reroll pas les rencontres en direct dans le jeu."
-            GrassStableMapping = "Regle de mapping sauvage: Stable par espece signifie que tous les Pikachu vanilla deviennent le meme remplacement partout. Stable par slot permet au Pikachu d'une route et au Pikachu d'une autre zone de devenir deux especes differentes. Tirage frais par entree est le mode chaotique: chaque entree ROMFS tire son remplacement."
-            VisibleEncounterBehavior = "Pokemon visibles dehors: Classique veut dire que tu combats ce que tu vois. Visuel vanilla + combat cache garde le modele original dehors puis remplace l'espece au lancement du combat. Visuel random + combat cache randomise aussi le modele visible et utilise un tirage de combat distinct, donc voir une espece ne revele pas le combat."
-            UndergroundMode = "Underground: modifie les slots d'especes du souterrain, stockes separement des rencontres normales de terrain."
-            AllowLegendaryUnderground = "Autoriser legendaires en underground: ajoute les legendaires et mythiques dans les pools de remplacement du souterrain."
-            DisableExpShare = "EXP Share par defaut: OFF: ecrit enabled=false dans la config ExLaunch [exp_share] generee. Si le menu PC runtime est active, c'est seulement l'etat de depart et le joueur peut le changer en jeu."
-            EarlyBike = "Velo Rotom des le debut: ecrit active=true dans la config ExLaunch [early_bike]. Le module ajoute une fois le vrai objet rare Velo Rotom quand le terrain est charge."
-            RuntimePcControls = "Menu PC pour changer en jeu: remplace le script du PC du Centre Pokemon uniquement si cette option est cochee. Cette option ne desactive pas l'EXP Share toute seule; elle permet seulement de modifier les options runtime en jeu. Decoche, le menu PC vanilla reste intact et les options du logiciel sont appliquees directement."
-            DynamicExpLevelCap = "Levelcap EXP dynamique: n'ecrit plus l'ancien IPS brut. Le chemin fiable passe par ExLaunch a la fin du calcul EXP. L'outil deploie le main.npdm ExLaunch-compatible du projet avec le module custom subsdk9."
-            StrictBossMaxLevelCap = "Cap boss max strict: calcule toujours les caps et peut normaliser les equipes boss listees, mais le blocage EXP en jeu requiert maintenant le module ExLaunch. L'outil deploie le main.npdm ExLaunch-compatible du projet avec le module custom subsdk9. Sans ce module, le JSON sert de reference et l'EXP n'est pas bloquee."
-            MainStorySoftLevelCap = "Cap progression principale souple: calcule une table de 9 caps basee sur les badges, mais chaque palier prend le niveau max des gros combats de progression du meme bloc plutot que seulement la prochaine arene. Les arenes restent l'ossature, et les vrais boss antagonistes / fin d'histoire du meme bloc sont ajoutes pour eviter l'overlevel sans changer le cap toutes les 10 minutes. L'application en jeu demande le module ExLaunch; le detail est exporte dans story-main-progression-soft-caps.json."
-            GymLeagueStoryLevelCap = "Cap EXP histoire arenes/Tarak: calcule une table de 9 caps depuis les vraies equipes generees. L'application en jeu requiert ExLaunch. L'outil deploie le main.npdm ExLaunch-compatible du projet avec le module custom subsdk9."
-            StoryMajorBattleOrderLevelCap = "Mode ordre histoire principale: garde le patch EXP dynamique global puis normalise une liste fixe et ordonnee des gros combats de l'histoire principale sur le niveau max de chaque equipe apres randomisation. Ca couvre les arenes plus les combats majeurs de Nabil, Travis, Rosemary, Liv, Shehroz et Tarak, exportes dans story-major-battle-caps.json, avec toutes les variantes dependantes du starter ou de la version presentes dans les donnees dresseurs. Ca repose encore sur une liste ordonnee preparee a la main, pas sur un lecteur temps reel de l'etat cache du scenario."
-            AutoInstallToEden = "Installation auto vers les emulateurs coches et detectes: apres la generation, l'outil tente de copier romfs, exefs et le sous-arbre sdmc genere vers tous les emulateurs coches et trouves sur le PC."
-            EdenModName = "Nom du dossier de mod installe: controle le nom final du dossier de mod dans le chemin load/mods propre a chaque emulateur. Garde Randomizer si tu veux simplement remplacer la run precedente."
-            InstallTargetEden = "Installer vers Eden: utilise %AppData%\\eden\\load\\<titleId>\\<nomDuMod> plus %AppData%\\eden\\sdmc\\config\\swsh-mods-exl\\config.toml."
-            InstallTargetRyujinx = "Installer vers Ryujinx: utilise %AppData%\\Ryujinx\\sdcard\\atmosphere\\contents\\<titleId>\\<nomDuMod> plus %AppData%\\Ryujinx\\sdcard\\config\\swsh-mods-exl\\config.toml. Les anciennes installations mods\\contents sont nettoyees automatiquement."
-            InstallTargetYuzu = "Installer vers Yuzu: utilise %AppData%\\yuzu\\load\\<titleId>\\<nomDuMod> plus %AppData%\\yuzu\\sdmc\\config\\swsh-mods-exl\\config.toml."
-            InstallTargetSudachi = "Installer vers Sudachi: utilise %AppData%\\sudachi\\load\\<titleId>\\<nomDuMod> plus %AppData%\\sudachi\\sdmc\\config\\swsh-mods-exl\\config.toml."
-            InstallTargetCitron = "Installer vers Citron: utilise %AppData%\\citron\\load\\<titleId>\\<nomDuMod> plus %AppData%\\citron\\sdmc\\config\\swsh-mods-exl\\config.toml."
-            InstallTargetSuyu = "Installer vers Suyu: utilise %AppData%\\suyu\\load\\<titleId>\\<nomDuMod> plus %AppData%\\suyu\\sdmc\\config\\swsh-mods-exl\\config.toml."
-            InstallTargetCitronNeo = "Installer vers Citron Neo: cherche les dossiers style Citron Neo / Citron Team comme %AppData%\\citron team, puis utilise load\\<titleId>\\<nomDuMod> et sdmc\\config\\swsh-mods-exl\\config.toml."
-            DifficultyProfile = "Profil de difficulte: applique un preset coherent d'options de randomisation sans toucher aux chemins ROMFS/ExeFS, au dossier de sortie ou aux cibles emulateur. Exemple: Strategique Smogon passe les moves, talents et objets dresseurs en choix Smogon; Hardcore arenes + ligue met les boss selectionnes a 6 Pokemon."
-            ValidateBuild = "Validation du build: verifie les dossiers source, les fichiers ROMFS requis, le besoin ExeFS pour les options runtime, les plages numeriques et les incompatibilites evidentes avant generation. Exemple: si les combats visibles caches sont actives sans dump ExeFS, la generation est bloquee avant d'ecrire un mod casse."
-            BuildSummary = "Resume du build: ouvre la meme page 'ce qui va etre modifie' que celle affichee avant generation. Exemple: avant d'ecrire les fichiers, tu vois si dresseurs, rencontres, EXP Share, ExLaunch, options Smogon et installations emulateur seront changes."
-        }
-    }
-}
-
-function Get-RandomizerHelpText {
-    param(
-        [string]$Language = "fr",
-        [string]$GameVersion = "Sword",
-        [string]$ModName = "Randomizer",
-        [string]$OutputRomfsRoot = ""
-    )
-
-    $lang = if ($Language -eq "en") { "en" } else { "fr" }
-    $ui = Get-UiStrings -Language $lang
-    Add-ConcreteDescriptionExamples -Ui $ui -Language $lang
-
-    $labels = $ui.Labels
-    $descriptions = $ui.Descriptions
-    $lines = New-Object System.Collections.Generic.List[string]
-
-    $addLine = {
-        param([string]$Text = "")
-        [void]$lines.Add($Text)
-    }
-    $addSection = {
-        param([string]$Title)
-        & $addLine ""
-        & $addLine ("=== {0} ===" -f $Title)
-    }
-    $addOption = {
-        param(
-            [string]$Label,
-            [string]$Description
-        )
-        if (-not [string]::IsNullOrWhiteSpace($Label) -and -not [string]::IsNullOrWhiteSpace($Description)) {
-            & $addLine ("- {0}: {1}" -f $Label, $Description)
-        }
-    }
-    $addKey = {
-        param(
-            [string]$Key,
-            [string]$Fallback = ""
-        )
-        $label = [string]$labels[$Key]
-        $description = [string]$descriptions[$Key]
-        if ([string]::IsNullOrWhiteSpace($description)) {
-            $description = $Fallback
-        }
-        & $addOption $label $description
-    }
-
-    if ($lang -eq "en") {
-        & $addLine "PokeFeur Randomizer help"
-        & $addLine "Every option below is generated from the same labels/descriptions used by the interface. Examples use Victreebel and Empoleon so the behavior stays concrete."
-        & $addSection "Main build"
-        & $addOption $ui.SourceLabel "Folder from the user's ROMFS dump. Example: select the romfs folder from Pokemon Sword/Shield; if the expected SWSH files are missing, generation must stop instead of producing a broken mod."
-        & $addOption $ui.SourceExefsLabel "Folder from the user's ExeFS dump. Example: select the exefs folder next to your dump when a runtime flow asks for it. The shipped ExLaunch package now provides its own compatible main.npdm/subsdk9 payloads."
-        & $addOption $ui.OutputLabel "Root folder where the generated mod is written. Example: choosing output\\Sword always creates romfs there; exefs and sdmc are added only when an ExeFS folder is explicitly provided for ExLaunch/runtime features."
-        & $addOption $ui.GameVersion "Chooses the title ID and version-specific install paths. Example: Sword and Shield use different emulator content folders."
-        & $addOption $ui.Seed "Controls repeatability. Example: seed 123 always produces the same Victreebel to Empoleon style mappings; -1 creates a new random seed."
-        & $addOption $ui.UiLanguage "Changes the software language immediately."
-        & $addOption $ui.ReportLanguage "Changes labels in JSON reports without changing the randomization itself."
-        & $addOption $ui.Theme "Switches the interface theme."
-        & $addOption $ui.DifficultyProfile $descriptions.DifficultyProfile
-        & $addOption $ui.ValidateBuild $descriptions.ValidateBuild
-        & $addOption $ui.BuildSummary $descriptions.BuildSummary
-        & $addOption $ui.Generate "Builds the mod from the user ROMFS/ExeFS folders and current options."
-        & $addOption "Export preset / Import preset" "Preset JSON saves and restores the software configuration only. Example: export your trainer/encounter settings, then import them later before generating another run."
-    } else {
-        & $addLine "Aide du PokeFeur Randomizer"
-        & $addLine "Chaque option ci-dessous reprend les memes libelles/descriptions que l'interface. Les exemples utilisent Empiflor et Pingoleon pour que l'effet soit concret."
-        & $addSection "Generation principale"
-        & $addOption $ui.SourceLabel "Dossier romfs du dump utilisateur. Exemple: selectionne le dossier romfs de Pokemon Epee/Bouclier; si les fichiers SWSH attendus manquent, la generation doit s'arreter au lieu de sortir un mod casse."
-        & $addOption $ui.SourceExefsLabel "Dossier exefs du dump utilisateur. Exemple: selectionne le dossier exefs a cote de ton dump quand un flux runtime le demande. Le package ExLaunch fourni embarque maintenant son propre couple main.npdm/subsdk9 compatible."
-        & $addOption $ui.OutputLabel "Dossier racine ou le mod genere est ecrit. Exemple: choisir output\\Epee cree toujours romfs dedans; exefs et sdmc ne sont ajoutes que si un dossier ExeFS est explicitement fourni pour les options ExLaunch/runtime."
-        & $addOption $ui.GameVersion "Choisit le title ID et les chemins d'installation selon le jeu. Exemple: Epee et Bouclier n'utilisent pas le meme dossier de contenu emulateur."
-        & $addOption $ui.Seed "Controle la reproductibilite. Exemple: seed 123 redonne toujours les memes mappings du style Empiflor vers Pingoleon; -1 cree un nouveau tirage."
-        & $addOption $ui.UiLanguage "Change immediatement la langue du logiciel."
-        & $addOption $ui.ReportLanguage "Change la langue des libelles dans les rapports JSON sans changer la randomisation."
-        & $addOption $ui.Theme "Change le theme visuel du logiciel."
-        & $addOption $ui.DifficultyProfile $descriptions.DifficultyProfile
-        & $addOption $ui.ValidateBuild $descriptions.ValidateBuild
-        & $addOption $ui.BuildSummary $descriptions.BuildSummary
-        & $addOption $ui.Generate "Genere le mod depuis les dossiers ROMFS/ExeFS utilisateur et les options actuelles."
-        & $addOption "Exporter preset / Importer preset" "Le preset JSON sauvegarde et restaure seulement la configuration du logiciel. Exemple: exporte tes reglages dresseurs/rencontres, puis importe-les plus tard avant une autre generation."
-    }
-
-    & $addSection $ui.Tabs.General
-    foreach ($key in @("DisableExpShare", "GymLeagueStoryLevelCap", "RuntimePcControls", "AutoInstallToEden", "EdenModName", "InstallTargetEden", "InstallTargetRyujinx", "InstallTargetYuzu", "InstallTargetSudachi", "InstallTargetCitron", "InstallTargetSuyu", "InstallTargetCitronNeo")) {
-        & $addKey $key
-    }
-
-    & $addSection $ui.Tabs.Trainers
-    foreach ($key in @(
-        "TrainerSpecies", "TrainerMoves", "TrainerSmogonMoveFallback", "TrainerItems", "TrainerItemPool", "TrainerAbility", "TrainerIV", "TrainerEV", "TrainerAddedSlotSpecies", "TrainerDuplicateMode",
-        "TrainerLevel", "TrainerTeamSize", "ForceAllTeams", "ForceBossTeams", "BossTeamsScope", "RandomizeNatures", "AllowLegendaryTrainers", "TrainerShinyChance",
-        "TrainerTypeThemed", "ForceTrainerFullyEvolved", "TrainerDynamaxLevel", "ForceTrainerCanDynamax", "MaxTrainerAI"
-    )) {
-        & $addKey $key
-    }
-    if ($lang -eq "en") {
-        & $addOption $labels.TrainerTeamMin "Minimum trainer party size. Example: 3 forces tiny teams upward to at least 3 Pokemon."
-        & $addOption $labels.TrainerTeamMax "Maximum trainer party size. Example: 4 prevents regular trainers from going above 4 Pokemon unless a 6-Pokemon helper applies first."
-        & $addOption $labels.TrainerFullyEvolvedLevel "Level used by Force final evolutions. Example: 40 means Empoleon-style final stages are forced from level 40 onward."
-    } else {
-        & $addOption $labels.TrainerTeamMin "Taille minimum des equipes de dresseurs. Exemple: 3 remonte les petites equipes a au moins 3 Pokemon."
-        & $addOption $labels.TrainerTeamMax "Taille maximum des equipes de dresseurs. Exemple: 4 empeche les dresseurs classiques de depasser 4 Pokemon sauf si une aide equipe a 6 s'applique avant."
-        & $addOption $labels.TrainerFullyEvolvedLevel "Niveau utilise par Forcer les evolutions finales. Exemple: 40 force les stades finaux comme Pingoleon a partir du niveau 40."
-    }
-
-    & $addSection $ui.Tabs.Pokemon
-    foreach ($key in @(
-        "TypeMode", "TypesMonotypeOnly", "AbilityMode", "AllowWonderGuard", "StatMode", "ExpYieldMultiplier", "ForceOneExpYield",
-        "MoveTypeMode", "MovePowerMode", "MovePPMode", "MoveAccuracyMode", "MoveCategoryMode"
-    )) {
-        & $addKey $key
-    }
-    if ($lang -eq "en") {
-        & $addOption $labels.MovePowerMin "Minimum power used when move power is randomized. Example: 40 prevents weak damaging moves from rolling below 40 power."
-        & $addOption $labels.MovePowerMax "Maximum power used when move power is randomized. Example: 120 prevents random moves from becoming absurdly strong."
-        & $addOption $labels.MovePPMin "Minimum PP used when move PP is randomized."
-        & $addOption $labels.MovePPMax "Maximum PP used when move PP is randomized."
-        & $addOption $labels.MoveAccuracyMin "Minimum accuracy used when move accuracy is randomized."
-        & $addOption $labels.MoveAccuracyMax "Maximum accuracy used when move accuracy is randomized."
-    } else {
-        & $addOption $labels.MovePowerMin "Puissance minimum quand la puissance des attaques est randomisee. Exemple: 40 empeche les attaques offensives de tomber sous 40."
-        & $addOption $labels.MovePowerMax "Puissance maximum quand la puissance des attaques est randomisee. Exemple: 120 evite des attaques random absurdes."
-        & $addOption $labels.MovePPMin "PP minimum quand les PP des attaques sont randomises."
-        & $addOption $labels.MovePPMax "PP maximum quand les PP des attaques sont randomises."
-        & $addOption $labels.MoveAccuracyMin "Precision minimum quand la precision des attaques est randomisee."
-        & $addOption $labels.MoveAccuracyMax "Precision maximum quand la precision des attaques est randomisee."
-    }
-
-    & $addSection $ui.Tabs.Evolutions
-    foreach ($key in @("EvolutionMode", "AllowLegendaryEvo", "NormalizeFriendship", "NormalizeTrade", "NormalizeSpecial")) {
-        & $addKey $key
-    }
-    if ($lang -eq "en") {
-        & $addOption $labels.FriendshipLevel "Level used after converting friendship evolutions. Example: if set to 30, that evolution happens at level 30."
-        & $addOption $labels.TradeLevel "Level used after converting trade evolutions. Example: if set to 36, the old trade evolution becomes level 36."
-        & $addOption $labels.SpecialLevel "Level used after converting special evolutions such as location, weather or item conditions."
-    } else {
-        & $addOption $labels.FriendshipLevel "Niveau utilise apres conversion des evolutions par amitie. Exemple: si tu mets 30, l'evolution arrive au niveau 30."
-        & $addOption $labels.TradeLevel "Niveau utilise apres conversion des evolutions par echange. Exemple: si tu mets 36, l'ancienne evolution par echange devient niveau 36."
-        & $addOption $labels.SpecialLevel "Niveau utilise apres conversion des evolutions speciales comme lieu, meteo ou condition d'objet."
-    }
-
-    & $addSection $ui.Tabs.Gifts
-    foreach ($key in @("StarterMode", "Starter1", "Starter2", "Starter3", "PatchStarters", "GiftMode", "AllowLegendaryGifts", "TradeMode", "AllowLegendaryTrades")) {
-        & $addKey $key
-    }
-    if ($lang -eq "en") {
-        & $addOption "Manual starters" "Leave all 3 boxes empty to use the starter mode. Fill all 3 boxes to force the exact trio, for example Victreebel / Empoleon / Victreebel."
-    } else {
-        & $addOption "Starters manuels" "Laisse les 3 champs vides pour utiliser le mode starters. Remplis les 3 champs pour imposer exactement le trio, par exemple Empiflor / Pingoleon / Empiflor."
-    }
-
-    & $addSection $ui.Tabs.Encounters
-    foreach ($key in @(
-        "StaticMode", "AllowLegendaryStatic", "StaticStableMapping", "GrassMode", "AllowLegendaryGrass", "GrassStableMapping",
-        "VisibleEncounterBehavior", "UndergroundMode", "AllowLegendaryUnderground"
-    )) {
-        & $addKey $key
-    }
-
-    if ($lang -eq "en") {
-        & $addSection "Mode values"
-        & $addLine "- Full random: any allowed Pokemon can be picked. Example: Victreebel can become Empoleon."
-        & $addLine "- Balanced random (similar BST): keeps replacements close in total base stats. Example: weak early Pokemon stay closer to early-game power."
-        & $addLine "- Keep vanilla: leaves that data unchanged."
-        & $addLine "- Stable by slot: each table slot gets its own stable result. Example: Route 4 Victreebel can map to Empoleon while another Victreebel elsewhere maps differently."
-        & $addLine "- Stable by species: the same vanilla species maps to the same result everywhere. Example: every Victreebel becomes Empoleon."
-        & $addLine "- Fresh roll per encounter entry: the build makes fresh rolls for encounter entries; it is the chaotic mode."
-        & $addLine "- Classic visible = battle: what you see outside is what you fight."
-        & $addLine "- Vanilla visible + hidden battle: outside visuals stay vanilla, but the battle species can be random."
-        & $addLine "- Random visible + hidden battle: outside visuals are random and the battle roll is separate."
-    } else {
-        & $addSection "Valeurs des menus"
-        & $addLine "- Random complet: n'importe quel Pokemon autorise peut etre tire. Exemple: Empiflor peut devenir Pingoleon."
-        & $addLine "- Random equilibre (BST proche): garde une puissance globale proche. Exemple: un Pokemon faible de debut de jeu reste dans une puissance comparable."
-        & $addLine "- Garder vanilla: ne modifie pas ces donnees."
-        & $addLine "- Stable par slot: chaque slot de table garde son propre resultat. Exemple: l'Empiflor d'une route peut devenir Pingoleon pendant qu'un autre Empiflor ailleurs devient autre chose."
-        & $addLine "- Stable par espece: la meme espece vanilla devient le meme remplacement partout. Exemple: tous les Empiflor deviennent Pingoleon."
-        & $addLine "- Tirage frais par entree: la generation fait un tirage frais pour chaque entree de rencontre; c'est le mode chaotique."
-        & $addLine "- Classique visible = combat: tu combats ce que tu vois dehors."
-        & $addLine "- Visuel vanilla + combat cache: les visuels dehors restent vanilla, mais le combat peut etre random."
-        & $addLine "- Visuel random + combat cache: les visuels dehors sont random et le combat utilise un tirage separe."
-    }
-
-    & $addSection $ui.Tabs.Reset
-    if ($lang -eq "en") {
-        & $addOption $labels.ResetTargets "Choose which detected emulator installs should be cleaned."
-        & $addOption $labels.ResetButton "Deletes only generated mod files for the selected emulator targets."
-    } else {
-        & $addOption $labels.ResetTargets "Choisit quelles installations emulateur detectees doivent etre nettoyees."
-        & $addOption $labels.ResetButton "Supprime uniquement les fichiers de mod generes pour les emulateurs selectionnes."
-    }
-    & $addLine $labels.ResetDefault
-
-    $installTitle = if ($lang -eq "en") { "Install paths" } else { "Chemins d'installation" }
-    & $addSection $installTitle
-    & $addLine (Get-InstallationGuideText -Language $lang -GameVersion $GameVersion -ModName $ModName -OutputRomfsRoot $OutputRomfsRoot)
-
-    return ($lines -join [Environment]::NewLine)
-}
-
-function Set-LocalizedComboItems {
-    param(
-        [System.Windows.Forms.ComboBox]$Combo,
-        [array]$Items
-    )
-
-    $currentValue = Get-ComboValue -Combo $Combo
-    $Combo.Items.Clear()
-    foreach ($item in $Items) {
-        Add-ComboBoxItem -Combo $Combo -Label $item.Label -Value $item.Value
-    }
-    $Combo.DisplayMember = "Label"
-
-    if ($currentValue) {
-        for ($i = 0; $i -lt $Combo.Items.Count; $i++) {
-            if ($Combo.Items[$i].Value -eq $currentValue) {
-                $Combo.SelectedIndex = $i
-                return
-            }
-        }
-    }
-
-    if ($Combo.Items.Count -gt 0) {
-        $Combo.SelectedIndex = 0
-    }
-}
-
-function Get-NormalizedGuiTheme {
-    param([string]$Theme)
-
-    $value = ([string]$Theme).Trim().ToLowerInvariant()
-    if ($value -in @("dark", "sombre", "noir")) {
-        return "Dark"
-    }
-
-    return "Light"
-}
-
-function Get-GuiThemePalette {
-    param([string]$Theme)
-
-    if ((Get-NormalizedGuiTheme -Theme $Theme) -eq "Dark") {
-        return @{
-            Name = "Dark"
-            Form = [System.Drawing.Color]::FromArgb(8, 12, 20)
-            Panel = [System.Drawing.Color]::FromArgb(17, 29, 53)
-            Surface = [System.Drawing.Color]::FromArgb(13, 22, 38)
-            Input = [System.Drawing.Color]::FromArgb(11, 17, 29)
-            InputReadOnly = [System.Drawing.Color]::FromArgb(16, 26, 45)
-            Button = [System.Drawing.Color]::FromArgb(17, 29, 53)
-            PrimaryButton = [System.Drawing.Color]::FromArgb(20, 82, 116)
-            Text = [System.Drawing.Color]::FromArgb(226, 234, 248)
-            MutedText = [System.Drawing.Color]::FromArgb(107, 135, 176)
-            Border = [System.Drawing.Color]::FromArgb(30, 48, 88)
-            SelectedTab = [System.Drawing.Color]::FromArgb(18, 42, 70)
-            TabHeader = [System.Drawing.Color]::FromArgb(13, 22, 38)
-            Accent = [System.Drawing.Color]::FromArgb(79, 195, 247)
-            AccentSoft = [System.Drawing.Color]::FromArgb(21, 64, 92)
-            Gold = [System.Drawing.Color]::FromArgb(247, 201, 72)
-            Green = [System.Drawing.Color]::FromArgb(74, 222, 128)
-            Red = [System.Drawing.Color]::FromArgb(248, 113, 113)
-            Pink = [System.Drawing.Color]::FromArgb(244, 114, 182)
-            Purple = [System.Drawing.Color]::FromArgb(167, 139, 250)
-        }
-    }
-
-    return @{
-        Name = "Light"
-        Form = [System.Drawing.SystemColors]::Control
-        Panel = [System.Drawing.SystemColors]::Control
-        Surface = [System.Drawing.SystemColors]::Control
-        Input = [System.Drawing.SystemColors]::Window
-        InputReadOnly = [System.Drawing.SystemColors]::Window
-        Button = [System.Drawing.SystemColors]::Control
-        PrimaryButton = [System.Drawing.SystemColors]::Control
-        Text = [System.Drawing.SystemColors]::ControlText
-        MutedText = [System.Drawing.SystemColors]::ControlText
-        Border = [System.Drawing.SystemColors]::ControlDark
-        SelectedTab = [System.Drawing.SystemColors]::Window
-        TabHeader = [System.Drawing.SystemColors]::Control
-        Accent = [System.Drawing.Color]::FromArgb(49, 101, 205)
-        AccentSoft = [System.Drawing.Color]::FromArgb(225, 235, 255)
-        Gold = [System.Drawing.Color]::FromArgb(173, 125, 13)
-        Green = [System.Drawing.Color]::FromArgb(38, 138, 79)
-        Red = [System.Drawing.Color]::FromArgb(190, 60, 60)
-        Pink = [System.Drawing.Color]::FromArgb(184, 69, 136)
-        Purple = [System.Drawing.Color]::FromArgb(94, 70, 170)
-    }
-}
-
-function Enable-GuiDoubleBuffer {
-    param([System.Windows.Forms.Control]$Control)
-
-    if (-not $Control) {
-        return
-    }
-
-    try {
-        $prop = [System.Windows.Forms.Control].GetProperty("DoubleBuffered", [System.Reflection.BindingFlags] "Instance, NonPublic")
-        if ($prop) {
-            $prop.SetValue($Control, $true, $null)
-        }
-    } catch {
-    }
-}
-
-function Add-PokeFeurBackground {
-    param([System.Windows.Forms.Form]$Form)
-
-    $Form.Add_Paint({
-        param($sender, $eventArgs)
-        $palette = Get-GuiThemePalette -Theme $script:GuiTheme
-        $g = $eventArgs.Graphics
-        $g.Clear($palette.Form)
-
-        $gridPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(18, $palette.Accent))
-        $linePen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(26, $palette.Border))
-        $glowBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(24, $palette.Accent))
-        $goldBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(16, $palette.Gold))
-        try {
-            for ($x = 0; $x -lt $sender.ClientSize.Width; $x += 40) {
-                $g.DrawLine($gridPen, $x, 0, $x, $sender.ClientSize.Height)
-            }
-            for ($y = 0; $y -lt $sender.ClientSize.Height; $y += 40) {
-                $g.DrawLine($gridPen, 0, $y, $sender.ClientSize.Width, $y)
-            }
-            $g.FillRectangle($glowBrush, 0, 0, $sender.ClientSize.Width, 88)
-            $g.FillEllipse($goldBrush, $sender.ClientSize.Width - 260, 14, 210, 120)
-            $g.DrawLine($linePen, 0, 88, $sender.ClientSize.Width, 88)
-        } finally {
-            $gridPen.Dispose()
-            $linePen.Dispose()
-            $glowBrush.Dispose()
-            $goldBrush.Dispose()
-        }
-    })
-}
-
-function Apply-GuiThemeToControl {
-    param(
-        [System.Windows.Forms.Control]$Control,
-        [hashtable]$Palette
-    )
-
-    if (-not $Control) {
-        return
-    }
-
-    if ($Control -is [System.Windows.Forms.Form]) {
-        $Control.BackColor = $Palette.Form
-        $Control.ForeColor = $Palette.Text
-        $Control.Font = New-GuiFont -Size 9.5
-    } elseif ($Control -is [System.Windows.Forms.TabPage] -or $Control -is [System.Windows.Forms.Panel] -or $Control -is [System.Windows.Forms.GroupBox]) {
-        $tag = [string]$Control.Tag
-        if ($tag -eq "HeaderPanel") {
-            $Control.BackColor = $Palette.Surface
-        } elseif ($tag -eq "ChromePanel") {
-            $Control.BackColor = $Palette.Panel
-        } elseif ($tag -eq "ActionPanel") {
-            $Control.BackColor = $Palette.Surface
-        } else {
-            $Control.BackColor = $Palette.Panel
-        }
-        $Control.ForeColor = $Palette.Text
-        if ($Control -is [System.Windows.Forms.GroupBox]) {
-            $Control.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
-        }
-    } elseif ($Control -is [System.Windows.Forms.TextBox]) {
-        $Control.BackColor = if ($Control.ReadOnly) { $Palette.InputReadOnly } else { $Palette.Input }
-        $Control.ForeColor = $Palette.Text
-        $Control.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
-    } elseif ($Control -is [System.Windows.Forms.ComboBox]) {
-        $Control.BackColor = $Palette.Input
-        $Control.ForeColor = $Palette.Text
-        $Control.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
-    } elseif ($Control -is [System.Windows.Forms.Button]) {
-        $Control.UseVisualStyleBackColor = $false
-        $Control.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
-        $Control.BackColor = if ([string]$Control.Tag -eq "PrimaryButton") { $Palette.PrimaryButton } else { $Palette.Button }
-        $Control.ForeColor = $Palette.Text
-        $Control.FlatAppearance.BorderColor = if ([string]$Control.Tag -eq "PrimaryButton") { $Palette.Accent } else { $Palette.Border }
-        $Control.FlatAppearance.MouseOverBackColor = if ([string]$Control.Tag -eq "PrimaryButton") { $Palette.AccentSoft } else { $Palette.SelectedTab }
-        $Control.FlatAppearance.MouseDownBackColor = $Palette.Input
-        $Control.FlatAppearance.BorderSize = 1
-        if ([string]$Control.Tag -eq "PrimaryButton") {
-            $Control.Font = New-GuiFont -Size 11 -Style ([System.Drawing.FontStyle]::Bold)
-        } else {
-            $Control.Font = New-GuiFont -Size 9.25 -Style ([System.Drawing.FontStyle]::Bold)
-        }
-    } elseif ($Control -is [System.Windows.Forms.CheckBox]) {
-        $Control.UseVisualStyleBackColor = $false
-        $Control.BackColor = $Palette.Panel
-        $Control.ForeColor = $Palette.Text
-    } elseif ($Control -is [System.Windows.Forms.Label]) {
-        $Control.BackColor = [System.Drawing.Color]::Transparent
-        $Control.ForeColor = $Palette.MutedText
-        if ([string]$Control.Tag -eq "BrandPoke") {
-            $Control.ForeColor = $Palette.Accent
-            $Control.Font = New-GuiFont -Family "Segoe UI" -Size 22 -Style ([System.Drawing.FontStyle]::Bold)
-        } elseif ([string]$Control.Tag -eq "BrandFeur") {
-            $Control.ForeColor = $Palette.Gold
-            $Control.Font = New-GuiFont -Family "Segoe UI" -Size 22 -Style ([System.Drawing.FontStyle]::Bold)
-        } elseif ([string]$Control.Tag -eq "HeroSub") {
-            $Control.ForeColor = $Palette.MutedText
-            $Control.Font = New-GuiFont -Size 9.5 -Style ([System.Drawing.FontStyle]::Bold)
-        } elseif ([string]$Control.Tag -eq "Title") {
-            $Control.ForeColor = $Palette.Accent
-            $Control.Font = New-GuiFont -Size 13 -Style ([System.Drawing.FontStyle]::Bold)
-        } elseif ([string]$Control.Tag -eq "Accent") {
-            $Control.ForeColor = $Palette.Purple
-        } elseif ([string]$Control.Tag -eq "InputLabel") {
-            $Control.ForeColor = $Palette.MutedText
-            $Control.Font = New-GuiFont -Size 9 -Style ([System.Drawing.FontStyle]::Bold)
-        }
-    } elseif ($Control -is [System.Windows.Forms.TabControl]) {
-        $Control.BackColor = $Palette.Form
-        $Control.ForeColor = $Palette.Text
-    } else {
-        $Control.BackColor = $Palette.Form
-        $Control.ForeColor = $Palette.Text
-    }
-
-    foreach ($child in $Control.Controls) {
-        Apply-GuiThemeToControl -Control $child -Palette $Palette
-    }
-}
-
-function Apply-GuiTheme {
-    param(
-        [System.Windows.Forms.Control]$Root,
-        [string]$Theme
-    )
-
-    $script:GuiTheme = Get-NormalizedGuiTheme -Theme $Theme
-    $palette = Get-GuiThemePalette -Theme $script:GuiTheme
-    Apply-GuiThemeToControl -Control $Root -Palette $palette
-    $Root.Refresh()
-}
-
-function Show-Gui {
-    Add-Type -AssemblyName System.Windows.Forms
-    Add-Type -AssemblyName System.Drawing
-
-    $script:UiLanguage = if (([string]$UiLanguage).ToLowerInvariant() -eq "en") { "en" } else { "fr" }
-    $script:GuiTheme = Get-NormalizedGuiTheme -Theme $GuiTheme
-
-    $form = New-Object System.Windows.Forms.Form
-    $form.Text = "PokeFeur Randomizer SWSH V4.17"
-    $form.ClientSize = New-Object System.Drawing.Size(1164, 980)
-    $form.MinimumSize = New-Object System.Drawing.Size(1180, 1020)
-    $form.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedSingle
-    $form.MaximizeBox = $false
-    $form.StartPosition = "CenterScreen"
-    $form.Font = New-GuiFont -Size 9.5
-    Enable-GuiDoubleBuffer -Control $form
-    Add-PokeFeurBackground -Form $form
-
-    $controls = @{}
-    $initialGameVersion = Get-NormalizedGameVersionSelection -Value $GameVersion
-    if ($initialGameVersion -eq "Auto") {
-        $initialGameVersion = "Sword"
-    }
-    $initialSourceRomfs = if (-not [string]::IsNullOrWhiteSpace($SourceRomfs)) {
-        $SourceRomfs
-    } else {
-        Get-ExistingDefaultPathOrEmpty -Path (Get-DefaultSourceRomfsPath -GameVersion $initialGameVersion)
-    }
-    $initialSourceExefs = if (-not [string]::IsNullOrWhiteSpace($SourceExefs)) {
-        $SourceExefs
-    } else {
-        ""
-    }
-    $initialOutputRomfs = if (-not [string]::IsNullOrWhiteSpace($OutputRomfs)) { $OutputRomfs } else { Get-DefaultOutputRomfsPath -GameVersion $initialGameVersion }
-
-    $headerPanel = New-GuiChromePanel -X 0 -Y 0 -Width 1164 -Height 90 -Tag "HeaderPanel"
-    $form.Controls.Add($headerPanel)
-    $heroPanel = New-GuiChromePanel -X 18 -Y 100 -Width 748 -Height 204 -Tag "ChromePanel"
-    $form.Controls.Add($heroPanel)
-    $versionPanel = New-GuiChromePanel -X 778 -Y 100 -Width 160 -Height 80 -Tag "ChromePanel"
-    $form.Controls.Add($versionPanel)
-    $actionPanel = New-GuiChromePanel -X 958 -Y 100 -Width 190 -Height 204 -Tag "ActionPanel"
-    $form.Controls.Add($actionPanel)
-    $headerPanel.SendToBack()
-    $heroPanel.SendToBack()
-    $versionPanel.SendToBack()
-    $actionPanel.SendToBack()
-
-    $brandPoke = New-Label -Text "Poke" -X 24 -Y 16 -Width 96
-    $brandPoke.Size = New-Object System.Drawing.Size(96, 40)
-    $brandPoke.Tag = "BrandPoke"
-    $form.Controls.Add($brandPoke)
-    $brandFeur = New-Label -Text "Feur" -X 116 -Y 16 -Width 88
-    $brandFeur.Size = New-Object System.Drawing.Size(88, 40)
-    $brandFeur.Tag = "BrandFeur"
-    $form.Controls.Add($brandFeur)
-    $heroSub = New-Label -Text "Randomizer Sword / Shield - ROMFS, ExLaunch, presets et installation emulateur" -X 218 -Y 24 -Width 740
-    $heroSub.Tag = "HeroSub"
-    $form.Controls.Add($heroSub)
-
-    $sourceLabel = New-Label -Text "" -X 32 -Y 112
-    $form.Controls.Add($sourceLabel)
-    $sourceBox = New-TextBox -Controls $controls -Name "Source" -X 32 -Y 136 -Width 600 -Text $initialSourceRomfs
-    $form.Controls.Add($sourceBox)
-    $browseSource = New-Object System.Windows.Forms.Button
-    $browseSource.Location = New-Object System.Drawing.Point(642, 134)
-    $browseSource.Size = New-Object System.Drawing.Size(100, 30)
-    $form.Controls.Add($browseSource)
-
-    $gameVersionLabel = New-Label -Text "" -X 790 -Y 112 -Width 120
-    $form.Controls.Add($gameVersionLabel)
-    $gameVersionCombo = New-ComboBox -Controls $controls -Name "GameVersion" -X 790 -Y 136 -Width 140
-    Add-ComboBoxItem -Combo $gameVersionCombo -Label "Bouclier" -Value "Shield"
-    Add-ComboBoxItem -Combo $gameVersionCombo -Label "Epee" -Value "Sword"
-    $gameVersionCombo.DisplayMember = "Label"
-    $gameVersionCombo.SelectedIndex = if ($initialGameVersion -eq "Sword") { 1 } else { 0 }
-    $form.Controls.Add($gameVersionCombo)
-
-    $outputLabel = New-Label -Text "" -X 32 -Y 174 -Width 260
-    $form.Controls.Add($outputLabel)
-    $outputBox = New-TextBox -Controls $controls -Name "Output" -X 32 -Y 198 -Width 280 -Text $initialOutputRomfs
-    $form.Controls.Add($outputBox)
-    $browseOutput = New-Object System.Windows.Forms.Button
-    $browseOutput.Location = New-Object System.Drawing.Point(322, 196)
-    $browseOutput.Size = New-Object System.Drawing.Size(88, 30)
-    $form.Controls.Add($browseOutput)
-
-    $sourceExefsLabel = New-Label -Text "" -X 430 -Y 174 -Width 260
-    $form.Controls.Add($sourceExefsLabel)
-    $sourceExefsBox = New-TextBox -Controls $controls -Name "SourceExefs" -X 430 -Y 198 -Width 220 -Text $initialSourceExefs
-    $form.Controls.Add($sourceExefsBox)
-    $browseSourceExefs = New-Object System.Windows.Forms.Button
-    $browseSourceExefs.Location = New-Object System.Drawing.Point(660, 196)
-    $browseSourceExefs.Size = New-Object System.Drawing.Size(82, 30)
-    $form.Controls.Add($browseSourceExefs)
-
-    $seedLabel = New-Label -Text "" -X 32 -Y 254
-    $form.Controls.Add($seedLabel)
-    $seedBox = New-TextBox -Controls $controls -Name "Seed" -X 32 -Y 278 -Width 120 -Text "-1"
-    $form.Controls.Add($seedBox)
-
-    $uiLangLabel = New-Label -Text "" -X 176 -Y 254 -Width 160
-    $form.Controls.Add($uiLangLabel)
-    $uiLangCombo = New-ComboBox -Controls $controls -Name "UiLanguage" -X 176 -Y 278 -Width 150
-    Add-ComboBoxItem -Combo $uiLangCombo -Label "Francais" -Value "fr"
-    Add-ComboBoxItem -Combo $uiLangCombo -Label "English" -Value "en"
-    $uiLangCombo.DisplayMember = "Label"
-    $uiLangCombo.SelectedIndex = if ($script:UiLanguage -eq "en") { 1 } else { 0 }
-    $form.Controls.Add($uiLangCombo)
-
-    $reportLangLabel = New-Label -Text "" -X 352 -Y 254 -Width 170
-    $form.Controls.Add($reportLangLabel)
-    $reportLangCombo = New-ComboBox -Controls $controls -Name "ReportLanguage" -X 352 -Y 278 -Width 150
-    Add-ComboBoxItem -Combo $reportLangCombo -Label "Francais" -Value "fr"
-    Add-ComboBoxItem -Combo $reportLangCombo -Label "English" -Value "en"
-    $reportLangCombo.DisplayMember = "Label"
-    $reportLangCombo.SelectedIndex = if (([string]$ReportLanguage).ToLowerInvariant() -eq "en") { 1 } else { 0 }
-    $form.Controls.Add($reportLangCombo)
-
-    $themeLabel = New-Label -Text "" -X 528 -Y 254 -Width 120
-    $form.Controls.Add($themeLabel)
-    $themeCombo = New-ComboBox -Controls $controls -Name "GuiTheme" -X 528 -Y 278 -Width 130
-    Add-ComboBoxItem -Combo $themeCombo -Label "Clair" -Value "Light"
-    Add-ComboBoxItem -Combo $themeCombo -Label "Sombre" -Value "Dark"
-    $themeCombo.DisplayMember = "Label"
-    $themeCombo.SelectedIndex = if ($script:GuiTheme -eq "Dark") { 1 } else { 0 }
-    $form.Controls.Add($themeCombo)
-
-    $folderDialog = New-Object System.Windows.Forms.FolderBrowserDialog
-    $browseSource.Add_Click({
-        if ($folderDialog.ShowDialog() -eq "OK") {
-            $selectedPath = $folderDialog.SelectedPath
-            $selectedRoot = $selectedPath
-            $romfsChild = Join-Path $selectedPath "romfs"
-            if (Test-Path -LiteralPath $romfsChild) {
-                $selectedPath = $romfsChild
-            }
-            $controls.Source.Text = $selectedPath
-            $detectedVersion = Get-SourceGameVersion -RomfsRoot $selectedPath
-            [void](Set-ComboValue -Combo $controls.GameVersion -Value $detectedVersion)
-        }
-    })
-    $browseSourceExefs.Add_Click({
-        if ($folderDialog.ShowDialog() -eq "OK") {
-            $selectedPath = $folderDialog.SelectedPath
-            $exefsChild = Join-Path $selectedPath "exefs"
-            if (Test-Path -LiteralPath (Join-Path $exefsChild "main.npdm")) {
-                $selectedPath = $exefsChild
-            }
-            $controls.SourceExefs.Text = $selectedPath
-        }
-    })
-    $browseOutput.Add_Click({
-        if ($folderDialog.ShowDialog() -eq "OK") { $controls.Output.Text = $folderDialog.SelectedPath }
-    })
-    $controls.GameVersion.Add_SelectedIndexChanged({
-        $selectedVersion = Get-ComboValue -Combo $controls.GameVersion
-        $controls.Source.Text = Get-ExistingDefaultPathOrEmpty -Path (Get-DefaultSourceRomfsPath -GameVersion $selectedVersion)
-        $controls.SourceExefs.Text = ""
-        $controls.Output.Text = Get-DefaultOutputRomfsPath -GameVersion $selectedVersion
-    })
-
-    $runButton = New-Object System.Windows.Forms.Button
-    $runButton.Location = New-Object System.Drawing.Point(974, 116)
-    $runButton.Size = New-Object System.Drawing.Size(160, 94)
-    $runButton.Tag = "PrimaryButton"
-    $form.Controls.Add($runButton)
-
-    $exportPresetButton = New-Object System.Windows.Forms.Button
-    $exportPresetButton.Location = New-Object System.Drawing.Point(974, 220)
-    $exportPresetButton.Size = New-Object System.Drawing.Size(160, 28)
-    $form.Controls.Add($exportPresetButton)
-
-    $importPresetButton = New-Object System.Windows.Forms.Button
-    $importPresetButton.Location = New-Object System.Drawing.Point(974, 254)
-    $importPresetButton.Size = New-Object System.Drawing.Size(160, 28)
-    $form.Controls.Add($importPresetButton)
-
-    function Bring-TopChromeToFront {
-        foreach ($control in @(
-            $brandPoke,
-            $brandFeur,
-            $heroSub,
-            $sourceLabel,
-            $sourceBox,
-            $browseSource,
-            $gameVersionLabel,
-            $gameVersionCombo,
-            $outputLabel,
-            $outputBox,
-            $browseOutput,
-            $sourceExefsLabel,
-            $sourceExefsBox,
-            $browseSourceExefs,
-            $seedLabel,
-            $seedBox,
-            $uiLangLabel,
-            $uiLangCombo,
-            $reportLangLabel,
-            $reportLangCombo,
-            $themeLabel,
-            $themeCombo,
-            $runButton,
-            $exportPresetButton,
-            $importPresetButton
-        )) {
-            if ($control) {
-                $control.BringToFront()
-            }
-        }
-    }
-
-    $tabs = New-Object System.Windows.Forms.TabControl
-    $tabs.Location = New-Object System.Drawing.Point(18, 318)
-    $tabs.Size = New-Object System.Drawing.Size(1130, 520)
-    $tabs.DrawMode = [System.Windows.Forms.TabDrawMode]::OwnerDrawFixed
-    $tabs.SizeMode = [System.Windows.Forms.TabSizeMode]::Fixed
-    $tabs.ItemSize = New-Object System.Drawing.Size(136, 30)
-    $tabs.Add_DrawItem({
-        param($sender, $eventArgs)
-        $palette = Get-GuiThemePalette -Theme $script:GuiTheme
-        $isSelected = ($eventArgs.Index -eq $sender.SelectedIndex)
-        $backColor = if ($isSelected) { $palette.SelectedTab } else { $palette.TabHeader }
-        $textColor = if ($isSelected) { $palette.Accent } else { $palette.Text }
-        $backBrush = New-Object System.Drawing.SolidBrush($backColor)
-        $borderPen = New-Object System.Drawing.Pen($palette.Border)
-        $accentPen = New-Object System.Drawing.Pen($palette.Accent, 2)
-        try {
-            $eventArgs.Graphics.FillRectangle($backBrush, $eventArgs.Bounds)
-            $eventArgs.Graphics.DrawRectangle($borderPen, $eventArgs.Bounds.X, $eventArgs.Bounds.Y, ($eventArgs.Bounds.Width - 1), ($eventArgs.Bounds.Height - 1))
-            if ($isSelected) {
-                $eventArgs.Graphics.DrawLine($accentPen, $eventArgs.Bounds.Left + 8, $eventArgs.Bounds.Bottom - 3, $eventArgs.Bounds.Right - 8, $eventArgs.Bounds.Bottom - 3)
-            }
-            $flags = [System.Windows.Forms.TextFormatFlags]::HorizontalCenter -bor [System.Windows.Forms.TextFormatFlags]::VerticalCenter -bor [System.Windows.Forms.TextFormatFlags]::EndEllipsis
-            [System.Windows.Forms.TextRenderer]::DrawText($eventArgs.Graphics, $sender.TabPages[$eventArgs.Index].Text, $sender.Font, $eventArgs.Bounds, $textColor, $flags)
-        } finally {
-            $backBrush.Dispose()
-            $borderPen.Dispose()
-            $accentPen.Dispose()
-        }
-    })
-    $form.Controls.Add($tabs)
-
-    $generalTab = New-Object System.Windows.Forms.TabPage
-    $tabs.TabPages.Add($generalTab)
-
-    $trainerTab = New-Object System.Windows.Forms.TabPage
-    $tabs.TabPages.Add($trainerTab)
-
-    $pokemonTab = New-Object System.Windows.Forms.TabPage
-    $tabs.TabPages.Add($pokemonTab)
-
-    $evoTab = New-Object System.Windows.Forms.TabPage
-    $tabs.TabPages.Add($evoTab)
-
-    $giftTab = New-Object System.Windows.Forms.TabPage
-    $tabs.TabPages.Add($giftTab)
-
-    $encounterTab = New-Object System.Windows.Forms.TabPage
-    $tabs.TabPages.Add($encounterTab)
-
-    $helpTab = New-Object System.Windows.Forms.TabPage
-    $tabs.TabPages.Add($helpTab)
-
-    $resetTab = New-Object System.Windows.Forms.TabPage
-    $tabs.TabPages.Add($resetTab)
-
-    $generalInfoLabels = @()
-    for ($i = 0; $i -lt 7; $i++) {
-        $generalInfoLabel = New-Label -Text "" -X 18 -Y (18 + (25 * $i)) -Width 1060
-        $generalInfoLabel.ForeColor = (Get-GuiThemePalette -Theme $script:GuiTheme).MutedText
-        $generalInfoLabels += $generalInfoLabel
-        $generalTab.Controls.Add($generalInfoLabel)
-    }
-
-    function Add-HiddenRemovedBuildOption {
-        param(
-            [System.Windows.Forms.Control]$Parent,
-            [System.Collections.Hashtable]$Controls,
-            [string]$Name
-        )
-
-        $hidden = New-CheckBox -Controls $Controls -Name $Name -Text "" -X 0 -Y 0 -Width 1 -Checked $false
-        $hidden.Visible = $false
-        $hidden.Enabled = $false
-        $Parent.Controls.Add($hidden)
-    }
-
-    function Disable-RemovedBuildOptions {
-        param([System.Collections.Hashtable]$Controls)
-
-        foreach ($name in @(
-            "EarlyBike",
-            "DynamicExpLevelCap",
-            "StrictBossMaxLevelCap",
-            "MainStorySoftLevelCap",
-            "StoryMajorBattleOrderLevelCap"
-        )) {
-            if ($Controls.ContainsKey($name)) {
-                $Controls[$name].Checked = $false
-                $Controls[$name].Visible = $false
-                $Controls[$name].Enabled = $false
-            }
-        }
-    }
-
-    foreach ($removedOptionName in @(
-        "EarlyBike",
-        "DynamicExpLevelCap",
-        "StrictBossMaxLevelCap",
-        "MainStorySoftLevelCap",
-        "StoryMajorBattleOrderLevelCap"
-    )) {
-        Add-HiddenRemovedBuildOption -Parent $generalTab -Controls $controls -Name $removedOptionName
-    }
-
-    $generalTab.Controls.Add((New-CheckBox -Controls $controls -Name "DisableExpShare" -Text "" -X 18 -Y 202 -Width 520 -Checked $false))
-    $generalTab.Controls.Add((New-CheckBox -Controls $controls -Name "GymLeagueStoryLevelCap" -Text "" -X 18 -Y 232 -Width 860 -Checked $false))
-    $generalTab.Controls.Add((New-CheckBox -Controls $controls -Name "RuntimePcControls" -Text "" -X 18 -Y 262 -Width 520 -Checked $RuntimePcControls))
-    $generalTab.Controls.Add((New-CheckBox -Controls $controls -Name "AutoInstallToEden" -Text "" -X 18 -Y 292 -Width 390 -Checked ([bool]$AutoInstallToEden)))
-    $edenModNameLabel = New-Label -Text "" -X 430 -Y 294 -Width 150
-    $generalTab.Controls.Add($edenModNameLabel)
-    $edenModNameBox = New-TextBox -Controls $controls -Name "EdenModName" -X 590 -Y 290 -Width 220 -Text $EdenModName
-    $generalTab.Controls.Add($edenModNameBox)
-    $generalTab.Controls.Add((New-CheckBox -Controls $controls -Name "InstallToEden" -Text "" -X 18 -Y 324 -Width 300 -Checked $InstallToEden))
-    $generalTab.Controls.Add((New-CheckBox -Controls $controls -Name "InstallToRyujinx" -Text "" -X 330 -Y 324 -Width 300 -Checked $InstallToRyujinx))
-    $generalTab.Controls.Add((New-CheckBox -Controls $controls -Name "InstallToYuzu" -Text "" -X 642 -Y 324 -Width 300 -Checked $InstallToYuzu))
-    $generalTab.Controls.Add((New-CheckBox -Controls $controls -Name "InstallToSudachi" -Text "" -X 18 -Y 354 -Width 300 -Checked $InstallToSudachi))
-    $generalTab.Controls.Add((New-CheckBox -Controls $controls -Name "InstallToCitron" -Text "" -X 330 -Y 354 -Width 300 -Checked $InstallToCitron))
-    $generalTab.Controls.Add((New-CheckBox -Controls $controls -Name "InstallToSuyu" -Text "" -X 642 -Y 354 -Width 300 -Checked $InstallToSuyu))
-    $generalTab.Controls.Add((New-CheckBox -Controls $controls -Name "InstallToCitronNeo" -Text "" -X 18 -Y 384 -Width 300 -Checked $InstallToCitronNeo))
-    $generalTab.Controls.Add((New-CheckBox -Controls $controls -Name "RaceMode" -Text "Race mode (seed/logs separes)" -X 330 -Y 384 -Width 300 -Checked ([bool]$RaceMode)))
-    $generalTab.Controls.Add((New-CheckBox -Controls $controls -Name "ExportEncounterZoneReport" -Text "JSON zones rencontres" -X 642 -Y 384 -Width 300 -Checked ([bool]$ExportEncounterZoneReport)))
-    $difficultyProfileLabel = New-Label -Text "" -X 330 -Y 414 -Width 170
-    $generalTab.Controls.Add($difficultyProfileLabel)
-    $difficultyProfileCombo = New-ComboBox -Controls $controls -Name "DifficultyProfile" -X 500 -Y 410 -Width 220
-    foreach ($profileItem in Get-DifficultyProfileComboItems -Language $script:UiLanguage) {
-        Add-ComboBoxItem -Combo $difficultyProfileCombo -Label $profileItem.Label -Value $profileItem.Value
-    }
-    $difficultyProfileCombo.DisplayMember = "Label"
-    [void](Set-ComboValue -Combo $difficultyProfileCombo -Value "Custom")
-    $generalTab.Controls.Add($difficultyProfileCombo)
-    $applyDifficultyProfileButton = New-Object System.Windows.Forms.Button
-    $applyDifficultyProfileButton.Location = New-Object System.Drawing.Point(712, 408)
-    $applyDifficultyProfileButton.Size = New-Object System.Drawing.Size(126, 32)
-    $generalTab.Controls.Add($applyDifficultyProfileButton)
-    $validateBuildButton = New-Object System.Windows.Forms.Button
-    $validateBuildButton.Location = New-Object System.Drawing.Point(848, 408)
-    $validateBuildButton.Size = New-Object System.Drawing.Size(126, 32)
-    $generalTab.Controls.Add($validateBuildButton)
-    $buildSummaryButton = New-Object System.Windows.Forms.Button
-    $buildSummaryButton.Location = New-Object System.Drawing.Point(984, 408)
-    $buildSummaryButton.Size = New-Object System.Drawing.Size(126, 32)
-    $generalTab.Controls.Add($buildSummaryButton)
-    Disable-RemovedBuildOptions -Controls $controls
-
-    $helpBox = New-Object System.Windows.Forms.TextBox
-    $helpBox.Multiline = $true
-    $helpBox.ReadOnly = $true
-    $helpBox.ScrollBars = "Vertical"
-    $helpBox.Location = New-Object System.Drawing.Point(18, 18)
-    $helpBox.Size = New-Object System.Drawing.Size(1092, 448)
-    $helpBox.BackColor = [System.Drawing.SystemColors]::Window
-    $helpTab.Controls.Add($helpBox)
-
-    $resetInfoLabel = New-Label -Text "" -X 18 -Y 18 -Width 860
-    $resetTab.Controls.Add($resetInfoLabel)
-    $resetTab.Controls.Add((New-CheckBox -Controls $controls -Name "ResetInstallToEden" -Text "Eden" -X 18 -Y 56 -Width 220 -Checked $InstallToEden))
-    $resetTab.Controls.Add((New-CheckBox -Controls $controls -Name "ResetInstallToRyujinx" -Text "Ryujinx" -X 250 -Y 56 -Width 220 -Checked $InstallToRyujinx))
-    $resetTab.Controls.Add((New-CheckBox -Controls $controls -Name "ResetInstallToYuzu" -Text "Yuzu" -X 482 -Y 56 -Width 220 -Checked $InstallToYuzu))
-    $resetTab.Controls.Add((New-CheckBox -Controls $controls -Name "ResetInstallToSudachi" -Text "Sudachi" -X 18 -Y 84 -Width 220 -Checked $InstallToSudachi))
-    $resetTab.Controls.Add((New-CheckBox -Controls $controls -Name "ResetInstallToCitron" -Text "Citron" -X 250 -Y 84 -Width 220 -Checked $InstallToCitron))
-    $resetTab.Controls.Add((New-CheckBox -Controls $controls -Name "ResetInstallToSuyu" -Text "Suyu" -X 482 -Y 84 -Width 220 -Checked $InstallToSuyu))
-    $resetTab.Controls.Add((New-CheckBox -Controls $controls -Name "ResetInstallToCitronNeo" -Text "Citron Neo" -X 18 -Y 112 -Width 220 -Checked $InstallToCitronNeo))
-    $resetButton = New-Object System.Windows.Forms.Button
-    $resetButton.Location = New-Object System.Drawing.Point(18, 148)
-    $resetButton.Size = New-Object System.Drawing.Size(240, 34)
-    $resetTab.Controls.Add($resetButton)
-    $resetStatusBox = New-Object System.Windows.Forms.TextBox
-    $resetStatusBox.Multiline = $true
-    $resetStatusBox.ReadOnly = $true
-    $resetStatusBox.ScrollBars = "Vertical"
-    $resetStatusBox.Location = New-Object System.Drawing.Point(18, 198)
-    $resetStatusBox.Size = New-Object System.Drawing.Size(892, 248)
-    $resetStatusBox.BackColor = [System.Drawing.SystemColors]::Window
-    $resetTab.Controls.Add($resetStatusBox)
-
-    $trainerSpeciesLabel = New-Label -Text "" -X 18 -Y 18 -Width 220
-    $trainerTab.Controls.Add($trainerSpeciesLabel)
-    $trainerSpeciesCombo = New-ComboBox -Controls $controls -Name "TrainerSpeciesMode" -X 18 -Y 42
-    Add-ComboBoxItem -Combo $trainerSpeciesCombo -Label "Aleatoire complet" -Value "Random"
-    Add-ComboBoxItem -Combo $trainerSpeciesCombo -Label "Aleatoire BST proche" -Value "SimilarBST"
-    Add-ComboBoxItem -Combo $trainerSpeciesCombo -Label "Ne pas changer" -Value "Unchanged"
-    $trainerSpeciesCombo.DisplayMember = "Label"
-    $trainerSpeciesCombo.SelectedIndex = 0
-    $trainerTab.Controls.Add($trainerSpeciesCombo)
-
-    $trainerMovesLabel = New-Label -Text "" -X 270 -Y 18 -Width 180
-    $trainerTab.Controls.Add($trainerMovesLabel)
-    $trainerMoveCombo = New-ComboBox -Controls $controls -Name "TrainerMoveMode" -X 270 -Y 42
-    Add-ComboBoxItem -Combo $trainerMoveCombo -Label "4 attaques aleatoires" -Value "Random4"
-    Add-ComboBoxItem -Combo $trainerMoveCombo -Label "Attaques naturelles au niveau" -Value "LastLevelUp4"
-    Add-ComboBoxItem -Combo $trainerMoveCombo -Label "Strategique Smogon" -Value "SmogonStrategic"
-    Add-ComboBoxItem -Combo $trainerMoveCombo -Label "Smogon + anciennes gens" -Value "SmogonLegacy"
-    Add-ComboBoxItem -Combo $trainerMoveCombo -Label "Ne pas changer" -Value "Unchanged"
-    $trainerMoveCombo.DisplayMember = "Label"
-    $trainerMoveCombo.SelectedIndex = 0
-    $trainerTab.Controls.Add($trainerMoveCombo)
-
-    $trainerSmogonMoveFallbackLabel = New-Label -Text "" -X 270 -Y 68 -Width 150
-    $trainerTab.Controls.Add($trainerSmogonMoveFallbackLabel)
-    $trainerSmogonMoveFallbackCombo = New-ComboBox -Controls $controls -Name "TrainerSmogonMoveFallbackMode" -X 430 -Y 66 -Width 190
-    Add-ComboBoxItem -Combo $trainerSmogonMoveFallbackCombo -Label "Backup niveau" -Value "LastLevelUp4"
-    Add-ComboBoxItem -Combo $trainerSmogonMoveFallbackCombo -Label "Backup random" -Value "Random4"
-    Add-ComboBoxItem -Combo $trainerSmogonMoveFallbackCombo -Label "Backup vanilla" -Value "Unchanged"
-    $trainerSmogonMoveFallbackCombo.DisplayMember = "Label"
-    $trainerSmogonMoveFallbackCombo.SelectedIndex = 0
-    $trainerTab.Controls.Add($trainerSmogonMoveFallbackCombo)
-
-    $trainerItemsLabel = New-Label -Text "" -X 522 -Y 18 -Width 220
-    $trainerTab.Controls.Add($trainerItemsLabel)
-    $trainerItemCombo = New-ComboBox -Controls $controls -Name "TrainerItemMode" -X 522 -Y 42
-    Add-ComboBoxItem -Combo $trainerItemCombo -Label "Random si objet deja present" -Value "RandomWhenPresent"
-    Add-ComboBoxItem -Combo $trainerItemCombo -Label "Objet random sur tous" -Value "ForceAll"
-    Add-ComboBoxItem -Combo $trainerItemCombo -Label "Strategique Smogon" -Value "SmogonStrategic"
-    Add-ComboBoxItem -Combo $trainerItemCombo -Label "Smogon + anciennes gens" -Value "SmogonLegacy"
-    Add-ComboBoxItem -Combo $trainerItemCombo -Label "Supprimer tous les objets" -Value "RemoveAll"
-    Add-ComboBoxItem -Combo $trainerItemCombo -Label "Ne pas changer" -Value "Unchanged"
-    $trainerItemCombo.DisplayMember = "Label"
-    $trainerItemCombo.SelectedIndex = 0
-    $trainerTab.Controls.Add($trainerItemCombo)
-
-    $trainerItemPoolLabel = New-Label -Text "" -X 774 -Y 18 -Width 180
-    $trainerTab.Controls.Add($trainerItemPoolLabel)
-    $trainerItemPoolCombo = New-ComboBox -Controls $controls -Name "TrainerItemPoolMode" -X 774 -Y 42 -Width 220
-    Add-ComboBoxItem -Combo $trainerItemPoolCombo -Label "Pool combat (objets utiles)" -Value "Battle"
-    Add-ComboBoxItem -Combo $trainerItemPoolCombo -Label "Pool large safe (chaotique)" -Value "FullRandom"
-    $trainerItemPoolCombo.DisplayMember = "Label"
-    $trainerItemPoolCombo.SelectedIndex = 0
-    $trainerTab.Controls.Add($trainerItemPoolCombo)
-
-    $trainerAbilityLabel = New-Label -Text "" -X 18 -Y 92 -Width 230
-    $trainerTab.Controls.Add($trainerAbilityLabel)
-    $trainerAbilityCombo = New-ComboBox -Controls $controls -Name "TrainerAbilityMode" -X 18 -Y 116
-    Add-ComboBoxItem -Combo $trainerAbilityCombo -Label "Randomiser le slot de talent" -Value "RandomSlot"
-    Add-ComboBoxItem -Combo $trainerAbilityCombo -Label "Strategique Smogon" -Value "SmogonStrategic"
-    Add-ComboBoxItem -Combo $trainerAbilityCombo -Label "Smogon + anciennes gens" -Value "SmogonLegacy"
-    Add-ComboBoxItem -Combo $trainerAbilityCombo -Label "Ne pas changer" -Value "Unchanged"
-    $trainerAbilityCombo.DisplayMember = "Label"
-    $trainerAbilityCombo.SelectedIndex = 1
-    $trainerTab.Controls.Add($trainerAbilityCombo)
-
-    $trainerIvLabel = New-Label -Text "" -X 270 -Y 92 -Width 120
-    $trainerTab.Controls.Add($trainerIvLabel)
-    $trainerIvCombo = New-ComboBox -Controls $controls -Name "TrainerIVMode" -X 270 -Y 116
-    Add-ComboBoxItem -Combo $trainerIvCombo -Label "31 partout" -Value "Max31"
-    Add-ComboBoxItem -Combo $trainerIvCombo -Label "Aleatoire" -Value "Random"
-    Add-ComboBoxItem -Combo $trainerIvCombo -Label "Ne pas changer" -Value "Unchanged"
-    $trainerIvCombo.DisplayMember = "Label"
-    $trainerIvCombo.SelectedIndex = 2
-    $trainerTab.Controls.Add($trainerIvCombo)
-
-    $trainerEvLabel = New-Label -Text "" -X 522 -Y 92 -Width 120
-    $trainerTab.Controls.Add($trainerEvLabel)
-    $trainerEvCombo = New-ComboBox -Controls $controls -Name "TrainerEVMode" -X 522 -Y 116
-    Add-ComboBoxItem -Combo $trainerEvCombo -Label "EV strategiques Smogon" -Value "SmogonStrategic"
-    Add-ComboBoxItem -Combo $trainerEvCombo -Label "EV Smogon + anciennes gens" -Value "SmogonLegacy"
-    Add-ComboBoxItem -Combo $trainerEvCombo -Label "EV legaux aleatoires" -Value "RandomLegal"
-    Add-ComboBoxItem -Combo $trainerEvCombo -Label "Mettre EV a zero" -Value "Zero"
-    Add-ComboBoxItem -Combo $trainerEvCombo -Label "Ne pas changer" -Value "Unchanged"
-    $trainerEvCombo.DisplayMember = "Label"
-    $trainerEvCombo.SelectedIndex = 3
-    $trainerTab.Controls.Add($trainerEvCombo)
-
-    $trainerAddedSlotSpeciesLabel = New-Label -Text "" -X 774 -Y 92 -Width 220
-    $trainerTab.Controls.Add($trainerAddedSlotSpeciesLabel)
-    $trainerAddedSlotSpeciesCombo = New-ComboBox -Controls $controls -Name "TrainerAddedSlotSpeciesMode" -X 774 -Y 116 -Width 220
-    Add-ComboBoxItem -Combo $trainerAddedSlotSpeciesCombo -Label "Slots ajoutes: random complet" -Value "Random"
-    Add-ComboBoxItem -Combo $trainerAddedSlotSpeciesCombo -Label "Slots ajoutes: BST proche" -Value "SimilarBST"
-    Add-ComboBoxItem -Combo $trainerAddedSlotSpeciesCombo -Label "Slots ajoutes: meme type" -Value "SameTypeRandom"
-    Add-ComboBoxItem -Combo $trainerAddedSlotSpeciesCombo -Label "Slots ajoutes: meme type + BST" -Value "SameTypeBST"
-    $trainerAddedSlotSpeciesCombo.DisplayMember = "Label"
-    $trainerAddedSlotSpeciesCombo.SelectedIndex = 0
-    $trainerTab.Controls.Add($trainerAddedSlotSpeciesCombo)
-
-    $trainerDuplicateModeLabel = New-Label -Text "" -X 774 -Y 166 -Width 220
-    $trainerTab.Controls.Add($trainerDuplicateModeLabel)
-    $trainerDuplicateModeCombo = New-ComboBox -Controls $controls -Name "TrainerDuplicateMode" -X 774 -Y 190 -Width 220
-    Add-ComboBoxItem -Combo $trainerDuplicateModeCombo -Label "Bloquer les doublons" -Value "NoDuplicates"
-    Add-ComboBoxItem -Combo $trainerDuplicateModeCombo -Label "Random normal" -Value "Normal"
-    $trainerDuplicateModeCombo.DisplayMember = "Label"
-    $trainerDuplicateModeCombo.SelectedIndex = 0
-    $trainerTab.Controls.Add($trainerDuplicateModeCombo)
-
-    $bossTeamsScopeLabel = New-Label -Text "" -X 774 -Y 218 -Width 220
-    $trainerTab.Controls.Add($bossTeamsScopeLabel)
-    $bossTeamsScopeCombo = New-ComboBox -Controls $controls -Name "BossTeamsToSixScope" -X 774 -Y 242 -Width 220
-    Add-ComboBoxItem -Combo $bossTeamsScopeCombo -Label "Boss importants" -Value "MajorBosses"
-    Add-ComboBoxItem -Combo $bossTeamsScopeCombo -Label "Arenes + ligue uniquement" -Value "GymLeague"
-    $bossTeamsScopeCombo.DisplayMember = "Label"
-    $bossTeamsScopeCombo.SelectedIndex = 0
-    $trainerTab.Controls.Add($bossTeamsScopeCombo)
-
-    $trainerLevelLabel = New-Label -Text "" -X 18 -Y 166 -Width 150
-    $trainerTab.Controls.Add($trainerLevelLabel)
-    $trainerLevelBox = New-TextBox -Controls $controls -Name "TrainerLevelMultiplier" -X 18 -Y 190 -Width 100 -Text "1.0"
-    $trainerTab.Controls.Add($trainerLevelBox)
-
-    $trainerTeamMinLabel = New-Label -Text "" -X 214 -Y 166 -Width 110
-    $trainerTab.Controls.Add($trainerTeamMinLabel)
-    $trainerTeamMinBox = New-TextBox -Controls $controls -Name "TrainerTeamMin" -X 214 -Y 190 -Width 60 -Text "-1"
-    $trainerTab.Controls.Add($trainerTeamMinBox)
-
-    $trainerTeamMaxLabel = New-Label -Text "" -X 324 -Y 166 -Width 110
-    $trainerTab.Controls.Add($trainerTeamMaxLabel)
-    $trainerTeamMaxBox = New-TextBox -Controls $controls -Name "TrainerTeamMax" -X 324 -Y 190 -Width 60 -Text "-1"
-    $trainerTab.Controls.Add($trainerTeamMaxBox)
-
-    $trainerTab.Controls.Add((New-CheckBox -Controls $controls -Name "ForceAllTeamsToSix" -Text "" -X 420 -Y 190 -Width 300 -Checked $false))
-    $trainerTab.Controls.Add((New-CheckBox -Controls $controls -Name "ForceBossTeamsToSix" -Text "" -X 420 -Y 220 -Width 340 -Checked $false))
-    $trainerNatureModeLabel = New-Label -Text "" -X 18 -Y 204 -Width 220
-    $trainerTab.Controls.Add($trainerNatureModeLabel)
-    $trainerNatureModeCombo = New-ComboBox -Controls $controls -Name "TrainerNatureMode" -X 18 -Y 228 -Width 220
-    Add-ComboBoxItem -Combo $trainerNatureModeCombo -Label "Garder vanilla" -Value "Unchanged"
-    Add-ComboBoxItem -Combo $trainerNatureModeCombo -Label "Nature aleatoire" -Value "Random"
-    Add-ComboBoxItem -Combo $trainerNatureModeCombo -Label "Nature strategique Smogon" -Value "SmogonStrategic"
-    Add-ComboBoxItem -Combo $trainerNatureModeCombo -Label "Nature Smogon + anciennes gens" -Value "SmogonLegacy"
-    $trainerNatureModeCombo.DisplayMember = "Label"
-    $trainerNatureModeCombo.SelectedIndex = 0
-    $trainerTab.Controls.Add($trainerNatureModeCombo)
-    $legacyNatureCheck = New-CheckBox -Controls $controls -Name "RandomizeTrainerNatures" -Text "" -X 18 -Y 228 -Width 280 -Checked $false
-    $legacyNatureCheck.Visible = $false
-    $trainerTab.Controls.Add((New-CheckBox -Controls $controls -Name "AllowLegendaryTrainers" -Text "" -X 18 -Y 258 -Width 420 -Checked $false))
-    $trainerTab.Controls.Add((New-CheckBox -Controls $controls -Name "MaxTrainerAI" -Text "" -X 522 -Y 258 -Width 260 -Checked $false))
-    $trainerTab.Controls.Add((New-CheckBox -Controls $controls -Name "TrainerTypeThemed" -Text "" -X 270 -Y 286 -Width 230 -Checked $false))
-    $trainerShinyLabel = New-Label -Text "" -X 18 -Y 292 -Width 220
-    $trainerTab.Controls.Add($trainerShinyLabel)
-    $trainerShinyBox = New-TextBox -Controls $controls -Name "TrainerShinyChancePercent" -X 18 -Y 316 -Width 80 -Text "0"
-    $trainerTab.Controls.Add($trainerShinyBox)
-    $trainerTab.Controls.Add((New-CheckBox -Controls $controls -Name "ForceTrainerFullyEvolved" -Text "" -X 154 -Y 316 -Width 330 -Checked $false))
-    $trainerFullyEvolvedLevelLabel = New-Label -Text "" -X 510 -Y 292 -Width 190
-    $trainerTab.Controls.Add($trainerFullyEvolvedLevelLabel)
-    $trainerFullyEvolvedLevelBox = New-TextBox -Controls $controls -Name "TrainerFullyEvolvedLevel" -X 510 -Y 316 -Width 70 -Text "40"
-    $trainerTab.Controls.Add($trainerFullyEvolvedLevelBox)
-    $trainerDynamaxLevelLabel = New-Label -Text "" -X 18 -Y 360 -Width 220
-    $trainerTab.Controls.Add($trainerDynamaxLevelLabel)
-    $trainerDynamaxLevelCombo = New-ComboBox -Controls $controls -Name "TrainerDynamaxLevelMode" -X 18 -Y 384 -Width 300
-    Add-ComboBoxItem -Combo $trainerDynamaxLevelCombo -Label "Ne pas changer" -Value "Unchanged"
-    Add-ComboBoxItem -Combo $trainerDynamaxLevelCombo -Label "Niveau Dynamax 10" -Value "Max10"
-    Add-ComboBoxItem -Combo $trainerDynamaxLevelCombo -Label "Niveau Dynamax aleatoire 0-10" -Value "Random0To10"
-    $trainerDynamaxLevelCombo.DisplayMember = "Label"
-    $trainerDynamaxLevelCombo.SelectedIndex = 0
-    $trainerTab.Controls.Add($trainerDynamaxLevelCombo)
-    $trainerTab.Controls.Add((New-CheckBox -Controls $controls -Name "ForceTrainerCanDynamax" -Text "" -X 340 -Y 386 -Width 430 -Checked $false))
-    $bossTargetsBox = New-Object System.Windows.Forms.TextBox
-    $bossTargetsBox.Multiline = $true
-    $bossTargetsBox.ReadOnly = $true
-    $bossTargetsBox.ScrollBars = "Vertical"
-    $bossTargetsBox.WordWrap = $false
-    $bossTargetsBox.Location = New-Object System.Drawing.Point(790, 292)
-    $bossTargetsBox.Size = New-Object System.Drawing.Size(320, 162)
-    $bossTargetsBox.BackColor = [System.Drawing.SystemColors]::Window
-    $trainerTab.Controls.Add($bossTargetsBox)
-
-    $typeModeLabel = New-Label -Text "" -X 18 -Y 18 -Width 120
-    $pokemonTab.Controls.Add($typeModeLabel)
-    $typeModeCombo = New-ComboBox -Controls $controls -Name "TypeMode" -X 18 -Y 42
-    Add-ComboBoxItem -Combo $typeModeCombo -Label "Randomiser les types" -Value "Random"
-    Add-ComboBoxItem -Combo $typeModeCombo -Label "Ne pas changer" -Value "Unchanged"
-    $typeModeCombo.DisplayMember = "Label"
-    $typeModeCombo.SelectedIndex = 1
-    $pokemonTab.Controls.Add($typeModeCombo)
-
-    $pokemonTab.Controls.Add((New-CheckBox -Controls $controls -Name "TypesMonotypeOnly" -Text "" -X 270 -Y 44 -Width 320 -Checked $false))
-
-    $abilityModeLabel = New-Label -Text "" -X 18 -Y 92 -Width 230
-    $pokemonTab.Controls.Add($abilityModeLabel)
-    $abilityModeCombo = New-ComboBox -Controls $controls -Name "AbilityMode" -X 18 -Y 116
-    Add-ComboBoxItem -Combo $abilityModeCombo -Label "Randomiser les talents" -Value "Random"
-    Add-ComboBoxItem -Combo $abilityModeCombo -Label "Ne pas changer" -Value "Unchanged"
-    $abilityModeCombo.DisplayMember = "Label"
-    $abilityModeCombo.SelectedIndex = 1
-    $pokemonTab.Controls.Add($abilityModeCombo)
-    $pokemonTab.Controls.Add((New-CheckBox -Controls $controls -Name "AllowWonderGuard" -Text "" -X 270 -Y 118 -Width 280 -Checked $false))
-
-    $statModeLabel = New-Label -Text "" -X 18 -Y 166 -Width 120
-    $pokemonTab.Controls.Add($statModeLabel)
-    $statModeCombo = New-ComboBox -Controls $controls -Name "StatMode" -X 18 -Y 190
-    Add-ComboBoxItem -Combo $statModeCombo -Label "Melanger les 6 stats" -Value "Shuffle"
-    Add-ComboBoxItem -Combo $statModeCombo -Label "Redistribuer le BST" -Value "Redistribute"
-    Add-ComboBoxItem -Combo $statModeCombo -Label "Ne pas changer" -Value "Unchanged"
-    $statModeCombo.DisplayMember = "Label"
-    $statModeCombo.SelectedIndex = 2
-    $pokemonTab.Controls.Add($statModeCombo)
-
-    $expYieldMultiplierLabel = New-Label -Text "" -X 510 -Y 166 -Width 190
-    $pokemonTab.Controls.Add($expYieldMultiplierLabel)
-    $expYieldMultiplierBox = New-TextBox -Controls $controls -Name "ExpYieldMultiplier" -X 510 -Y 190 -Width 80 -Text "1.0"
-    $pokemonTab.Controls.Add($expYieldMultiplierBox)
-    $pokemonTab.Controls.Add((New-CheckBox -Controls $controls -Name "ForceOneExpYield" -Text "" -X 610 -Y 190 -Width 320 -Checked $false))
-
-    $pokemonTab.Controls.Add((New-CheckBox -Controls $controls -Name "RandomizeMoveTypes" -Text "" -X 270 -Y 190 -Width 260 -Checked $false))
-    $pokemonTab.Controls.Add((New-CheckBox -Controls $controls -Name "RandomizeMovePower" -Text "" -X 18 -Y 246 -Width 220 -Checked $false))
-    $movePowerMinLabel = New-Label -Text "" -X 270 -Y 224 -Width 110
-    $pokemonTab.Controls.Add($movePowerMinLabel)
-    $movePowerMinBox = New-TextBox -Controls $controls -Name "MovePowerMin" -X 270 -Y 248 -Width 70 -Text "20"
-    $pokemonTab.Controls.Add($movePowerMinBox)
-    $movePowerMaxLabel = New-Label -Text "" -X 360 -Y 224 -Width 110
-    $pokemonTab.Controls.Add($movePowerMaxLabel)
-    $movePowerMaxBox = New-TextBox -Controls $controls -Name "MovePowerMax" -X 360 -Y 248 -Width 70 -Text "150"
-    $pokemonTab.Controls.Add($movePowerMaxBox)
-    $pokemonTab.Controls.Add((New-CheckBox -Controls $controls -Name "RandomizeMovePP" -Text "" -X 18 -Y 312 -Width 220 -Checked $false))
-    $movePPMinLabel = New-Label -Text "" -X 270 -Y 290 -Width 110
-    $pokemonTab.Controls.Add($movePPMinLabel)
-    $movePPMinBox = New-TextBox -Controls $controls -Name "MovePPMin" -X 270 -Y 314 -Width 70 -Text "5"
-    $pokemonTab.Controls.Add($movePPMinBox)
-    $movePPMaxLabel = New-Label -Text "" -X 360 -Y 290 -Width 110
-    $pokemonTab.Controls.Add($movePPMaxLabel)
-    $movePPMaxBox = New-TextBox -Controls $controls -Name "MovePPMax" -X 360 -Y 314 -Width 70 -Text "40"
-    $pokemonTab.Controls.Add($movePPMaxBox)
-    $pokemonTab.Controls.Add((New-CheckBox -Controls $controls -Name "RandomizeMoveAccuracy" -Text "" -X 18 -Y 378 -Width 220 -Checked $false))
-    $moveAccuracyMinLabel = New-Label -Text "" -X 270 -Y 356 -Width 120
-    $pokemonTab.Controls.Add($moveAccuracyMinLabel)
-    $moveAccuracyMinBox = New-TextBox -Controls $controls -Name "MoveAccuracyMin" -X 270 -Y 380 -Width 70 -Text "70"
-    $pokemonTab.Controls.Add($moveAccuracyMinBox)
-    $moveAccuracyMaxLabel = New-Label -Text "" -X 360 -Y 356 -Width 120
-    $pokemonTab.Controls.Add($moveAccuracyMaxLabel)
-    $moveAccuracyMaxBox = New-TextBox -Controls $controls -Name "MoveAccuracyMax" -X 360 -Y 380 -Width 70 -Text "100"
-    $pokemonTab.Controls.Add($moveAccuracyMaxBox)
-    $pokemonTab.Controls.Add((New-CheckBox -Controls $controls -Name "RandomizeMoveCategory" -Text "" -X 510 -Y 248 -Width 360 -Checked $false))
-    $pokemonTab.Controls.Add((New-CheckBox -Controls $controls -Name "RandomizePickupItems" -Text "" -X 510 -Y 300 -Width 360 -Checked ([bool]$RandomizePickupItems)))
-    $pokemonTab.Controls.Add((New-CheckBox -Controls $controls -Name "RandomizeShopItems" -Text "" -X 510 -Y 330 -Width 360 -Checked ([bool]$RandomizeShopItems)))
-    $pokemonTab.Controls.Add((New-CheckBox -Controls $controls -Name "RandomizeTechnicalRecords" -Text "" -X 510 -Y 360 -Width 360 -Checked ([bool]$RandomizeTechnicalRecords)))
-
-    $evoModeLabel = New-Label -Text "" -X 18 -Y 18 -Width 140
-    $evoTab.Controls.Add($evoModeLabel)
-    $evoModeCombo = New-ComboBox -Controls $controls -Name "EvolutionMode" -X 18 -Y 42
-    Add-ComboBoxItem -Combo $evoModeCombo -Label "Aleatoire complet" -Value "Random"
-    Add-ComboBoxItem -Combo $evoModeCombo -Label "Aleatoire BST proche" -Value "SimilarBST"
-    Add-ComboBoxItem -Combo $evoModeCombo -Label "Ne pas changer" -Value "Unchanged"
-    $evoModeCombo.DisplayMember = "Label"
-    $evoModeCombo.SelectedIndex = 2
-    $evoTab.Controls.Add($evoModeCombo)
-    $evoTab.Controls.Add((New-CheckBox -Controls $controls -Name "AllowLegendaryEvolutions" -Text "" -X 270 -Y 44 -Width 300 -Checked $false))
-    $evoTab.Controls.Add((New-CheckBox -Controls $controls -Name "NormalizeFriendshipEvolutions" -Text "" -X 18 -Y 92 -Width 340 -Checked $false))
-    $friendshipLevelLabel = New-Label -Text "" -X 370 -Y 92 -Width 120
-    $evoTab.Controls.Add($friendshipLevelLabel)
-    $friendshipLevelBox = New-TextBox -Controls $controls -Name "FriendshipEvolutionLevel" -X 370 -Y 116 -Width 70 -Text "30"
-    $evoTab.Controls.Add($friendshipLevelBox)
-    $evoTab.Controls.Add((New-CheckBox -Controls $controls -Name "NormalizeTradeEvolutions" -Text "" -X 18 -Y 154 -Width 340 -Checked $false))
-    $tradeLevelLabelEvo = New-Label -Text "" -X 370 -Y 154 -Width 120
-    $evoTab.Controls.Add($tradeLevelLabelEvo)
-    $tradeLevelBox = New-TextBox -Controls $controls -Name "TradeEvolutionLevel" -X 370 -Y 178 -Width 70 -Text "37"
-    $evoTab.Controls.Add($tradeLevelBox)
-    $evoTab.Controls.Add((New-CheckBox -Controls $controls -Name "NormalizeSpecialEvolutions" -Text "" -X 18 -Y 216 -Width 420 -Checked $false))
-    $specialLevelLabelEvo = New-Label -Text "" -X 470 -Y 216 -Width 140
-    $evoTab.Controls.Add($specialLevelLabelEvo)
-    $specialLevelBox = New-TextBox -Controls $controls -Name "SpecialEvolutionLevel" -X 470 -Y 240 -Width 70 -Text "36"
-    $evoTab.Controls.Add($specialLevelBox)
-
-    $giftModeLabel = New-Label -Text "" -X 18 -Y 18 -Width 190
-    $giftTab.Controls.Add($giftModeLabel)
-    $giftModeCombo = New-ComboBox -Controls $controls -Name "GiftMode" -X 18 -Y 42
-    Add-ComboBoxItem -Combo $giftModeCombo -Label "Aleatoire complet" -Value "Random"
-    Add-ComboBoxItem -Combo $giftModeCombo -Label "Aleatoire BST proche" -Value "SimilarBST"
-    Add-ComboBoxItem -Combo $giftModeCombo -Label "Ne pas changer" -Value "Unchanged"
-    $giftModeCombo.DisplayMember = "Label"
-    $giftModeCombo.SelectedIndex = 2
-    $giftTab.Controls.Add($giftModeCombo)
-
-    $starterModeLabel = New-Label -Text "" -X 270 -Y 18 -Width 180
-    $giftTab.Controls.Add($starterModeLabel)
-    $starterModeCombo = New-ComboBox -Controls $controls -Name "StarterMode" -X 270 -Y 42
-    Add-ComboBoxItem -Combo $starterModeCombo -Label "Aleatoire complet" -Value "Random"
-    Add-ComboBoxItem -Combo $starterModeCombo -Label "Aleatoire BST proche" -Value "SimilarBST"
-    Add-ComboBoxItem -Combo $starterModeCombo -Label "Ne pas changer" -Value "Unchanged"
-    $starterModeCombo.DisplayMember = "Label"
-    $starterModeCombo.SelectedIndex = 2
-    $giftTab.Controls.Add($starterModeCombo)
-
-    $giftTab.Controls.Add((New-CheckBox -Controls $controls -Name "AllowLegendaryGifts" -Text "" -X 522 -Y 44 -Width 340 -Checked $false))
-
-    $manualStarterGroupLabel = New-Label -Text "" -X 18 -Y 90 -Width 1040 -Height 34
-    $giftTab.Controls.Add($manualStarterGroupLabel)
-    $starter1Label = New-Label -Text "" -X 18 -Y 126 -Width 60
-    $giftTab.Controls.Add($starter1Label)
-    $starter1Box = New-TextBox -Controls $controls -Name "Starter1" -X 18 -Y 150 -Width 180 -Text ""
-    $giftTab.Controls.Add($starter1Box)
-    $starter2Label = New-Label -Text "" -X 214 -Y 126 -Width 60
-    $giftTab.Controls.Add($starter2Label)
-    $starter2Box = New-TextBox -Controls $controls -Name "Starter2" -X 214 -Y 150 -Width 180 -Text ""
-    $giftTab.Controls.Add($starter2Box)
-    $starter3Label = New-Label -Text "" -X 410 -Y 126 -Width 60
-    $giftTab.Controls.Add($starter3Label)
-    $starter3Box = New-TextBox -Controls $controls -Name "Starter3" -X 410 -Y 150 -Width 180 -Text ""
-    $giftTab.Controls.Add($starter3Box)
-    $starterAutoComplete = New-SpeciesAutoCompleteSource
-    foreach ($starterBox in @($starter1Box, $starter2Box, $starter3Box)) {
-        $starterBox.AutoCompleteMode = "SuggestAppend"
-        $starterBox.AutoCompleteSource = "CustomSource"
-        $starterBox.AutoCompleteCustomSource = $starterAutoComplete
-        $starterBox.Add_Leave({
-            param($sender, $eventArgs)
-            Complete-SpeciesTextBoxValue -TextBox $sender -Language $script:UiLanguage
-        })
-        $starterBox.Add_KeyDown({
-            param($sender, $eventArgs)
-            if ($eventArgs.KeyCode -eq [System.Windows.Forms.Keys]::Enter) {
-                Complete-SpeciesTextBoxValue -TextBox $sender -Language $script:UiLanguage
-                $eventArgs.SuppressKeyPress = $true
-            }
-        })
-    }
-    $giftTab.Controls.Add((New-CheckBox -Controls $controls -Name "PatchStarterRelatedTrainers" -Text "" -X 606 -Y 152 -Width 430 -Checked $true))
-
-    $tradeModeLabel = New-Label -Text "" -X 18 -Y 196 -Width 160
-    $giftTab.Controls.Add($tradeModeLabel)
-    $tradeModeCombo = New-ComboBox -Controls $controls -Name "TradeMode" -X 18 -Y 220
-    Add-ComboBoxItem -Combo $tradeModeCombo -Label "Aleatoire complet" -Value "Random"
-    Add-ComboBoxItem -Combo $tradeModeCombo -Label "Aleatoire BST proche" -Value "SimilarBST"
-    Add-ComboBoxItem -Combo $tradeModeCombo -Label "Ne pas changer" -Value "Unchanged"
-    $tradeModeCombo.DisplayMember = "Label"
-    $tradeModeCombo.SelectedIndex = 2
-    $giftTab.Controls.Add($tradeModeCombo)
-    $giftTab.Controls.Add((New-CheckBox -Controls $controls -Name "AllowLegendaryTrades" -Text "" -X 270 -Y 222 -Width 320 -Checked $false))
-
-    $staticModeLabel = New-Label -Text "" -X 18 -Y 18 -Width 220
-    $encounterTab.Controls.Add($staticModeLabel)
-    $staticEncounterCombo = New-ComboBox -Controls $controls -Name "StaticEncounterMode" -X 18 -Y 42
-    Add-ComboBoxItem -Combo $staticEncounterCombo -Label "Aleatoire complet" -Value "Random"
-    Add-ComboBoxItem -Combo $staticEncounterCombo -Label "Aleatoire BST proche" -Value "SimilarBST"
-    Add-ComboBoxItem -Combo $staticEncounterCombo -Label "Ne pas changer" -Value "Unchanged"
-    $staticEncounterCombo.DisplayMember = "Label"
-    $staticEncounterCombo.SelectedIndex = 2
-    $encounterTab.Controls.Add($staticEncounterCombo)
-    $encounterTab.Controls.Add((New-CheckBox -Controls $controls -Name "AllowLegendaryStaticEncounters" -Text "" -X 270 -Y 44 -Width 340 -Checked $false))
-    $staticStableMappingLabel = New-Label -Text "" -X 18 -Y 74 -Width 220
-    $encounterTab.Controls.Add($staticStableMappingLabel)
-    $staticStableMappingCombo = New-ComboBox -Controls $controls -Name "StaticEncounterStableMapping" -X 270 -Y 70 -Width 170
-    Add-ComboBoxItem -Combo $staticStableMappingCombo -Label "Par slot" -Value "Slot"
-    Add-ComboBoxItem -Combo $staticStableMappingCombo -Label "Par espece" -Value "Species"
-    Add-ComboBoxItem -Combo $staticStableMappingCombo -Label "Vrai random build" -Value "Random"
-    $staticStableMappingCombo.DisplayMember = "Label"
-    $staticStableMappingCombo.SelectedIndex = 0
-    $encounterTab.Controls.Add($staticStableMappingCombo)
-
-    $grassModeLabel = New-Label -Text "" -X 18 -Y 126 -Width 220
-    $encounterTab.Controls.Add($grassModeLabel)
-    $grassEncounterCombo = New-ComboBox -Controls $controls -Name "GrassEncounterMode" -X 18 -Y 150
-    Add-ComboBoxItem -Combo $grassEncounterCombo -Label "Aleatoire complet" -Value "Random"
-    Add-ComboBoxItem -Combo $grassEncounterCombo -Label "Aleatoire BST proche" -Value "SimilarBST"
-    Add-ComboBoxItem -Combo $grassEncounterCombo -Label "Ne pas changer" -Value "Unchanged"
-    $grassEncounterCombo.DisplayMember = "Label"
-    $grassEncounterCombo.SelectedIndex = 2
-    $encounterTab.Controls.Add($grassEncounterCombo)
-    $encounterTab.Controls.Add((New-CheckBox -Controls $controls -Name "AllowLegendaryGrassEncounters" -Text "" -X 270 -Y 152 -Width 340 -Checked $false))
-    $grassStableMappingLabel = New-Label -Text "" -X 18 -Y 182 -Width 220
-    $encounterTab.Controls.Add($grassStableMappingLabel)
-    $grassStableMappingCombo = New-ComboBox -Controls $controls -Name "GrassEncounterStableMapping" -X 270 -Y 178 -Width 170
-    Add-ComboBoxItem -Combo $grassStableMappingCombo -Label "Par slot" -Value "Slot"
-    Add-ComboBoxItem -Combo $grassStableMappingCombo -Label "Par espece" -Value "Species"
-    Add-ComboBoxItem -Combo $grassStableMappingCombo -Label "Vrai random build" -Value "Random"
-    $grassStableMappingCombo.DisplayMember = "Label"
-    $grassStableMappingCombo.SelectedIndex = 0
-    $encounterTab.Controls.Add($grassStableMappingCombo)
-
-    $visibleBehaviorLabel = New-Label -Text "" -X 18 -Y 226 -Width 220
-    $encounterTab.Controls.Add($visibleBehaviorLabel)
-    $visibleBehaviorCombo = New-ComboBox -Controls $controls -Name "VisibleEncounterBehavior" -X 270 -Y 222 -Width 430
-    Add-ComboBoxItem -Combo $visibleBehaviorCombo -Label "Classique: visible = combat" -Value "RomfsMatch"
-    Add-ComboBoxItem -Combo $visibleBehaviorCombo -Label "Full random visible + combat cache" -Value "RandomVisualBattleRandom"
-    Add-ComboBoxItem -Combo $visibleBehaviorCombo -Label "Full vanilla visible + combat cache" -Value "VanillaVisualBattleRandom"
-    $visibleBehaviorCombo.DisplayMember = "Label"
-    $visibleBehaviorCombo.SelectedIndex = 2
-    $encounterTab.Controls.Add($visibleBehaviorCombo)
-
-    $undergroundModeLabel = New-Label -Text "" -X 18 -Y 286 -Width 180
-    $encounterTab.Controls.Add($undergroundModeLabel)
-    $undergroundModeCombo = New-ComboBox -Controls $controls -Name "UndergroundMode" -X 18 -Y 310
-    Add-ComboBoxItem -Combo $undergroundModeCombo -Label "Aleatoire complet" -Value "Random"
-    Add-ComboBoxItem -Combo $undergroundModeCombo -Label "Aleatoire BST proche" -Value "SimilarBST"
-    Add-ComboBoxItem -Combo $undergroundModeCombo -Label "Ne pas changer" -Value "Unchanged"
-    $undergroundModeCombo.DisplayMember = "Label"
-    $undergroundModeCombo.SelectedIndex = 2
-    $encounterTab.Controls.Add($undergroundModeCombo)
-    $encounterTab.Controls.Add((New-CheckBox -Controls $controls -Name "AllowLegendaryUnderground" -Text "" -X 270 -Y 312 -Width 300 -Checked $false))
-
-    $statusBox = New-Object System.Windows.Forms.TextBox
-    $statusBox.Multiline = $true
-    $statusBox.ReadOnly = $true
-    $statusBox.ScrollBars = "Vertical"
-    $detailsBox = New-Object System.Windows.Forms.TextBox
-    $detailsBox.Multiline = $true
-    $detailsBox.ReadOnly = $true
-    $detailsBox.ScrollBars = "Vertical"
-    $detailsBox.Location = New-Object System.Drawing.Point(18, 852)
-    $detailsBox.Size = New-Object System.Drawing.Size(1130, 58)
-    $detailsBox.Text = ""
-    $form.Controls.Add($detailsBox)
-
-    $uiDescFr = Get-UiStrings -Language "fr"
-    $uiDescEn = Get-UiStrings -Language "en"
-    Add-ConcreteDescriptionExamples -Ui $uiDescFr -Language "fr"
-    Add-ConcreteDescriptionExamples -Ui $uiDescEn -Language "en"
-    Register-ControlDescription -Control $trainerSpeciesCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerSpecies; en = $uiDescEn.Descriptions.TrainerSpecies }
-    Register-ControlDescription -Control $trainerMoveCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerMoves; en = $uiDescEn.Descriptions.TrainerMoves }
-    Register-ControlDescription -Control $trainerSmogonMoveFallbackCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerSmogonMoveFallback; en = $uiDescEn.Descriptions.TrainerSmogonMoveFallback }
-    Register-ControlDescription -Control $trainerItemCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerItems; en = $uiDescEn.Descriptions.TrainerItems }
-    Register-ControlDescription -Control $trainerItemPoolCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerItemPool; en = $uiDescEn.Descriptions.TrainerItemPool }
-    Register-ControlDescription -Control $trainerAddedSlotSpeciesCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerAddedSlotSpecies; en = $uiDescEn.Descriptions.TrainerAddedSlotSpecies }
-    Register-ControlDescription -Control $trainerDuplicateModeCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerDuplicateMode; en = $uiDescEn.Descriptions.TrainerDuplicateMode }
-    Register-ControlDescription -Control $bossTeamsScopeCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.BossTeamsScope; en = $uiDescEn.Descriptions.BossTeamsScope }
-    Register-ControlDescription -Control $trainerAbilityCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerAbility; en = $uiDescEn.Descriptions.TrainerAbility }
-    Register-ControlDescription -Control $trainerIvCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerIV; en = $uiDescEn.Descriptions.TrainerIV }
-    Register-ControlDescription -Control $trainerEvCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerEV; en = $uiDescEn.Descriptions.TrainerEV }
-    Register-ControlDescription -Control $trainerLevelBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerLevel; en = $uiDescEn.Descriptions.TrainerLevel }
-    Register-ControlDescription -Control $trainerTeamMinBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerTeamSize; en = $uiDescEn.Descriptions.TrainerTeamSize }
-    Register-ControlDescription -Control $trainerTeamMaxBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerTeamSize; en = $uiDescEn.Descriptions.TrainerTeamSize }
-    Register-ControlDescription -Control $controls.TrainerTypeThemed -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerTypeThemed; en = $uiDescEn.Descriptions.TrainerTypeThemed }
-    Register-ControlDescription -Control $controls.TrainerNatureMode -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.RandomizeNatures; en = $uiDescEn.Descriptions.RandomizeNatures }
-    Register-ControlDescription -Control $controls.AllowLegendaryTrainers -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.AllowLegendaryTrainers; en = $uiDescEn.Descriptions.AllowLegendaryTrainers }
-    Register-ControlDescription -Control $trainerShinyBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerShinyChance; en = $uiDescEn.Descriptions.TrainerShinyChance }
-    Register-ControlDescription -Control $controls.ForceTrainerFullyEvolved -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.ForceTrainerFullyEvolved; en = $uiDescEn.Descriptions.ForceTrainerFullyEvolved }
-    Register-ControlDescription -Control $trainerFullyEvolvedLevelBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.ForceTrainerFullyEvolved; en = $uiDescEn.Descriptions.ForceTrainerFullyEvolved }
-    Register-ControlDescription -Control $controls.MaxTrainerAI -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.MaxTrainerAI; en = $uiDescEn.Descriptions.MaxTrainerAI }
-    Register-ControlDescription -Control $trainerDynamaxLevelCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TrainerDynamaxLevel; en = $uiDescEn.Descriptions.TrainerDynamaxLevel }
-    Register-ControlDescription -Control $controls.ForceTrainerCanDynamax -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.ForceTrainerCanDynamax; en = $uiDescEn.Descriptions.ForceTrainerCanDynamax }
-    Register-ControlDescription -Control $controls.ForceAllTeamsToSix -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.ForceAllTeams; en = $uiDescEn.Descriptions.ForceAllTeams }
-    Register-ControlDescription -Control $controls.ForceBossTeamsToSix -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.ForceBossTeams; en = $uiDescEn.Descriptions.ForceBossTeams }
-    Register-ControlDescription -Control $bossTargetsBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.ForceBossTargets; en = $uiDescEn.Descriptions.ForceBossTargets }
-    Register-ControlDescription -Control $typeModeCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TypeMode; en = $uiDescEn.Descriptions.TypeMode }
-    Register-ControlDescription -Control $controls.TypesMonotypeOnly -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TypesMonotypeOnly; en = $uiDescEn.Descriptions.TypesMonotypeOnly }
-    Register-ControlDescription -Control $abilityModeCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.AbilityMode; en = $uiDescEn.Descriptions.AbilityMode }
-    Register-ControlDescription -Control $controls.AllowWonderGuard -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.AllowWonderGuard; en = $uiDescEn.Descriptions.AllowWonderGuard }
-    Register-ControlDescription -Control $statModeCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.StatMode; en = $uiDescEn.Descriptions.StatMode }
-    Register-ControlDescription -Control $expYieldMultiplierBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.ExpYieldMultiplier; en = $uiDescEn.Descriptions.ExpYieldMultiplier }
-    Register-ControlDescription -Control $controls.ForceOneExpYield -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.ForceOneExpYield; en = $uiDescEn.Descriptions.ForceOneExpYield }
-    Register-ControlDescription -Control $controls.RandomizeMoveTypes -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.MoveTypeMode; en = $uiDescEn.Descriptions.MoveTypeMode }
-    Register-ControlDescription -Control $controls.RandomizeMovePower -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.MovePowerMode; en = $uiDescEn.Descriptions.MovePowerMode }
-    Register-ControlDescription -Control $movePowerMinBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.MovePowerMode; en = $uiDescEn.Descriptions.MovePowerMode }
-    Register-ControlDescription -Control $movePowerMaxBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.MovePowerMode; en = $uiDescEn.Descriptions.MovePowerMode }
-    Register-ControlDescription -Control $controls.RandomizeMovePP -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.MovePPMode; en = $uiDescEn.Descriptions.MovePPMode }
-    Register-ControlDescription -Control $movePPMinBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.MovePPMode; en = $uiDescEn.Descriptions.MovePPMode }
-    Register-ControlDescription -Control $movePPMaxBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.MovePPMode; en = $uiDescEn.Descriptions.MovePPMode }
-    Register-ControlDescription -Control $controls.RandomizeMoveAccuracy -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.MoveAccuracyMode; en = $uiDescEn.Descriptions.MoveAccuracyMode }
-    Register-ControlDescription -Control $moveAccuracyMinBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.MoveAccuracyMode; en = $uiDescEn.Descriptions.MoveAccuracyMode }
-    Register-ControlDescription -Control $moveAccuracyMaxBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.MoveAccuracyMode; en = $uiDescEn.Descriptions.MoveAccuracyMode }
-    Register-ControlDescription -Control $controls.RandomizeMoveCategory -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.MoveCategoryMode; en = $uiDescEn.Descriptions.MoveCategoryMode }
-    Register-ControlDescription -Control $controls.RandomizePickupItems -DetailsBox $detailsBox -Description @{ fr = "Randomise les objets du tableau structure d'exploration souterraine. Les scripts AMX d'objets au sol ne sont pas modifies."; en = "Randomizes items in the decoded underground exploration item table. Field-item AMX scripts are not edited." }
-    Register-ControlDescription -Control $controls.RandomizeShopItems -DetailsBox $detailsBox -Description @{ fr = "Randomise les objets des boutiques decodees dans shop_data.bin. Les scripts AMX de boutique restent intacts."; en = "Randomizes decoded shop inventory items in shop_data.bin. Shop AMX scripts remain untouched." }
-    Register-ControlDescription -Control $controls.RandomizeTechnicalRecords -DetailsBox $detailsBox -Description @{ fr = "Randomise les IDs d'objets CT/TR quand ils apparaissent dans les tables decodees. Ne change pas encore les attaques enseignees par item.dat."; en = "Randomizes TM/TR item IDs when they appear in decoded tables. It does not yet change item.dat taught moves." }
-    Register-ControlDescription -Control $starterModeCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.StarterMode; en = $uiDescEn.Descriptions.StarterMode }
-    Register-ControlDescription -Control $starter1Box -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.Starter1; en = $uiDescEn.Descriptions.Starter1 }
-    Register-ControlDescription -Control $starter2Box -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.Starter2; en = $uiDescEn.Descriptions.Starter2 }
-    Register-ControlDescription -Control $starter3Box -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.Starter3; en = $uiDescEn.Descriptions.Starter3 }
-    Register-ControlDescription -Control $controls.PatchStarterRelatedTrainers -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.PatchStarters; en = $uiDescEn.Descriptions.PatchStarters }
-    Register-ControlDescription -Control $reportLangCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.ReportLanguage; en = $uiDescEn.Descriptions.ReportLanguage }
-    Register-ControlDescription -Control $uiLangCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.UiLanguage; en = $uiDescEn.Descriptions.UiLanguage }
-    Register-ControlDescription -Control $themeCombo -DetailsBox $detailsBox -Description @{ fr = "Theme de l'interface: clair ou sombre. Le choix est aussi sauvegarde dans les presets JSON."; en = "Interface theme: light or dark. This choice is also saved in JSON presets." }
-    Register-ControlDescription -Control $difficultyProfileCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.DifficultyProfile; en = $uiDescEn.Descriptions.DifficultyProfile }
-    Register-ControlDescription -Control $applyDifficultyProfileButton -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.DifficultyProfile; en = $uiDescEn.Descriptions.DifficultyProfile }
-    Register-ControlDescription -Control $validateBuildButton -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.ValidateBuild; en = $uiDescEn.Descriptions.ValidateBuild }
-    Register-ControlDescription -Control $buildSummaryButton -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.BuildSummary; en = $uiDescEn.Descriptions.BuildSummary }
-    Register-ControlDescription -Control $sourceBox -DetailsBox $detailsBox -Description @{ fr = "Dossier ROMFS original du dump utilisateur. Exemple: selectionne ...\\Epee\\romfs; le logiciel copie seulement les fichiers necessaires puis modifie les tables ROMFS en sortie."; en = "Original ROMFS folder from the user's dump. Example: select ...\\Sword\\romfs; the tool copies only needed files and edits ROMFS tables in the generated output." }
-    Register-ControlDescription -Control $sourceExefsBox -DetailsBox $detailsBox -Description @{ fr = "Dossier ExeFS original du dump utilisateur. Exemple: selectionne ...\\Epee\\exefs quand un flux runtime le demande. Le package ExLaunch fourni embarque maintenant son propre main.npdm compatible et son subsdk9 custom."; en = "Original ExeFS folder from the user's dump. Example: select ...\\Sword\\exefs when a runtime flow asks for it. The shipped ExLaunch package now includes its own compatible main.npdm and custom subsdk9." }
-    Register-ControlDescription -Control $outputBox -DetailsBox $detailsBox -Description @{ fr = "Dossier de sortie du mod. Exemple: ...\\output\\Epee. Le logiciel cree toujours romfs dedans. Il ajoute aussi exefs\\subsdk9, exefs\\main.npdm et sdmc\\config quand un flux ExLaunch/runtime est actif."; en = "Generated mod folder. Example: ...\\output\\Sword. The tool always creates romfs there. It also adds exefs\\subsdk9, exefs\\main.npdm, and sdmc\\config when an ExLaunch/runtime flow is active." }
-    Register-ControlDescription -Control $controls.DisableExpShare -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.DisableExpShare; en = $uiDescEn.Descriptions.DisableExpShare }
-    Register-ControlDescription -Control $controls.EarlyBike -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.EarlyBike; en = $uiDescEn.Descriptions.EarlyBike }
-    Register-ControlDescription -Control $controls.RuntimePcControls -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.RuntimePcControls; en = $uiDescEn.Descriptions.RuntimePcControls }
-    Register-ControlDescription -Control $controls.DynamicExpLevelCap -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.DynamicExpLevelCap; en = $uiDescEn.Descriptions.DynamicExpLevelCap }
-    Register-ControlDescription -Control $controls.StrictBossMaxLevelCap -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.StrictBossMaxLevelCap; en = $uiDescEn.Descriptions.StrictBossMaxLevelCap }
-    Register-ControlDescription -Control $controls.MainStorySoftLevelCap -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.MainStorySoftLevelCap; en = $uiDescEn.Descriptions.MainStorySoftLevelCap }
-    Register-ControlDescription -Control $controls.GymLeagueStoryLevelCap -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.GymLeagueStoryLevelCap; en = $uiDescEn.Descriptions.GymLeagueStoryLevelCap }
-    Register-ControlDescription -Control $controls.StoryMajorBattleOrderLevelCap -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.StoryMajorBattleOrderLevelCap; en = $uiDescEn.Descriptions.StoryMajorBattleOrderLevelCap }
-    Register-ControlDescription -Control $controls.AutoInstallToEden -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.AutoInstallToEden; en = $uiDescEn.Descriptions.AutoInstallToEden }
-    Register-ControlDescription -Control $edenModNameBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.EdenModName; en = $uiDescEn.Descriptions.EdenModName }
-    Register-ControlDescription -Control $controls.InstallToEden -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.InstallTargetEden; en = $uiDescEn.Descriptions.InstallTargetEden }
-    Register-ControlDescription -Control $controls.InstallToRyujinx -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.InstallTargetRyujinx; en = $uiDescEn.Descriptions.InstallTargetRyujinx }
-    Register-ControlDescription -Control $controls.InstallToYuzu -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.InstallTargetYuzu; en = $uiDescEn.Descriptions.InstallTargetYuzu }
-    Register-ControlDescription -Control $controls.InstallToSudachi -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.InstallTargetSudachi; en = $uiDescEn.Descriptions.InstallTargetSudachi }
-    Register-ControlDescription -Control $controls.InstallToCitron -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.InstallTargetCitron; en = $uiDescEn.Descriptions.InstallTargetCitron }
-    Register-ControlDescription -Control $controls.InstallToSuyu -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.InstallTargetSuyu; en = $uiDescEn.Descriptions.InstallTargetSuyu }
-    Register-ControlDescription -Control $controls.InstallToCitronNeo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.InstallTargetCitronNeo; en = $uiDescEn.Descriptions.InstallTargetCitronNeo }
-    Register-ControlDescription -Control $controls.RaceMode -DetailsBox $detailsBox -Description @{ fr = "Mode race: garde la seed finale dans un fichier race-summary.json non detaille et ecrit les spoilers complets dans spoiler-log.json. Le resume de seed peut spoiler; ne l'ouvre que si tu veux voir le contenu de la run."; en = "Race mode: keeps the final seed in a non-detailed race-summary.json and writes full spoilers into spoiler-log.json. The seed summary can spoil the run; open it only if you want to see run contents." }
-    Register-ControlDescription -Control $controls.ExportEncounterZoneReport -DetailsBox $detailsBox -Description @{ fr = "Exporte encounter-zones.json pour le viewer: zones, methodes d'apparition, chances, niveaux et especes avant/apres. Ce fichier peut spoiler les rencontres."; en = "Exports encounter-zones.json for the viewer: zones, encounter methods, chances, levels, and before/after species. This file can spoil encounters." }
-    Register-ControlDescription -Control $evoModeCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.EvolutionMode; en = $uiDescEn.Descriptions.EvolutionMode }
-    Register-ControlDescription -Control $controls.AllowLegendaryEvolutions -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.AllowLegendaryEvo; en = $uiDescEn.Descriptions.AllowLegendaryEvo }
-    Register-ControlDescription -Control $controls.NormalizeFriendshipEvolutions -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.NormalizeFriendship; en = $uiDescEn.Descriptions.NormalizeFriendship }
-    Register-ControlDescription -Control $friendshipLevelBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.NormalizeFriendship; en = $uiDescEn.Descriptions.NormalizeFriendship }
-    Register-ControlDescription -Control $controls.NormalizeTradeEvolutions -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.NormalizeTrade; en = $uiDescEn.Descriptions.NormalizeTrade }
-    Register-ControlDescription -Control $tradeLevelBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.NormalizeTrade; en = $uiDescEn.Descriptions.NormalizeTrade }
-    Register-ControlDescription -Control $controls.NormalizeSpecialEvolutions -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.NormalizeSpecial; en = $uiDescEn.Descriptions.NormalizeSpecial }
-    Register-ControlDescription -Control $specialLevelBox -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.NormalizeSpecial; en = $uiDescEn.Descriptions.NormalizeSpecial }
-    Register-ControlDescription -Control $giftModeCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.GiftMode; en = $uiDescEn.Descriptions.GiftMode }
-    Register-ControlDescription -Control $controls.AllowLegendaryGifts -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.AllowLegendaryGifts; en = $uiDescEn.Descriptions.AllowLegendaryGifts }
-    Register-ControlDescription -Control $tradeModeCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.TradeMode; en = $uiDescEn.Descriptions.TradeMode }
-    Register-ControlDescription -Control $controls.AllowLegendaryTrades -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.AllowLegendaryTrades; en = $uiDescEn.Descriptions.AllowLegendaryTrades }
-    Register-ControlDescription -Control $staticEncounterCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.StaticMode; en = $uiDescEn.Descriptions.StaticMode }
-    Register-ControlDescription -Control $controls.AllowLegendaryStaticEncounters -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.AllowLegendaryStatic; en = $uiDescEn.Descriptions.AllowLegendaryStatic }
-    Register-ControlDescription -Control $staticStableMappingCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.StaticStableMapping; en = $uiDescEn.Descriptions.StaticStableMapping }
-    Register-ControlDescription -Control $grassEncounterCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.GrassMode; en = $uiDescEn.Descriptions.GrassMode }
-    Register-ControlDescription -Control $controls.AllowLegendaryGrassEncounters -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.AllowLegendaryGrass; en = $uiDescEn.Descriptions.AllowLegendaryGrass }
-    Register-ControlDescription -Control $grassStableMappingCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.GrassStableMapping; en = $uiDescEn.Descriptions.GrassStableMapping }
-    Register-ControlDescription -Control $visibleBehaviorCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.VisibleEncounterBehavior; en = $uiDescEn.Descriptions.VisibleEncounterBehavior }
-    Register-ControlDescription -Control $undergroundModeCombo -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.UndergroundMode; en = $uiDescEn.Descriptions.UndergroundMode }
-    Register-ControlDescription -Control $controls.AllowLegendaryUnderground -DetailsBox $detailsBox -Description @{ fr = $uiDescFr.Descriptions.AllowLegendaryUnderground; en = $uiDescEn.Descriptions.AllowLegendaryUnderground }
-
-    $statusBox.Location = New-Object System.Drawing.Point(18, 918)
-    $statusBox.Size = New-Object System.Drawing.Size(1130, 62)
-    $statusBox.Text = ""
-    $form.Controls.Add($statusBox)
-
-    $script:ApplyingUiLanguage = $false
-    $script:ApplyingCompatibilityUi = $false
-    $script:LastDetailsDescription = $null
-    function Apply-UiLanguage {
-        param([string]$Language)
-
-        if ($script:ApplyingUiLanguage) {
-            return
-        }
-        $script:ApplyingUiLanguage = $true
-
-        $script:UiLanguage = if ($Language -eq "en") { "en" } else { "fr" }
-        $ui = Get-UiStrings -Language $script:UiLanguage
-
-        $form.Text = $ui.FormTitle
-        $sourceLabel.Text = $ui.SourceLabel
-        $sourceExefsLabel.Text = $ui.SourceExefsLabel
-        $outputLabel.Text = $ui.OutputLabel
-        $gameVersionLabel.Text = $ui.GameVersion
-        $seedLabel.Text = $ui.Seed
-        $uiLangLabel.Text = $ui.UiLanguage
-        $reportLangLabel.Text = $ui.ReportLanguage
-        $themeLabel.Text = $ui.Theme
-        $difficultyProfileLabel.Text = $ui.DifficultyProfile
-        $browseSource.Text = $ui.Browse
-        $browseSourceExefs.Text = $ui.Browse
-        $browseOutput.Text = $ui.Browse
-        $runButton.Text = $ui.Generate
-        $applyDifficultyProfileButton.Text = $ui.ApplyDifficultyProfile
-        $validateBuildButton.Text = $ui.ValidateBuild
-        $buildSummaryButton.Text = $ui.BuildSummary
-        $exportPresetButton.Text = if ($script:UiLanguage -eq "en") { "Export preset" } else { "Exporter preset" }
-        $importPresetButton.Text = if ($script:UiLanguage -eq "en") { "Import preset" } else { "Importer preset" }
-        $generalTab.Text = $ui.Tabs.General
-        $trainerTab.Text = $ui.Tabs.Trainers
-        $pokemonTab.Text = $ui.Tabs.Pokemon
-        $evoTab.Text = $ui.Tabs.Evolutions
-        $giftTab.Text = $ui.Tabs.Gifts
-        $encounterTab.Text = $ui.Tabs.Encounters
-        $helpTab.Text = $ui.Tabs.Help
-        $resetTab.Text = $ui.Tabs.Reset
-
-        for ($i = 0; $i -lt $generalInfoLabels.Count; $i++) {
-            $generalInfoLabels[$i].Text = $ui.GeneralLines[$i]
-        }
-        $controls.DisableExpShare.Text = $ui.Labels.DisableExpShare
-        $controls.EarlyBike.Text = $ui.Labels.EarlyBike
-        $controls.RuntimePcControls.Text = $ui.Labels.RuntimePcControls
-        $controls.DynamicExpLevelCap.Text = $ui.Labels.DynamicExpLevelCap
-        $controls.StrictBossMaxLevelCap.Text = $ui.Labels.StrictBossMaxLevelCap
-        $controls.MainStorySoftLevelCap.Text = $ui.Labels.MainStorySoftLevelCap
-        $controls.GymLeagueStoryLevelCap.Text = $ui.Labels.GymLeagueStoryLevelCap
-        $controls.StoryMajorBattleOrderLevelCap.Text = $ui.Labels.StoryMajorBattleOrderLevelCap
-        $controls.AutoInstallToEden.Text = $ui.Labels.AutoInstallToEden
-        $edenModNameLabel.Text = $ui.Labels.EdenModName
-        $controls.InstallToEden.Text = $ui.Labels.InstallTargetEden
-        $controls.InstallToRyujinx.Text = $ui.Labels.InstallTargetRyujinx
-        $controls.InstallToYuzu.Text = $ui.Labels.InstallTargetYuzu
-        $controls.InstallToSudachi.Text = $ui.Labels.InstallTargetSudachi
-        $controls.InstallToCitron.Text = $ui.Labels.InstallTargetCitron
-        $controls.InstallToSuyu.Text = $ui.Labels.InstallTargetSuyu
-        $controls.InstallToCitronNeo.Text = $ui.Labels.InstallTargetCitronNeo
-        $controls.RaceMode.Text = if ($script:UiLanguage -eq "en") { "Race mode (locked seed / separate logs)" } else { "Race mode (seed fixe / logs separes)" }
-        $controls.ExportEncounterZoneReport.Text = if ($script:UiLanguage -eq "en") { "Encounter zones JSON" } else { "JSON zones rencontres" }
-        $resetInfoLabel.Text = $ui.Labels.ResetDefault
-        $resetButton.Text = $ui.Labels.ResetButton
-
-        $trainerSpeciesLabel.Text = $ui.Labels.TrainerSpecies
-        $trainerMovesLabel.Text = $ui.Labels.TrainerMoves
-        $trainerItemsLabel.Text = $ui.Labels.TrainerItems
-        $trainerItemPoolLabel.Text = $ui.Labels.TrainerItemPool
-        $trainerAbilityLabel.Text = $ui.Labels.TrainerAbility
-        $trainerIvLabel.Text = $ui.Labels.TrainerIV
-        $trainerEvLabel.Text = $ui.Labels.TrainerEV
-        $trainerAddedSlotSpeciesLabel.Text = $ui.Labels.TrainerAddedSlotSpecies
-        $trainerDuplicateModeLabel.Text = $ui.Labels.TrainerDuplicateMode
-        $bossTeamsScopeLabel.Text = $ui.Labels.BossTeamsScope
-        $trainerLevelLabel.Text = $ui.Labels.TrainerLevel
-        $trainerTeamMinLabel.Text = $ui.Labels.TrainerTeamMin
-        $trainerTeamMaxLabel.Text = $ui.Labels.TrainerTeamMax
-        $trainerNatureModeLabel.Text = $ui.Labels.RandomizeNatures
-        $controls.TrainerTypeThemed.Text = $ui.Labels.TrainerTypeThemed
-        $trainerShinyLabel.Text = $ui.Labels.TrainerShinyChance
-        $controls.ForceTrainerFullyEvolved.Text = $ui.Labels.ForceTrainerFullyEvolved
-        $trainerFullyEvolvedLevelLabel.Text = $ui.Labels.TrainerFullyEvolvedLevel
-        $controls.MaxTrainerAI.Text = $ui.Labels.MaxTrainerAI
-        $trainerDynamaxLevelLabel.Text = $ui.Labels.TrainerDynamaxLevel
-        $controls.ForceTrainerCanDynamax.Text = $ui.Labels.ForceTrainerCanDynamax
-        $controls.ForceAllTeamsToSix.Text = $ui.Labels.ForceAllTeams
-        $controls.ForceBossTeamsToSix.Text = $ui.Labels.ForceBossTeams
-        $controls.AllowLegendaryTrainers.Text = $ui.Labels.AllowLegendaryTrainers
-        $bossScopeValue = if ($controls.BossTeamsToSixScope) { Get-ComboValue -Combo $controls.BossTeamsToSixScope } else { $script:BossTeamsToSixScope }
-        $bossTargetsBox.Text = Get-BossTrainerUniqueNamesText -Language $script:UiLanguage -Scope $bossScopeValue
-        $typeModeLabel.Text = $ui.Labels.TypeMode
-        $controls.TypesMonotypeOnly.Text = $ui.Labels.ForceMonotype
-        $abilityModeLabel.Text = $ui.Labels.AbilityMode
-        $controls.AllowWonderGuard.Text = $ui.Labels.AllowWonderGuard
-        $statModeLabel.Text = $ui.Labels.StatMode
-        $expYieldMultiplierLabel.Text = $ui.Labels.ExpYieldMultiplier
-        $controls.ForceOneExpYield.Text = $ui.Labels.ForceOneExpYield
-        $controls.RandomizeMoveTypes.Text = $ui.Labels.MoveTypeMode
-        $controls.RandomizeMovePower.Text = $ui.Labels.MovePowerMode
-        $movePowerMinLabel.Text = $ui.Labels.MovePowerMin
-        $movePowerMaxLabel.Text = $ui.Labels.MovePowerMax
-        $controls.RandomizeMovePP.Text = $ui.Labels.MovePPMode
-        $movePPMinLabel.Text = $ui.Labels.MovePPMin
-        $movePPMaxLabel.Text = $ui.Labels.MovePPMax
-        $controls.RandomizeMoveAccuracy.Text = $ui.Labels.MoveAccuracyMode
-        $moveAccuracyMinLabel.Text = $ui.Labels.MoveAccuracyMin
-        $moveAccuracyMaxLabel.Text = $ui.Labels.MoveAccuracyMax
-        $controls.RandomizeMoveCategory.Text = $ui.Labels.MoveCategoryMode
-        $controls.RandomizePickupItems.Text = if ($script:UiLanguage -eq "en") { "Pickup / field items" } else { "Objets ramassables" }
-        $controls.RandomizeShopItems.Text = if ($script:UiLanguage -eq "en") { "Shop items" } else { "Objets boutiques" }
-        $controls.RandomizeTechnicalRecords.Text = if ($script:UiLanguage -eq "en") { "TM/TR item IDs" } else { "Objets CT/TR" }
-        $evoModeLabel.Text = $ui.Labels.EvolutionMode
-        $controls.AllowLegendaryEvolutions.Text = $ui.Labels.AllowLegendaryEvo
-        $controls.NormalizeFriendshipEvolutions.Text = $ui.Labels.NormalizeFriendship
-        $friendshipLevelLabel.Text = $ui.Labels.FriendshipLevel
-        $controls.NormalizeTradeEvolutions.Text = $ui.Labels.NormalizeTrade
-        $tradeLevelLabelEvo.Text = $ui.Labels.TradeLevel
-        $controls.NormalizeSpecialEvolutions.Text = $ui.Labels.NormalizeSpecial
-        $specialLevelLabelEvo.Text = $ui.Labels.SpecialLevel
-        $giftModeLabel.Text = $ui.Labels.GiftMode
-        $starterModeLabel.Text = $ui.Labels.StarterMode
-        $controls.AllowLegendaryGifts.Text = $ui.Labels.AllowLegendaryGifts
-        $manualStarterGroupLabel.Text = $ui.Labels.ManualStarterGroup
-        $starter1Label.Text = $ui.Labels.Slot1
-        $starter2Label.Text = $ui.Labels.Slot2
-        $starter3Label.Text = $ui.Labels.Slot3
-        $controls.PatchStarterRelatedTrainers.Text = $ui.Labels.PatchStarters
-        $tradeModeLabel.Text = $ui.Labels.TradeMode
-        $controls.AllowLegendaryTrades.Text = $ui.Labels.AllowLegendaryTrades
-        $staticModeLabel.Text = $ui.Labels.StaticMode
-        $controls.AllowLegendaryStaticEncounters.Text = $ui.Labels.AllowLegendaryStatic
-        $staticStableMappingLabel.Text = $ui.Labels.StaticStableMapping
-        $grassModeLabel.Text = $ui.Labels.GrassMode
-        $controls.AllowLegendaryGrassEncounters.Text = $ui.Labels.AllowLegendaryGrass
-        $grassStableMappingLabel.Text = $ui.Labels.GrassStableMapping
-        $visibleBehaviorLabel.Text = $ui.Labels.VisibleEncounterBehavior
-        $undergroundModeLabel.Text = $ui.Labels.UndergroundMode
-        $controls.AllowLegendaryUnderground.Text = $ui.Labels.AllowLegendaryUnderground
-
-        Set-LocalizedComboItems -Combo $uiLangCombo -Items @(
-            @{ Label = $ui.UiLanguageFrench; Value = "fr" },
-            @{ Label = $ui.UiLanguageEnglish; Value = "en" }
-        )
-        Set-LocalizedComboItems -Combo $reportLangCombo -Items @(
-            @{ Label = $ui.ReportLanguageFrench; Value = "fr" },
-            @{ Label = $ui.ReportLanguageEnglish; Value = "en" }
-        )
-        Set-LocalizedComboItems -Combo $themeCombo -Items @(
-            @{ Label = $ui.ThemeLight; Value = "Light" },
-            @{ Label = $ui.ThemeDark; Value = "Dark" }
-        )
-        Set-LocalizedComboItems -Combo $difficultyProfileCombo -Items (Get-DifficultyProfileComboItems -Language $script:UiLanguage)
-        Set-LocalizedComboItems -Combo $trainerSpeciesCombo -Items @(
-            @{ Label = $ui.ModeRandom; Value = "Random" },
-            @{ Label = $ui.ModeSimilarBST; Value = "SimilarBST" },
-            @{ Label = $ui.ModeUnchanged; Value = "Unchanged" }
-        )
-        Set-LocalizedComboItems -Combo $trainerMoveCombo -Items @(
-            @{ Label = $ui.TrainerMoveRandom4; Value = "Random4" },
-            @{ Label = $ui.TrainerMoveLevel4; Value = "LastLevelUp4" },
-            @{ Label = $ui.TrainerMoveSmogon; Value = "SmogonStrategic" },
-            @{ Label = $ui.TrainerMoveSmogonLegacy; Value = "SmogonLegacy" },
-            @{ Label = $ui.ModeUnchanged; Value = "Unchanged" }
-        )
-        $trainerSmogonMoveFallbackLabel.Text = $ui.Labels.TrainerSmogonMoveFallback
-        Set-LocalizedComboItems -Combo $trainerSmogonMoveFallbackCombo -Items @(
-            @{ Label = $ui.TrainerSmogonMoveFallbackLevel; Value = "LastLevelUp4" },
-            @{ Label = $ui.TrainerSmogonMoveFallbackRandom; Value = "Random4" },
-            @{ Label = $ui.TrainerSmogonMoveFallbackUnchanged; Value = "Unchanged" }
-        )
-        Set-LocalizedComboItems -Combo $trainerItemCombo -Items @(
-            @{ Label = $ui.TrainerItemRandomPresent; Value = "RandomWhenPresent" },
-            @{ Label = $ui.TrainerItemForceAll; Value = "ForceAll" },
-            @{ Label = $ui.TrainerItemSmogon; Value = "SmogonStrategic" },
-            @{ Label = $ui.TrainerItemSmogonLegacy; Value = "SmogonLegacy" },
-            @{ Label = $ui.TrainerItemRemoveAll; Value = "RemoveAll" },
-            @{ Label = $ui.ModeUnchanged; Value = "Unchanged" }
-        )
-        Set-LocalizedComboItems -Combo $trainerItemPoolCombo -Items @(
-            @{ Label = $ui.TrainerItemPoolBattle; Value = "Battle" },
-            @{ Label = $ui.TrainerItemPoolFull; Value = "FullRandom" }
-        )
-        Set-LocalizedComboItems -Combo $trainerAbilityCombo -Items @(
-            @{ Label = $ui.TrainerAbilityRandom; Value = "RandomSlot" },
-            @{ Label = $ui.TrainerAbilitySmogon; Value = "SmogonStrategic" },
-            @{ Label = $ui.TrainerAbilitySmogonLegacy; Value = "SmogonLegacy" },
-            @{ Label = $ui.ModeUnchanged; Value = "Unchanged" }
-        )
-        Set-LocalizedComboItems -Combo $trainerIvCombo -Items @(
-            @{ Label = $ui.TrainerIVMax; Value = "Max31" },
-            @{ Label = $ui.TrainerIVRandom; Value = "Random" },
-            @{ Label = $ui.ModeUnchanged; Value = "Unchanged" }
-        )
-        Set-LocalizedComboItems -Combo $trainerEvCombo -Items @(
-            @{ Label = $ui.TrainerEVSmogon; Value = "SmogonStrategic" },
-            @{ Label = $ui.TrainerEVSmogonLegacy; Value = "SmogonLegacy" },
-            @{ Label = $ui.TrainerEVRandom; Value = "RandomLegal" },
-            @{ Label = $ui.TrainerEVZero; Value = "Zero" },
-            @{ Label = $ui.ModeUnchanged; Value = "Unchanged" }
-        )
-        Set-LocalizedComboItems -Combo $trainerNatureModeCombo -Items @(
-            @{ Label = $ui.TrainerNatureUnchanged; Value = "Unchanged" },
-            @{ Label = $ui.TrainerNatureRandom; Value = "Random" },
-            @{ Label = $ui.TrainerNatureSmogon; Value = "SmogonStrategic" },
-            @{ Label = $ui.TrainerNatureSmogonLegacy; Value = "SmogonLegacy" }
-        )
-        Set-LocalizedComboItems -Combo $trainerAddedSlotSpeciesCombo -Items @(
-            @{ Label = $ui.TrainerAddedSlotRandom; Value = "Random" },
-            @{ Label = $ui.TrainerAddedSlotSimilarBST; Value = "SimilarBST" },
-            @{ Label = $ui.TrainerAddedSlotSameType; Value = "SameTypeRandom" },
-            @{ Label = $ui.TrainerAddedSlotSameTypeBST; Value = "SameTypeBST" }
-        )
-        Set-LocalizedComboItems -Combo $trainerDuplicateModeCombo -Items @(
-            @{ Label = $ui.TrainerDuplicateNoDuplicates; Value = "NoDuplicates" },
-            @{ Label = $ui.TrainerDuplicateNormal; Value = "Normal" }
-        )
-        Set-LocalizedComboItems -Combo $bossTeamsScopeCombo -Items @(
-            @{ Label = $ui.BossScopeMajor; Value = "MajorBosses" },
-            @{ Label = $ui.BossScopeGymLeague; Value = "GymLeague" }
-        )
-        Set-LocalizedComboItems -Combo $trainerDynamaxLevelCombo -Items @(
-            @{ Label = $ui.Labels.TrainerDynamaxUnchanged; Value = "Unchanged" },
-            @{ Label = $ui.Labels.TrainerDynamaxMax; Value = "Max10" },
-            @{ Label = $ui.Labels.TrainerDynamaxRandom; Value = "Random0To10" }
-        )
-        Set-LocalizedComboItems -Combo $typeModeCombo -Items @(
-            @{ Label = if ($script:UiLanguage -eq "en") { "Randomize Pokemon types" } else { "Randomiser les types" }; Value = "Random" },
-            @{ Label = $ui.ModeUnchanged; Value = "Unchanged" }
-        )
-        Set-LocalizedComboItems -Combo $abilityModeCombo -Items @(
-            @{ Label = if ($script:UiLanguage -eq "en") { "Randomize species abilities" } else { "Randomiser les talents des especes" }; Value = "Random" },
-            @{ Label = $ui.ModeUnchanged; Value = "Unchanged" }
-        )
-        Set-LocalizedComboItems -Combo $statModeCombo -Items @(
-            @{ Label = $ui.StatShuffle; Value = "Shuffle" },
-            @{ Label = $ui.StatRedistribute; Value = "Redistribute" },
-            @{ Label = $ui.ModeUnchanged; Value = "Unchanged" }
-        )
-        foreach ($combo in @($evoModeCombo, $giftModeCombo, $tradeModeCombo, $staticEncounterCombo, $grassEncounterCombo, $undergroundModeCombo)) {
-            Set-LocalizedComboItems -Combo $combo -Items @(
-                @{ Label = $ui.ModeRandom; Value = "Random" },
-                @{ Label = $ui.ModeSimilarBST; Value = "SimilarBST" },
-                @{ Label = $ui.ModeUnchanged; Value = "Unchanged" }
-            )
-        }
-        Set-LocalizedComboItems -Combo $starterModeCombo -Items @(
-            @{ Label = $ui.StarterRandom; Value = "Random" },
-            @{ Label = $ui.StarterSimilarBST; Value = "SimilarBST" },
-            @{ Label = $ui.StarterUnchanged; Value = "Unchanged" }
-        )
-        foreach ($combo in @($staticStableMappingCombo, $grassStableMappingCombo)) {
-            Set-LocalizedComboItems -Combo $combo -Items @(
-                @{ Label = $ui.MappingSlot; Value = "Slot" },
-                @{ Label = $ui.MappingSpecies; Value = "Species" },
-                @{ Label = $ui.MappingTrueRandom; Value = "Random" }
-            )
-        }
-        Set-LocalizedComboItems -Combo $visibleBehaviorCombo -Items @(
-            @{ Label = if ($script:UiLanguage -eq "en") { "Classic: visible = battle" } else { "Classique: visible = combat" }; Value = "RomfsMatch" },
-            @{ Label = if ($script:UiLanguage -eq "en") { "Random visible + hidden battle" } else { "Visuel random + combat cache" }; Value = "RandomVisualBattleRandom" },
-            @{ Label = if ($script:UiLanguage -eq "en") { "Vanilla visible + hidden battle" } else { "Visuel vanilla + combat cache" }; Value = "VanillaVisualBattleRandom" }
-        )
-
-        if ($script:LastDetailsDescription) {
-            $detailsBox.Text = Get-LocalizedDescriptionText -Description $script:LastDetailsDescription
-        } elseif ([string]::IsNullOrWhiteSpace($detailsBox.Text) -or
-            $detailsBox.Text -eq (Get-UiStrings -Language "fr").Labels.DetailsDefault -or
-            $detailsBox.Text -eq (Get-UiStrings -Language "en").Labels.DetailsDefault) {
-            $detailsBox.Text = $ui.Labels.DetailsDefault
-        }
-        if ([string]::IsNullOrWhiteSpace($statusBox.Text)) {
-            $statusBox.Text = $ui.Labels.StatusDefault
-        }
-        $script:ApplyingUiLanguage = $false
-    }
-
-    function Update-InstallationUi {
-        $gameVersion = Get-SourceGameVersion -RomfsRoot $controls.Source.Text
-        $modName = Get-NormalizedModName -ModName $controls.EdenModName.Text
-        $ui = Get-UiStrings -Language $script:UiLanguage
-        $targetMap = @{}
-        foreach ($target in @(Get-EmulatorInstallTargets -GameVersion $gameVersion -ModName $modName)) {
-            $targetMap[[string]$target.Key] = $target
-        }
-
-        foreach ($pair in @(
-            @{ Control = $controls.InstallToEden; ResetControl = $controls.ResetInstallToEden; Key = "eden"; Label = $ui.Labels.InstallTargetEden },
-            @{ Control = $controls.InstallToRyujinx; ResetControl = $controls.ResetInstallToRyujinx; Key = "ryujinx"; Label = $ui.Labels.InstallTargetRyujinx },
-            @{ Control = $controls.InstallToYuzu; ResetControl = $controls.ResetInstallToYuzu; Key = "yuzu"; Label = $ui.Labels.InstallTargetYuzu },
-            @{ Control = $controls.InstallToSudachi; ResetControl = $controls.ResetInstallToSudachi; Key = "sudachi"; Label = $ui.Labels.InstallTargetSudachi },
-            @{ Control = $controls.InstallToCitron; ResetControl = $controls.ResetInstallToCitron; Key = "citron"; Label = $ui.Labels.InstallTargetCitron },
-            @{ Control = $controls.InstallToSuyu; ResetControl = $controls.ResetInstallToSuyu; Key = "suyu"; Label = $ui.Labels.InstallTargetSuyu },
-            @{ Control = $controls.InstallToCitronNeo; ResetControl = $controls.ResetInstallToCitronNeo; Key = "citronneo"; Label = $ui.Labels.InstallTargetCitronNeo }
-        )) {
-            $target = $targetMap[$pair.Key]
-            $statusText = if ($target -and [bool]$target.IsDetected) {
-                if ($script:UiLanguage -eq "en") { "detected" } else { "detecte" }
-            } else {
-                if ($script:UiLanguage -eq "en") { "not found" } else { "introuvable" }
-            }
-            $pair.Control.Text = ("{0} [{1}]" -f $pair.Label, $statusText)
-            $pair.ResetControl.Text = $pair.Control.Text
-            if ($controls.AutoInstallToEden) {
-                $pair.Control.Enabled = ([bool]$controls.AutoInstallToEden.Checked -and $target -and [bool]$target.IsDetected)
-            }
-            if ($pair.ResetControl) {
-                $pair.ResetControl.Enabled = ($target -and [bool]$target.IsDetected)
-            }
-        }
-
-        $helpBox.Text = Get-RandomizerHelpText -Language $script:UiLanguage -GameVersion $gameVersion -ModName $modName -OutputRomfsRoot $controls.Output.Text
-        if ([string]::IsNullOrWhiteSpace($resetStatusBox.Text)) {
-            $resetStatusBox.Text = $ui.Labels.ResetDefault
-        }
-    }
-
-    function Set-OptionControlsEnabled {
-        param(
-            [bool]$Enabled,
-            [object[]]$ControlList
-        )
-
-        foreach ($control in @($ControlList)) {
-            if ($null -ne $control) {
-                $control.Enabled = $Enabled
-            }
-        }
-    }
-
-    function Update-CompatibilityUi {
-        if ($script:ApplyingCompatibilityUi) {
-            return
-        }
-
-        $script:ApplyingCompatibilityUi = $true
-        try {
-            $trainerSpeciesModeValue = Normalize-Mode (Get-ComboValue -Combo $controls.TrainerSpeciesMode)
-            $trainerMoveModeValue = Normalize-Mode (Get-ComboValue -Combo $controls.TrainerMoveMode)
-            $trainerItemModeValue = Normalize-Mode (Get-ComboValue -Combo $controls.TrainerItemMode)
-            $forceAllTeams = [bool]$controls.ForceAllTeamsToSix.Checked
-            if ($forceAllTeams -and [bool]$controls.ForceBossTeamsToSix.Checked) {
-                $controls.ForceBossTeamsToSix.Checked = $false
-            }
-
-            $forceBossTeams = ([bool]$controls.ForceBossTeamsToSix.Checked -and -not $forceAllTeams)
-            $teamExpansionEnabled = ($forceAllTeams -or $forceBossTeams)
-            $smogonItemModeEnabled = Test-TrainerModeUsesSmogon $trainerItemModeValue
-            $itemRandomEnabled = ($trainerItemModeValue -in @("randomwhenpresent", "forceall"))
-            $smogonMoveFallbackEnabled = Test-TrainerModeUsesSmogon $trainerMoveModeValue
-            $speciesRandomEnabled = ($trainerSpeciesModeValue -ne "unchanged")
-            $addedSlotSpeciesChoiceEnabled = ($teamExpansionEnabled -and -not $speciesRandomEnabled)
-            $duplicateModeUseful = ($speciesRandomEnabled -or $itemRandomEnabled -or $smogonItemModeEnabled -or $teamExpansionEnabled)
-
-            if ($smogonItemModeEnabled) {
-                [void](Set-ComboValue -Combo $controls.TrainerItemPoolMode -Value "Battle")
-            }
-
-            Set-OptionControlsEnabled -Enabled $itemRandomEnabled -ControlList @($trainerItemPoolLabel, $trainerItemPoolCombo)
-            Set-OptionControlsEnabled -Enabled $smogonMoveFallbackEnabled -ControlList @($trainerSmogonMoveFallbackLabel, $trainerSmogonMoveFallbackCombo)
-            Set-OptionControlsEnabled -Enabled $addedSlotSpeciesChoiceEnabled -ControlList @($trainerAddedSlotSpeciesLabel, $trainerAddedSlotSpeciesCombo)
-            Set-OptionControlsEnabled -Enabled $duplicateModeUseful -ControlList @($trainerDuplicateModeLabel, $trainerDuplicateModeCombo)
-            Set-OptionControlsEnabled -Enabled $speciesRandomEnabled -ControlList @($controls.TrainerTypeThemed)
-            Set-OptionControlsEnabled -Enabled ($speciesRandomEnabled -or $addedSlotSpeciesChoiceEnabled) -ControlList @($controls.AllowLegendaryTrainers)
-            Set-OptionControlsEnabled -Enabled (-not $forceAllTeams) -ControlList @($controls.ForceBossTeamsToSix)
-            Set-OptionControlsEnabled -Enabled $forceBossTeams -ControlList @($bossTeamsScopeLabel, $bossTeamsScopeCombo, $bossTargetsBox)
-
-            if (-not $forceBossTeams) {
-                $bossTargetsBox.Text = if ($script:UiLanguage -eq "en") {
-                    "Enable boss teams at 6 Pokemon to use this target list."
-                } else {
-                    "Active boss a 6 Pokemon pour utiliser cette liste de cibles."
-                }
-            } else {
-                $bossTargetsBox.Text = Get-BossTrainerUniqueNamesText -Language $script:UiLanguage -Scope (Get-ComboValue -Combo $controls.BossTeamsToSixScope)
-            }
-
-            Update-InstallationUi
-        } finally {
-            $script:ApplyingCompatibilityUi = $false
-        }
-    }
-
-    $uiLangCombo.Add_SelectedIndexChanged({
-        Apply-UiLanguage -Language (Get-ComboValue -Combo $controls.UiLanguage)
-        Update-InstallationUi
-        Update-CompatibilityUi
-        Bring-TopChromeToFront
-    })
-
-    $themeCombo.Add_SelectedIndexChanged({
-        Apply-GuiTheme -Root $form -Theme (Get-ComboValue -Combo $controls.GuiTheme)
-        Bring-TopChromeToFront
-    })
-
-    $bossTeamsScopeCombo.Add_SelectedIndexChanged({
-        if (-not $script:ApplyingUiLanguage) {
-            $bossTargetsBox.Text = Get-BossTrainerUniqueNamesText -Language $script:UiLanguage -Scope (Get-ComboValue -Combo $controls.BossTeamsToSixScope)
-        }
-    })
-
-    foreach ($combo in @(
-        $trainerSpeciesCombo,
-        $trainerMoveCombo,
-        $trainerItemCombo,
-        $trainerAddedSlotSpeciesCombo,
-        $trainerDuplicateModeCombo
-    )) {
-        $combo.Add_SelectedIndexChanged({ Update-CompatibilityUi })
-    }
-
-    foreach ($checkBox in @(
-        $controls.ForceAllTeamsToSix,
-        $controls.ForceBossTeamsToSix,
-        $controls.AutoInstallToEden
-    )) {
-        $checkBox.Add_CheckedChanged({ Update-CompatibilityUi })
-    }
-
-    $controls.Source.Add_TextChanged({ Update-InstallationUi; Update-CompatibilityUi })
-    $controls.Output.Add_TextChanged({ Update-InstallationUi })
-    $controls.EdenModName.Add_TextChanged({ Update-InstallationUi; Update-CompatibilityUi })
-
-    $applyDifficultyProfileButton.Add_Click({
-        try {
-            $profileKey = Get-ComboValue -Combo $controls.DifficultyProfile
-            $result = Apply-DifficultyProfileToControls -Controls $controls -ProfileKey $profileKey
-            Disable-RemovedBuildOptions -Controls $controls
-            Update-InstallationUi
-            Update-CompatibilityUi
-            $profile = $result.Profile
-            $label = [string]$profile.Labels[$script:UiLanguage]
-            $description = [string]$profile.Descriptions[$script:UiLanguage]
-            $statusBox.Text = if ($script:UiLanguage -eq "en") {
-                "Difficulty profile applied: $label`r`nOptions changed: $($result.Applied)`r`n$description"
-            } else {
-                "Profil de difficulte applique: $label`r`nOptions modifiees: $($result.Applied)`r`n$description"
-            }
-        } catch {
-            $statusBox.Text = if ($script:UiLanguage -eq "en") {
-                "Profile error: $($_.Exception.Message)"
-            } else {
-                "Erreur profil: $($_.Exception.Message)"
-            }
-        }
-    })
-
-    $validateBuildButton.Add_Click({
-        try {
-            Disable-RemovedBuildOptions -Controls $controls
-            $validation = Test-GuiBuildConfiguration -Controls $controls -Language $script:UiLanguage
-            $statusBox.Text = Format-GuiBuildValidationResult -Validation $validation -Language $script:UiLanguage
-            if ($validation.Errors.Count -gt 0) {
-                [void](Confirm-GuiBuildValidationResult -Owner $form -Validation $validation -Language $script:UiLanguage -ConfirmWarnings $false)
-            } elseif ($validation.Warnings.Count -gt 0) {
-                $title = if ($script:UiLanguage -eq "en") { "Config warnings" } else { "Avertissements config" }
-                [void][System.Windows.Forms.MessageBox]::Show($form, $statusBox.Text, $title, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
-            } else {
-                $title = if ($script:UiLanguage -eq "en") { "Config OK" } else { "Config OK" }
-                [void][System.Windows.Forms.MessageBox]::Show($form, $statusBox.Text, $title, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-            }
-        } catch {
-            $statusBox.Text = "Erreur: $($_.Exception.Message)"
-        }
-    })
-
-    $buildSummaryButton.Add_Click({
-        try {
-            Disable-RemovedBuildOptions -Controls $controls
-            $validation = Test-GuiBuildConfiguration -Controls $controls -Language $script:UiLanguage
-            $statusBox.Text = Format-GuiBuildValidationResult -Validation $validation -Language $script:UiLanguage
-            if ($validation.Errors.Count -gt 0) {
-                [void](Confirm-GuiBuildValidationResult -Owner $form -Validation $validation -Language $script:UiLanguage -ConfirmWarnings $false)
-                return
-            }
-            $summary = Get-GuiBuildSummaryText -Controls $controls -Validation $validation -Language $script:UiLanguage
-            $statusBox.Text = $summary
-            [void](Show-GuiBuildSummaryDialog -Owner $form -SummaryText $summary -Language $script:UiLanguage -ConfirmGeneration $false)
-        } catch {
-            $statusBox.Text = "Erreur: $($_.Exception.Message)"
-        }
-    })
-
-    Apply-UiLanguage -Language $script:UiLanguage
-    Update-InstallationUi
-    Update-CompatibilityUi
-    Apply-GuiTheme -Root $form -Theme $script:GuiTheme
-    Bring-TopChromeToFront
-    $form.Add_Shown({ Bring-TopChromeToFront })
-
-    $exportPresetButton.Add_Click({
-        try {
-            $dialog = New-Object System.Windows.Forms.SaveFileDialog
-            $dialog.Filter = "JSON preset (*.json)|*.json|All files (*.*)|*.*"
-            $dialog.Title = if ($script:UiLanguage -eq "en") { "Export randomizer preset" } else { "Exporter le preset du randomizer" }
-            $dialog.FileName = "PokeFeurRandomSWSH-preset.json"
-            if ($dialog.ShowDialog($form) -ne [System.Windows.Forms.DialogResult]::OK) {
-                return
-            }
-
-            $preset = Get-GuiPresetFromControls -Controls $controls
-            $json = $preset | ConvertTo-Json -Depth 8
-            [IO.File]::WriteAllText($dialog.FileName, $json, [Text.UTF8Encoding]::new($false))
-            $statusBox.Text = if ($script:UiLanguage -eq "en") {
-                "Preset exported: $($dialog.FileName)"
-            } else {
-                "Preset exporte: $($dialog.FileName)"
-            }
-        } catch {
-            $statusBox.Text = if ($script:UiLanguage -eq "en") {
-                "Preset export error: $($_.Exception.Message)"
-            } else {
-                "Erreur export preset: $($_.Exception.Message)"
-            }
-        }
-    })
-
-    $importPresetButton.Add_Click({
-        try {
-            $dialog = New-Object System.Windows.Forms.OpenFileDialog
-            $dialog.Filter = "JSON preset (*.json)|*.json|All files (*.*)|*.*"
-            $dialog.Title = if ($script:UiLanguage -eq "en") { "Import randomizer preset" } else { "Importer un preset du randomizer" }
-            if ($dialog.ShowDialog($form) -ne [System.Windows.Forms.DialogResult]::OK) {
-                return
-            }
-
-            $preset = Get-Content -LiteralPath $dialog.FileName -Raw -Encoding UTF8 | ConvertFrom-Json
-            $applied = Set-GuiControlsFromPreset -Controls $controls -Preset $preset
-            Disable-RemovedBuildOptions -Controls $controls
-            Apply-UiLanguage -Language (Get-ComboValue -Combo $controls.UiLanguage)
-            Update-InstallationUi
-            Update-CompatibilityUi
-            Apply-GuiTheme -Root $form -Theme (Get-ComboValue -Combo $controls.GuiTheme)
-            Bring-TopChromeToFront
-            $statusBox.Text = if ($script:UiLanguage -eq "en") {
-                "Preset imported: $($dialog.FileName)`r`nOptions applied: $applied"
-            } else {
-                "Preset importe: $($dialog.FileName)`r`nOptions appliquees: $applied"
-            }
-        } catch {
-            $statusBox.Text = if ($script:UiLanguage -eq "en") {
-                "Preset import error: $($_.Exception.Message)"
-            } else {
-                "Erreur import preset: $($_.Exception.Message)"
-            }
-        }
-    })
-
-    $resetButton.Add_Click({
-        $previousInstallToEden = $script:InstallToEden
-        $previousInstallToRyujinx = $script:InstallToRyujinx
-        $previousInstallToYuzu = $script:InstallToYuzu
-        $previousInstallToSudachi = $script:InstallToSudachi
-        $previousInstallToCitron = $script:InstallToCitron
-        $previousInstallToSuyu = $script:InstallToSuyu
-        $previousInstallToCitronNeo = $script:InstallToCitronNeo
-        try {
-            $script:InstallToEden = [bool]$controls.ResetInstallToEden.Checked
-            $script:InstallToRyujinx = [bool]$controls.ResetInstallToRyujinx.Checked
-            $script:InstallToYuzu = [bool]$controls.ResetInstallToYuzu.Checked
-            $script:InstallToSudachi = [bool]$controls.ResetInstallToSudachi.Checked
-            $script:InstallToCitron = [bool]$controls.ResetInstallToCitron.Checked
-            $script:InstallToSuyu = [bool]$controls.ResetInstallToSuyu.Checked
-            $script:InstallToCitronNeo = [bool]$controls.ResetInstallToCitronNeo.Checked
-            if (@(Get-RequestedEmulatorKeys).Count -lt 1) {
-                throw $(if ($script:UiLanguage -eq "en") { "Select at least one emulator target for reset." } else { "Coche au moins une cible emulateur pour le reset." })
-            }
-
-            $gameVersion = Get-SourceGameVersion -RomfsRoot $controls.Source.Text
-            $resetResults = @(Reset-SelectedEmulatorInstallations -GameVersion $gameVersion -ModName $controls.EdenModName.Text)
-            if ($script:UiLanguage -eq "en") {
-                $lines = @("Reset finished.")
-                foreach ($entry in $resetResults) {
-                    if ([string]::IsNullOrWhiteSpace([string]$entry.Error)) {
-                        $lines += ("{0}: mod removed={1}, config removed={2}" -f $entry.Emulator, $entry.RemovedMod, $entry.RemovedConfig)
-                        if (-not [string]::IsNullOrWhiteSpace([string]$entry.Note)) {
-                            $lines += ("{0}: {1}" -f $entry.Emulator, [string]$entry.Note)
-                        }
-                    } else {
-                        $lines += ("{0}: {1}" -f $entry.Emulator, $entry.Error)
-                    }
-                }
-                $resetStatusBox.Text = ($lines -join [Environment]::NewLine)
-            } else {
-                $lines = @("Reset termine.")
-                foreach ($entry in $resetResults) {
-                    if ([string]::IsNullOrWhiteSpace([string]$entry.Error)) {
-                        $lines += ("{0}: mod supprime={1}, config supprimee={2}" -f $entry.Emulator, $entry.RemovedMod, $entry.RemovedConfig)
-                        if (-not [string]::IsNullOrWhiteSpace([string]$entry.Note)) {
-                            $lines += ("{0}: {1}" -f $entry.Emulator, [string]$entry.Note)
-                        }
-                    } else {
-                        $lines += ("{0}: {1}" -f $entry.Emulator, $entry.Error)
-                    }
-                }
-                $resetStatusBox.Text = ($lines -join [Environment]::NewLine)
-            }
-        } catch {
-            if ($script:UiLanguage -eq "en") {
-                $resetStatusBox.Text = ("Error: {0}" -f $_.Exception.Message)
-            } else {
-                $resetStatusBox.Text = ("Erreur: {0}" -f $_.Exception.Message)
-            }
-        } finally {
-            $script:InstallToEden = $previousInstallToEden
-            $script:InstallToRyujinx = $previousInstallToRyujinx
-            $script:InstallToYuzu = $previousInstallToYuzu
-            $script:InstallToSudachi = $previousInstallToSudachi
-            $script:InstallToCitron = $previousInstallToCitron
-            $script:InstallToSuyu = $previousInstallToSuyu
-            $script:InstallToCitronNeo = $previousInstallToCitronNeo
-            Update-InstallationUi
-        }
-    })
-
-    $runButton.Add_Click({
-        try {
-            $ui = Get-UiStrings -Language $script:UiLanguage
-            $runButton.Enabled = $false
-            $statusBox.Text = if ($script:UiLanguage -eq "en") { "Validating configuration..." } else { "Validation de la configuration..." }
-            $form.Refresh()
-
-            Disable-RemovedBuildOptions -Controls $controls
-            $validation = Test-GuiBuildConfiguration -Controls $controls -Language $script:UiLanguage
-            $statusBox.Text = Format-GuiBuildValidationResult -Validation $validation -Language $script:UiLanguage
-            if (-not (Confirm-GuiBuildValidationResult -Owner $form -Validation $validation -Language $script:UiLanguage -ConfirmWarnings $true)) {
-                return
-            }
-
-            $summary = Get-GuiBuildSummaryText -Controls $controls -Validation $validation -Language $script:UiLanguage
-            $statusBox.Text = $summary
-            if (-not (Show-GuiBuildSummaryDialog -Owner $form -SummaryText $summary -Language $script:UiLanguage -ConfirmGeneration $true)) {
-                return
-            }
-
-            $statusBox.Text = $ui.Labels.StatusRunning
-            $form.Refresh()
-
-            $seedText = ([string]$controls.Seed.Text).Trim()
-            $parsedSeed = 0L
-            if (-not [long]::TryParse($seedText, [ref]$parsedSeed)) {
-                throw $ui.Labels.SeedError
-            }
-
-            $script:SourceRomfs = $controls.Source.Text
-            $script:SourceExefs = $controls.SourceExefs.Text
-            $script:OutputRomfs = $controls.Output.Text
-            $script:GameVersion = Get-ComboValue -Combo $controls.GameVersion
-            $script:Seed = Resolve-SeedValue -SeedValue $parsedSeed
-            $script:UiLanguage = Get-ComboValue -Combo $controls.UiLanguage
-            $script:ReportLanguage = Get-ComboValue -Combo $controls.ReportLanguage
-            $script:DisableExpShare = [switch]$controls.DisableExpShare.Checked
-            $script:EarlyBike = [switch]$controls.EarlyBike.Checked
-            $script:RuntimePcControls = [bool]$controls.RuntimePcControls.Checked
-            $script:DynamicExpLevelCap = [switch]$controls.DynamicExpLevelCap.Checked
-            $script:StrictBossMaxLevelCap = [switch]$controls.StrictBossMaxLevelCap.Checked
-            $script:MainStorySoftLevelCap = [switch]$controls.MainStorySoftLevelCap.Checked
-            $script:GymLeagueStoryLevelCap = [switch]$controls.GymLeagueStoryLevelCap.Checked
-            $script:StoryMajorBattleOrderLevelCap = [switch]$controls.StoryMajorBattleOrderLevelCap.Checked
-            $script:AutoInstallToEden = [switch]$controls.AutoInstallToEden.Checked
-            $script:EdenModName = $controls.EdenModName.Text
-            $script:InstallToEden = [bool]$controls.InstallToEden.Checked
-            $script:InstallToRyujinx = [bool]$controls.InstallToRyujinx.Checked
-            $script:InstallToYuzu = [bool]$controls.InstallToYuzu.Checked
-            $script:InstallToSudachi = [bool]$controls.InstallToSudachi.Checked
-            $script:InstallToCitron = [bool]$controls.InstallToCitron.Checked
-            $script:InstallToSuyu = [bool]$controls.InstallToSuyu.Checked
-            $script:InstallToCitronNeo = [bool]$controls.InstallToCitronNeo.Checked
-            $script:RaceMode = [switch]$controls.RaceMode.Checked
-            $script:ExportEncounterZoneReport = [bool]$controls.ExportEncounterZoneReport.Checked
-            $script:TrainerSpeciesMode = Get-ComboValue -Combo $controls.TrainerSpeciesMode
-            $script:TrainerMoveMode = Get-ComboValue -Combo $controls.TrainerMoveMode
-            $script:TrainerSmogonMoveFallbackMode = Get-ComboValue -Combo $controls.TrainerSmogonMoveFallbackMode
-            $script:TrainerItemMode = Get-ComboValue -Combo $controls.TrainerItemMode
-            $script:TrainerItemPoolMode = Get-ComboValue -Combo $controls.TrainerItemPoolMode
-            $script:TrainerAddedSlotSpeciesMode = Get-ComboValue -Combo $controls.TrainerAddedSlotSpeciesMode
-            $script:TrainerDuplicateMode = Get-ComboValue -Combo $controls.TrainerDuplicateMode
-            $script:TrainerAbilityMode = Get-ComboValue -Combo $controls.TrainerAbilityMode
-            $script:TrainerIVMode = Get-ComboValue -Combo $controls.TrainerIVMode
-            $script:TrainerEVMode = Get-ComboValue -Combo $controls.TrainerEVMode
-            $script:TrainerNatureMode = Get-ComboValue -Combo $controls.TrainerNatureMode
-            $script:RandomizeTrainerNatures = [switch]((Get-EffectiveTrainerNatureMode -Mode $script:TrainerNatureMode -LegacyRandomize $false) -eq "random")
-            $script:TrainerLevelMultiplier = Convert-GuiDoubleText -Text $controls.TrainerLevelMultiplier.Text -Label $ui.Labels.TrainerLevel -Language $script:UiLanguage
-            $script:TrainerTeamMin = [int]$controls.TrainerTeamMin.Text
-            $script:TrainerTeamMax = [int]$controls.TrainerTeamMax.Text
-            $script:TrainerTypeThemed = [switch]$controls.TrainerTypeThemed.Checked
-            $script:TrainerShinyChancePercent = Convert-GuiDoubleText -Text $controls.TrainerShinyChancePercent.Text -Label $ui.Labels.TrainerShinyChance -Language $script:UiLanguage
-            $script:ForceTrainerFullyEvolved = [switch]$controls.ForceTrainerFullyEvolved.Checked
-            $script:TrainerFullyEvolvedLevel = [int]$controls.TrainerFullyEvolvedLevel.Text
-            $script:MaxTrainerAI = [switch]$controls.MaxTrainerAI.Checked
-            $script:TrainerDynamaxLevelMode = Get-ComboValue -Combo $controls.TrainerDynamaxLevelMode
-            $script:ForceTrainerCanDynamax = [switch]$controls.ForceTrainerCanDynamax.Checked
-            $script:ForceAllTeamsToSix = [switch]$controls.ForceAllTeamsToSix.Checked
-            $script:ForceBossTeamsToSix = [bool]$controls.ForceBossTeamsToSix.Checked
-            $script:BossTeamsToSixScope = Get-ComboValue -Combo $controls.BossTeamsToSixScope
-            $script:AllowLegendaryTrainers = [switch]$controls.AllowLegendaryTrainers.Checked
-            $script:TypeMode = Get-ComboValue -Combo $controls.TypeMode
-            $script:TypesMonotypeOnly = [switch]$controls.TypesMonotypeOnly.Checked
-            $script:AbilityMode = Get-ComboValue -Combo $controls.AbilityMode
-            $script:AllowWonderGuard = [switch]$controls.AllowWonderGuard.Checked
-            $script:StatMode = Get-ComboValue -Combo $controls.StatMode
-            $script:ExpYieldMultiplier = Convert-GuiDoubleText -Text $controls.ExpYieldMultiplier.Text -Label $ui.Labels.ExpYieldMultiplier -Language $script:UiLanguage
-            $script:ForceOneExpYield = [switch]$controls.ForceOneExpYield.Checked
-            $script:RandomizeMoveTypes = [switch]$controls.RandomizeMoveTypes.Checked
-            $script:RandomizeMovePower = [switch]$controls.RandomizeMovePower.Checked
-            $script:MovePowerMin = [int]$controls.MovePowerMin.Text
-            $script:MovePowerMax = [int]$controls.MovePowerMax.Text
-            $script:RandomizeMovePP = [switch]$controls.RandomizeMovePP.Checked
-            $script:MovePPMin = [int]$controls.MovePPMin.Text
-            $script:MovePPMax = [int]$controls.MovePPMax.Text
-            $script:RandomizeMoveAccuracy = [switch]$controls.RandomizeMoveAccuracy.Checked
-            $script:MoveAccuracyMin = [int]$controls.MoveAccuracyMin.Text
-            $script:MoveAccuracyMax = [int]$controls.MoveAccuracyMax.Text
-            $script:RandomizeMoveCategory = [switch]$controls.RandomizeMoveCategory.Checked
-            $script:RandomizePickupItems = [switch]$controls.RandomizePickupItems.Checked
-            $script:RandomizeShopItems = [switch]$controls.RandomizeShopItems.Checked
-            $script:RandomizeTechnicalRecords = [switch]$controls.RandomizeTechnicalRecords.Checked
-            $script:EvolutionMode = Get-ComboValue -Combo $controls.EvolutionMode
-            $script:AllowLegendaryEvolutions = [switch]$controls.AllowLegendaryEvolutions.Checked
-            $script:NormalizeFriendshipEvolutions = [bool]$controls.NormalizeFriendshipEvolutions.Checked
-            $script:FriendshipEvolutionLevel = [int]$controls.FriendshipEvolutionLevel.Text
-            $script:NormalizeTradeEvolutions = [bool]$controls.NormalizeTradeEvolutions.Checked
-            $script:TradeEvolutionLevel = [int]$controls.TradeEvolutionLevel.Text
-            $script:NormalizeSpecialEvolutions = [bool]$controls.NormalizeSpecialEvolutions.Checked
-            $script:SpecialEvolutionLevel = [int]$controls.SpecialEvolutionLevel.Text
-            $script:GiftMode = Get-ComboValue -Combo $controls.GiftMode
-            $script:StarterMode = Get-ComboValue -Combo $controls.StarterMode
-            $script:Starter1 = $controls.Starter1.Text
-            $script:Starter2 = $controls.Starter2.Text
-            $script:Starter3 = $controls.Starter3.Text
-            $script:PatchStarterRelatedTrainers = [bool]$controls.PatchStarterRelatedTrainers.Checked
-            $script:AllowLegendaryGifts = [switch]$controls.AllowLegendaryGifts.Checked
-            $script:TradeMode = Get-ComboValue -Combo $controls.TradeMode
-            $script:AllowLegendaryTrades = [switch]$controls.AllowLegendaryTrades.Checked
-            $script:StaticEncounterMode = Get-ComboValue -Combo $controls.StaticEncounterMode
-            $script:AllowLegendaryStaticEncounters = [switch]$controls.AllowLegendaryStaticEncounters.Checked
-            $script:StaticEncounterStableMapping = Get-ComboValue -Combo $controls.StaticEncounterStableMapping
-            $script:GrassEncounterMode = Get-ComboValue -Combo $controls.GrassEncounterMode
-            $script:AllowLegendaryGrassEncounters = [switch]$controls.AllowLegendaryGrassEncounters.Checked
-            $script:GrassEncounterStableMapping = Get-ComboValue -Combo $controls.GrassEncounterStableMapping
-            $script:VisibleEncounterBehavior = Get-ComboValue -Combo $controls.VisibleEncounterBehavior
-            $script:UndergroundMode = Get-ComboValue -Combo $controls.UndergroundMode
-            $script:AllowLegendaryUnderground = [switch]$controls.AllowLegendaryUnderground.Checked
-
-            $progressLines = New-Object System.Collections.Generic.List[string]
-            $progressCallback = {
-                param([string]$Message)
-                $progressLines.Add($Message)
-                while ($progressLines.Count -gt 10) {
-                    $progressLines.RemoveAt(0)
-                }
-                $statusBox.Text = ($progressLines -join [Environment]::NewLine)
-                $statusBox.SelectionStart = $statusBox.Text.Length
-                $statusBox.ScrollToCaret()
-                [System.Windows.Forms.Application]::DoEvents()
-            }
-
-            $result = Invoke-Randomization -SourceRomfsRoot $controls.Source.Text -SourceExefsRoot $controls.SourceExefs.Text -OutputRomfsRoot $controls.Output.Text -ProgressCallback $progressCallback
-
-            if ($script:UiLanguage -eq "en") {
-                $statusBox.Text = @"
-Done.
-Output: $($result.Output)
-Seed: $($result.Seed)
-Personal edited: $($result.PersonalEntriesEdited)
-EXP yields edited: $($result.ExpYieldsEdited)
-Moves edited: $($result.MovesEdited)
-Move types edited: $($result.MoveTypesEdited)
-Move powers edited: $($result.MovePowersEdited)
-Move PP edited: $($result.MovePPEdited)
-Move accuracy edited: $($result.MoveAccuracyEdited)
-Move categories edited: $($result.MoveCategoriesEdited)
-Pickup items edited: $($result.PickupItemsEdited)
-Shop items edited: $($result.ShopItemsEdited)
-TM/TR item IDs edited: $($result.TechnicalRecordsEdited)
-Trainers edited: $($result.TrainersEdited)
-Trainer Pokemon processed: $($result.TrainerPokemonProcessed)
-Boss teams expanded to 6: $($result.BossTeamsExpanded)
-Boss teams normalized to strict cap: $($result.BossTeamsLevelNormalized)
-Trainer shinies forced: $($result.TrainerShiniesForced)
-Trainer Pokemon force-evolved: $($result.TrainerSpeciesForceEvolved)
-Type-themed trainer teams: $($result.TrainerTypeThemedTrainers)
-Trainer AI maxed: $($result.TrainerAIMaxed)
-Trainer Dynamax levels edited: $($result.TrainerDynamaxLevelsEdited)
-Trainer CanDynamax flags forced: $($result.TrainerDynamaxFlagsForced)
-Trainer detailed changes logged: $($result.TrainerChangesLogged)
-Evolutions edited: $($result.EvolutionsEdited)
-Friendship evolutions normalized: $($result.FriendshipEvolutionsNormalized)
-Trade evolutions normalized: $($result.TradeEvolutionsNormalized)
-Special evolutions normalized: $($result.SpecialEvolutionsNormalized)
-Gifts edited: $($result.GiftsEdited)
-Starters edited: $($result.StartersEdited)
-Starter-related trainer files patched: $($result.StarterRelatedTrainerFilesEdited)
-Starter-related trainer slots patched: $($result.StarterRelatedTrainerSlotsEdited)
-In-game trade slots edited: $($result.TradeSpeciesSlotsEdited)
-Static encounters edited: $($result.StaticEncountersEdited)
-Tall grass slots edited: $($result.GrassEncounterSlotsEdited)
-Underground slots edited: $($result.UndergroundSpeciesSlotsEdited)
-Wild detailed changes logged: $($result.WildChangesLogged)
-JSON: $($result.JsonReportPath)
-Trainer changes JSON: $($result.TrainerChangesReportPath)
-Wild changes JSON: $($result.WildChangesReportPath)
-Item changes JSON: $($result.ItemChangesReportPath)
-Encounter zones JSON: $($result.EncounterZoneReportPath)
-Seed summary JSON: $($result.SeedSummaryReportPath)
-Race summary JSON: $($result.RaceSummaryReportPath)
-Spoiler log JSON: $($result.SpoilerLogReportPath)
-Level caps JSON: $($result.BossLevelCapsReportPath)
-Story gym/champion caps JSON: $($result.StoryGymLeagueCapsReportPath)
-Ordered main-story battles JSON: $($result.StoryMajorBattleCapsReportPath)
-Disable EXP Share via ExLaunch: $($result.DisableExpSharePatchEnabled)
-Dynamic EXP cap IPS files: $($result.DynamicExpLevelCapPatchFilesWritten)
-Story gym/champion EXP cap IPS files: $($result.StoryGymLeagueExpCapPatchFilesWritten)
-EXP cap requires ExLaunch: $($result.ExpLevelCapRequiresExLaunch)
-EXP cap ExLaunch config: $($result.ExpLevelCapExLaunchConfigPath)
-ExLaunch module available: $($result.ExLaunchModuleAvailable)
-ExLaunch module auto-deployed: $($result.ExLaunchModuleDeployed)
-PC runtime controls: $($result.RuntimePcScriptApplied)
-ExLaunch module target: $($result.ExLaunchModuleTargetRoot)
-Installation folder: $($result.InstallationPackageRoot)
-Installation guide: $($result.InstallationPackageReadmePath)
-Auto-install requested: $($result.AutoInstallRequested)
-Auto-install success count: $($result.AutoInstallSuccessCount)
-Auto-install failure count: $($result.AutoInstallFailureCount)
-ExeFS IPS files total: $($result.ExeFsPatchFilesWritten)
-ExeFS patch root: $($result.ExeFsPatchRoot)
-"@
-            } else {
-                $statusBox.Text = @"
-Termine.
-Sortie: $($result.Output)
-Seed: $($result.Seed)
-Personal modifies: $($result.PersonalEntriesEdited)
-EXP donnees modifiees: $($result.ExpYieldsEdited)
-Attaques modifiees: $($result.MovesEdited)
-Types d'attaques modifies: $($result.MoveTypesEdited)
-Puissances d'attaques modifiees: $($result.MovePowersEdited)
-PP d'attaques modifies: $($result.MovePPEdited)
-Precisions d'attaques modifiees: $($result.MoveAccuracyEdited)
-Categories d'attaques modifiees: $($result.MoveCategoriesEdited)
-Objets ramassables modifies: $($result.PickupItemsEdited)
-Objets boutiques modifies: $($result.ShopItemsEdited)
-Objets CT/TR modifies: $($result.TechnicalRecordsEdited)
-Trainers modifies: $($result.TrainersEdited)
-Pokemon de dresseurs traites: $($result.TrainerPokemonProcessed)
-Boss etendus a 6: $($result.BossTeamsExpanded)
-Equipes boss normalisees au cap strict: $($result.BossTeamsLevelNormalized)
-Shinies dresseurs forces: $($result.TrainerShiniesForced)
-Pokemon de dresseurs forces au stade final: $($result.TrainerSpeciesForceEvolved)
-Equipes dresseurs themees par type: $($result.TrainerTypeThemedTrainers)
-IA dresseurs maxees: $($result.TrainerAIMaxed)
-Niveaux Dynamax dresseurs modifies: $($result.TrainerDynamaxLevelsEdited)
-Flags CanDynamax dresseurs forces: $($result.TrainerDynamaxFlagsForced)
-Changements detailles dresseurs journalises: $($result.TrainerChangesLogged)
-Evolutions modifiees: $($result.EvolutionsEdited)
-Evolutions amitie normalisees: $($result.FriendshipEvolutionsNormalized)
-Evolutions echange normalisees: $($result.TradeEvolutionsNormalized)
-Evolutions speciales normalisees: $($result.SpecialEvolutionsNormalized)
-Gifts modifies: $($result.GiftsEdited)
-Starters modifies: $($result.StartersEdited)
-Fichiers dresseurs lies aux starters patches: $($result.StarterRelatedTrainerFilesEdited)
-Slots dresseurs lies aux starters patches: $($result.StarterRelatedTrainerSlotsEdited)
-Slots trades PNJ modifies: $($result.TradeSpeciesSlotsEdited)
-Rencontres fixes modifiees: $($result.StaticEncountersEdited)
-Slots hautes herbes modifies: $($result.GrassEncounterSlotsEdited)
-Slots underground modifies: $($result.UndergroundSpeciesSlotsEdited)
-Changements detailles nature journalises: $($result.WildChangesLogged)
-JSON: $($result.JsonReportPath)
-JSON changements dresseurs: $($result.TrainerChangesReportPath)
-JSON changements nature: $($result.WildChangesReportPath)
-JSON changements objets: $($result.ItemChangesReportPath)
-JSON zones rencontres: $($result.EncounterZoneReportPath)
-JSON resume seed: $($result.SeedSummaryReportPath)
-JSON race: $($result.RaceSummaryReportPath)
-JSON spoiler log: $($result.SpoilerLogReportPath)
-JSON caps boss: $($result.BossLevelCapsReportPath)
-JSON caps histoire arenes/Tarak: $($result.StoryGymLeagueCapsReportPath)
-JSON combats majeurs ordre histoire: $($result.StoryMajorBattleCapsReportPath)
-EXP Share via ExLaunch: $($result.DisableExpSharePatchEnabled)
-Fichiers IPS levelcap EXP dynamique: $($result.DynamicExpLevelCapPatchFilesWritten)
-Fichiers IPS cap EXP histoire arenes/Tarak: $($result.StoryGymLeagueExpCapPatchFilesWritten)
-Cap EXP requiert ExLaunch: $($result.ExpLevelCapRequiresExLaunch)
-Config ExLaunch cap EXP: $($result.ExpLevelCapExLaunchConfigPath)
-Module ExLaunch disponible: $($result.ExLaunchModuleAvailable)
-Module ExLaunch auto-deploye: $($result.ExLaunchModuleDeployed)
-Controle runtime via PC: $($result.RuntimePcScriptApplied)
-Destination module ExLaunch: $($result.ExLaunchModuleTargetRoot)
-Dossier Installation: $($result.InstallationPackageRoot)
-Guide Installation: $($result.InstallationPackageReadmePath)
-Installation auto demandee: $($result.AutoInstallRequested)
-Installations auto reussies: $($result.AutoInstallSuccessCount)
-Installations auto en echec: $($result.AutoInstallFailureCount)
-Fichiers IPS ExeFS total: $($result.ExeFsPatchFilesWritten)
-Dossier patchs ExeFS: $($result.ExeFsPatchRoot)
-"@
-            }
-            $message = if ($script:UiLanguage -eq "en") { "Generation complete." } else { "Generation terminee." }
-            [void][System.Windows.Forms.MessageBox]::Show($form, $message, $form.Text, [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-        } catch {
-            $statusBox.Text = "Erreur: $($_.Exception.Message)"
-        } finally {
-            $runButton.Enabled = $true
-        }
-    })
-
-    [void]$form.ShowDialog()
-}
+# L'interface vit dans src/Interface.ps1 : 6407 lignes qui ne servent qu'a
+# l'affichage. Le point-source la charge dans CETTE portee, donc rien ne change
+# pour les appelants - Show-Gui, les fabriques et la bibliotheque de controles
+# restent visibles exactement comme avant.
+. (Join-Path $PSScriptRoot 'src\Interface.ps1')
 
 Write-LauncherIfMissing
 

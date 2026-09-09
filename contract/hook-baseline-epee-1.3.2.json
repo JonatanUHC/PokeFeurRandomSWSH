@@ -1,0 +1,553 @@
+{
+  "build": "Epee 1.3.2",
+  "textLength": 26218288,
+  "preimageBytes": 16,
+  "note": "Empreinte de reference des points de hook. Elle detecte un changement d offset ou de binaire ; elle ne prouve pas qu un offset est correct.",
+  "hooks": [
+    {
+      "hook": "SwapAnimation",
+      "expression": "0x5b1f30",
+      "file": "research/swsh-mods-exl/source/program/patches/dex_animations.hpp",
+      "line": 160,
+      "address": 5971760,
+      "preimage": "0B204BA90A010BEBA1000054E8031F2A"
+    },
+    {
+      "hook": "StorePos1",
+      "expression": "0x60f5a0",
+      "file": "research/swsh-mods-exl/source/program/patches/freecam.hpp",
+      "line": 163,
+      "address": 6354336,
+      "preimage": "802E803D29020014759A40F9B50400B4"
+    },
+    {
+      "hook": "SetPos1",
+      "expression": "0x60f5a4",
+      "file": "research/swsh-mods-exl/source/program/patches/freecam.hpp",
+      "line": 164,
+      "address": 6354340,
+      "preimage": "29020014759A40F9B50400B4B75640B9"
+    },
+    {
+      "hook": "MsgStringReplace",
+      "expression": "0x67d4d0",
+      "file": "research/swsh-mods-exl/source/program/msg_handler.hpp",
+      "line": 89,
+      "address": 6804688,
+      "preimage": "08F04139C8010034F30F1EF8FD7B01A9"
+    },
+    {
+      "hook": "MsgHashStore",
+      "expression": "0x67eb10",
+      "file": "research/swsh-mods-exl/source/program/msg_handler.hpp",
+      "line": 90,
+      "address": 6810384,
+      "preimage": "F44FBEA9FD7B01A9FD430091F40300AA"
+    },
+    {
+      "hook": "RandomizeWildBattleSpecies[0]",
+      "expression": "kSpeciesReadSites[i]",
+      "file": "research/swsh-mods-exl/source/program/patches/randomizer.hpp",
+      "line": 1073,
+      "address": 7761252,
+      "preimage": "602A40B9E1031F2A21F7FF97E00F1F32"
+    },
+    {
+      "hook": "RandomizeWildBattleSpecies[1]",
+      "expression": "kSpeciesReadSites[i]",
+      "file": "research/swsh-mods-exl/source/program/patches/randomizer.hpp",
+      "line": 1073,
+      "address": 7761304,
+      "preimage": "602A40B915F7FF97800280521BF7FF97"
+    },
+    {
+      "hook": "RandomizeWildBattleSpecies[2]",
+      "expression": "kSpeciesReadSites[i]",
+      "file": "research/swsh-mods-exl/source/program/patches/randomizer.hpp",
+      "line": 1073,
+      "address": 7761596,
+      "preimage": "602A40B974410094606200796866C079"
+    },
+    {
+      "hook": "RandomizeWildBattleSpecies[3]",
+      "expression": "kSpeciesReadSites[i]",
+      "file": "research/swsh-mods-exl/source/program/patches/randomizer.hpp",
+      "line": 1073,
+      "address": 7761636,
+      "preimage": "602A40B9615A4079C1F6FF97C0028052"
+    },
+    {
+      "hook": "RandomizeGeneratedBattleSpeciesSetter",
+      "expression": "BattlePokemonBuilder::SetGeneratedSpecies_offset",
+      "file": "research/swsh-mods-exl/source/program/patches/randomizer.hpp",
+      "line": 1100,
+      "address": 7795392,
+      "preimage": "F50F1DF8F44F01A9FD7B02A9FD830091"
+    },
+    {
+      "hook": "RandomizeGeneratedBattleFormSetter",
+      "expression": "BattlePokemonBuilder::SetGeneratedForm_offset",
+      "file": "research/swsh-mods-exl/source/program/patches/randomizer.hpp",
+      "line": 1101,
+      "address": 7795696,
+      "preimage": "F50F1DF8F44F01A9FD7B02A9FD830091"
+    },
+    {
+      "hook": "RandomizeGeneratedBattleSpeciesGetter",
+      "expression": "BattlePokemonBuilder::GetGeneratedSpecies_offset",
+      "file": "research/swsh-mods-exl/source/program/patches/randomizer.hpp",
+      "line": 1095,
+      "address": 7838608,
+      "preimage": "F70F1CF8F65701A9F44F02A9FD7B03A9"
+    },
+    {
+      "hook": "RandomizeGeneratedBattleFormGetter",
+      "expression": "BattlePokemonBuilder::GetGeneratedForm_offset",
+      "file": "research/swsh-mods-exl/source/program/patches/randomizer.hpp",
+      "line": 1096,
+      "address": 7838848,
+      "preimage": "F70F1CF8F65701A9F44F02A9FD7B03A9"
+    },
+    {
+      "hook": "IncludeBattleSoundBank",
+      "expression": "InitSoundEngine_offset+0x2B4",
+      "file": "research/swsh-mods-exl/source/program/patches/overworld_shiny.hpp",
+      "line": 170,
+      "address": 7944868,
+      "preimage": "EB060094E00F40F9A00000B4088C44F8"
+    },
+    {
+      "hook": "DisableExpShareBeforeExpCalc",
+      "expression": "ExpLevelCap::ExpCalcFlagRead_offset",
+      "file": "research/swsh-mods-exl/source/program/patches/exp_level_cap.hpp",
+      "line": 109,
+      "address": 9067040,
+      "preimage": "09804039F30301AAF40300AA69000035"
+    },
+    {
+      "hook": "ClampExpGainAtLevelCap",
+      "expression": "ExpLevelCap::ExpCalcEpilogue_offset",
+      "file": "research/swsh-mods-exl/source/program/patches/exp_level_cap.hpp",
+      "line": 110,
+      "address": 9067452,
+      "preimage": "E9A3406DF50F40F9FD7B43A9F44F42A9"
+    },
+    {
+      "hook": "DisableVanillaBattleSoundBank",
+      "expression": "SetUpBattleEnvironment_offset+0x608",
+      "file": "research/swsh-mods-exl/source/program/patches/overworld_shiny.hpp",
+      "line": 169,
+      "address": 9867640,
+      "preimage": "5AA8F897E00F40F9A00000B4088C44F8"
+    },
+    {
+      "hook": "DebugTick",
+      "expression": "0xcba730 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/debug.hpp",
+      "line": 229,
+      "address": 13346608,
+      "preimage": "080040F9083940F900013FD6A0000036"
+    },
+    {
+      "hook": "Tick",
+      "expression": "0xcba730 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/freecam.hpp",
+      "line": 162,
+      "address": 13346608,
+      "preimage": "080040F9083940F900013FD6A0000036"
+    },
+    {
+      "hook": "DisableTerrainCulling2",
+      "expression": "0xcce05c - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/freecam.hpp",
+      "line": 170,
+      "address": 13426780,
+      "preimage": "2104145EA44C241E05E4006F6504046E"
+    },
+    {
+      "hook": "DisableTerrainCulling1",
+      "expression": "0xccfc24 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/freecam.hpp",
+      "line": 169,
+      "address": 13433892,
+      "preimage": "2104145EA44C241E05E4006F8020261E"
+    },
+    {
+      "hook": "SwapSymbolTableHash",
+      "expression": "OverworldEncount::GenerateSymbolEncountParam_offset",
+      "file": "research/swsh-mods-exl/source/program/patches/underworld.hpp",
+      "line": 75,
+      "address": 13652144,
+      "preimage": "1F20007128020054E803002AC99A00F0"
+    },
+    {
+      "hook": "SwapSymbolTableAccess",
+      "expression": "OverworldEncount::FetchSymbolEncountTable_offset + 0x54",
+      "file": "research/swsh-mods-exl/source/program/patches/underworld.hpp",
+      "line": 76,
+      "address": 13653924,
+      "preimage": "0B01098B680140B9A800003527000014"
+    },
+    {
+      "hook": "AddFollowingSpawner",
+      "expression": "0xd18e88 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/extended_following.hpp",
+      "line": 121,
+      "address": 13733512,
+      "preimage": "F50301AAF60300AAB30000B4E00313AA"
+    },
+    {
+      "hook": "DisableDLCMaxPitch",
+      "expression": "0xd19c98 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/camera_tweaks.hpp",
+      "line": 35,
+      "address": 13737112,
+      "preimage": "FF03029120001FD6FD7B47A9F44F46A9"
+    },
+    {
+      "hook": "RandomizeGimmickSpawns",
+      "expression": "OverworldEncount::InitGimmickSpec_offset",
+      "file": "research/swsh-mods-exl/source/program/patches/randomizer.hpp",
+      "line": 1045,
+      "address": 13831520,
+      "preimage": "F30301AA3F0800B9F40300AABF0E01F8"
+    },
+    {
+      "hook": "RemoveLevelCap",
+      "expression": "OverworldEncount::InitGimmickSpec_offset + 0x98",
+      "file": "research/swsh-mods-exl/source/program/patches/uncap_level.hpp",
+      "line": 28,
+      "address": 13831672,
+      "preimage": "882640B91F0D007148000054681600B9"
+    },
+    {
+      "hook": "RemoveLevelCap",
+      "expression": "OverworldEncount::GenerateMainSpec_offset + 0x26c",
+      "file": "research/swsh-mods-exl/source/program/patches/uncap_level.hpp",
+      "line": 29,
+      "address": 13833308,
+      "preimage": "084D40F9092940A94101090B4A0109CA"
+    },
+    {
+      "hook": "ModifyShinyRate",
+      "expression": "OverworldEncount::GenerateMainSpec_offset+0x2D8",
+      "file": "research/swsh-mods-exl/source/program/patches/overworld_shiny.hpp",
+      "line": 172,
+      "address": 13833416,
+      "preimage": "28159F1A48180034081D00121F050071"
+    },
+    {
+      "hook": "RandomizeSlotSpawns",
+      "expression": "OverworldEncount::GenerateBasicSpec_offset",
+      "file": "research/swsh-mods-exl/source/program/patches/randomizer.hpp",
+      "line": 1044,
+      "address": 13838848,
+      "preimage": "F80302AAFBC7E897E00F1F3201C8E897"
+    },
+    {
+      "hook": "RemoveLevelCap",
+      "expression": "OverworldEncount::GenerateBasicSpec_offset + 0xd4",
+      "file": "research/swsh-mods-exl/source/program/patches/uncap_level.hpp",
+      "line": 27,
+      "address": 13839060,
+      "preimage": "1FFD037181000054DF02156BD6060011"
+    },
+    {
+      "hook": "PatchCameraConstants",
+      "expression": "Field::ExtendedCamera::ExtendedCamera_offset + 0x164",
+      "file": "research/swsh-mods-exl/source/program/patches/camera_tweaks.hpp",
+      "line": 33,
+      "address": 13872996,
+      "preimage": "68DE05B92801805268E205B968B61791"
+    },
+    {
+      "hook": "EnableExtendedCamera",
+      "expression": "Field::ExtendedCamera::ExtendedCamera_offset + 0x3E0",
+      "file": "research/swsh-mods-exl/source/program/patches/freecam.hpp",
+      "line": 171,
+      "address": 13873632,
+      "preimage": "E90E00F9E80600F9C80240F9C90A40F9"
+    },
+    {
+      "hook": "StorePos2",
+      "expression": "0xd3c36c - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/freecam.hpp",
+      "line": 165,
+      "address": 13878124,
+      "preimage": "2905001109FD0A88AAFFFF35A80640F9"
+    },
+    {
+      "hook": "SetPos2",
+      "expression": "0xd3c370 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/freecam.hpp",
+      "line": 166,
+      "address": 13878128,
+      "preimage": "09FD0A88AAFFFF35A80640F9888E00F9"
+    },
+    {
+      "hook": "DumpFlatbuffer",
+      "expression": "GimmickSpawner::GimmickSpawner_offset",
+      "file": "research/swsh-mods-exl/source/program/patches/debug.hpp",
+      "line": 230,
+      "address": 14002896,
+      "preimage": "090140B90301098B02000014E3031FAA"
+    },
+    {
+      "hook": "SetUpAuraPtcl",
+      "expression": "EncountObject_offset+0x4C4",
+      "file": "research/swsh-mods-exl/source/program/patches/overworld_shiny.hpp",
+      "line": 175,
+      "address": 14016292,
+      "preimage": "FD7B46A9F44F45A9F65744A9F85F43A9"
+    },
+    {
+      "hook": "PlayAuraPtcl",
+      "expression": "UpdatesAura_offset+0x3FC",
+      "file": "research/swsh-mods-exl/source/program/patches/overworld_shiny.hpp",
+      "line": 177,
+      "address": 14024316,
+      "preimage": "A1C300D1E00313AAB4031DF8DE83FD97"
+    },
+    {
+      "hook": "StopAuraPtcl",
+      "expression": "UpdatesAura_offset+0x4A8",
+      "file": "research/swsh-mods-exl/source/program/patches/overworld_shiny.hpp",
+      "line": 179,
+      "address": 14024488,
+      "preimage": "F50300AAE00308AA2C772E94E803002A"
+    },
+    {
+      "hook": "RandomizeBattleDataStore",
+      "expression": "EncountObject::CopySpecToBattleData_store_species_offset",
+      "file": "research/swsh-mods-exl/source/program/patches/randomizer.hpp",
+      "line": 1089,
+      "address": 14027204,
+      "preimage": "88420179894601798C4A01798D4E0179"
+    },
+    {
+      "hook": "SetUpAuraPtcl",
+      "expression": "FishingPoint_offset+0x114",
+      "file": "research/swsh-mods-exl/source/program/patches/overworld_shiny.hpp",
+      "line": 176,
+      "address": 14051028,
+      "preimage": "E203142A3A68FD97688E43B908011C32"
+    },
+    {
+      "hook": "StopFishAuraPtcl",
+      "expression": "0xd6683c-VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/overworld_shiny.hpp",
+      "line": 181,
+      "address": 14051388,
+      "preimage": "F82300F9B867FD9788CE42F9E82700F9"
+    },
+    {
+      "hook": "KeepFishingChain",
+      "expression": "0xd66a94 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/fishing_tweaks.hpp",
+      "line": 17,
+      "address": 14051988,
+      "preimage": "1F0109EB61000054E00315AAE87BFE97"
+    },
+    {
+      "hook": "FishAuraAndShinySound",
+      "expression": "FishAuraHandler_offset+0x238",
+      "file": "research/swsh-mods-exl/source/program/patches/overworld_shiny.hpp",
+      "line": 174,
+      "address": 14052696,
+      "preimage": "D4E7D6F214A7E0F2A16300D1E00313AA"
+    },
+    {
+      "hook": "PlayFishAuraPtcl",
+      "expression": "FishAuraHandler_offset+0x270",
+      "file": "research/swsh-mods-exl/source/program/patches/overworld_shiny.hpp",
+      "line": 178,
+      "address": 14052752,
+      "preimage": "9867FD9711000014E80189D28843A0F2"
+    },
+    {
+      "hook": "StorePos3",
+      "expression": "0xd93780 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/freecam.hpp",
+      "line": 167,
+      "address": 14235520,
+      "preimage": "FD7B42A9F44F41A9FFC30091C0035FD6"
+    },
+    {
+      "hook": "SetPos3",
+      "expression": "0xd93784 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/freecam.hpp",
+      "line": 168,
+      "address": 14235524,
+      "preimage": "F44F41A9FFC30091C0035FD6E10300AA"
+    },
+    {
+      "hook": "PatchMaximumSpawns",
+      "expression": "Field::EncountSpawner::EncountSpawner_offset + 0x150",
+      "file": "research/swsh-mods-exl/source/program/patches/glimwood_overworld.hpp",
+      "line": 42,
+      "address": 14344704,
+      "preimage": "400040F9F40306AAF50305AAF70304AA"
+    },
+    {
+      "hook": "VerifySpawnerTypeInit",
+      "expression": "EncountSpawnerInit_offset + 0x13c",
+      "file": "research/swsh-mods-exl/source/program/patches/underworld.hpp",
+      "line": 73,
+      "address": 14345036,
+      "preimage": "E00314AA00013FD67F9206B9AED70394"
+    },
+    {
+      "hook": "VerifySpawnerType",
+      "expression": "OverworldEncount::TryGenerateSymbolEncount_offset",
+      "file": "research/swsh-mods-exl/source/program/patches/underworld.hpp",
+      "line": 74,
+      "address": 14349184,
+      "preimage": "BF8317B8BFC31778A943187809008092"
+    },
+    {
+      "hook": "DisableEmptyTableCheck",
+      "expression": "OverworldEncount::TryGenerateSymbolEncount_offset + 0x1C",
+      "file": "research/swsh-mods-exl/source/program/patches/underworld.hpp",
+      "line": 77,
+      "address": 14349212,
+      "preimage": "154011911F6101F8BF8318F81FE102F8"
+    },
+    {
+      "hook": "RepurposeBrilliantAura",
+      "expression": "AuraHandler_offset+0x16C",
+      "file": "research/swsh-mods-exl/source/program/patches/overworld_shiny.hpp",
+      "line": 173,
+      "address": 14462332,
+      "preimage": "281DA94E182300913F0318EB01FBFF54"
+    },
+    {
+      "hook": "OverrideAI",
+      "expression": "0xe519a0 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/synchro_mode.hpp",
+      "line": 64,
+      "address": 15014304,
+      "preimage": "29011191E81300F92800009008C11391"
+    },
+    {
+      "hook": "DisableAI",
+      "expression": "0xe51a30 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/synchro_mode.hpp",
+      "line": 63,
+      "address": 15014448,
+      "preimage": "29811491E81300F92800009008411791"
+    },
+    {
+      "hook": "PlayShinySound",
+      "expression": "EncountObject::FromParams_offset+0x194",
+      "file": "research/swsh-mods-exl/source/program/patches/overworld_shiny.hpp",
+      "line": 171,
+      "address": 15345668,
+      "preimage": "E1830091E00314AAE8A300B978000094"
+    },
+    {
+      "hook": "RandomizeEncountObjectBattleSpec",
+      "expression": "EncountObject::FromParams_after_spec_copy_offset",
+      "file": "research/swsh-mods-exl/source/program/patches/randomizer.hpp",
+      "line": 1049,
+      "address": 15345768,
+      "preimage": "A84E40B908A308B9A8324B3908672F39"
+    },
+    {
+      "hook": "PatchInvalidMessageNullptr",
+      "expression": "0xeaaef4 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/msg_handler.hpp",
+      "line": 91,
+      "address": 15380212,
+      "preimage": "0D000014A80240F9153140F9B50200B4"
+    },
+    {
+      "hook": "PatchInvalidMessageNullptr",
+      "expression": "0xeab900 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/msg_handler.hpp",
+      "line": 92,
+      "address": 15382784,
+      "preimage": "E80240F9080D40F9E00317AA00013FD6"
+    },
+    {
+      "hook": "MainInitHook",
+      "expression": "MainInit_offset",
+      "file": "research/swsh-mods-exl/source/program/main.cpp",
+      "line": 140,
+      "address": 15798960,
+      "preimage": "F40300AA400340F921DB61F8F50303AA"
+    },
+    {
+      "hook": "HookNpad",
+      "expression": "HID::PollNpad_offset + 0x84",
+      "file": "research/swsh-mods-exl/source/program/hid_handler.hpp",
+      "line": 38,
+      "address": 15858260,
+      "preimage": "C0035FD6000000000000000000800091"
+    },
+    {
+      "hook": "FullyRemoveLevelCap",
+      "expression": "GetLevelCap_1_offset + 0x6C",
+      "file": "research/swsh-mods-exl/source/program/patches/uncap_level.hpp",
+      "line": 31,
+      "address": 20636668,
+      "preimage": "000000003F080E7169000054E0031F2A"
+    },
+    {
+      "hook": "FullyRemoveLevelCap",
+      "expression": "GetLevelCap_0_offset + 0x28",
+      "file": "research/swsh-mods-exl/source/program/patches/uncap_level.hpp",
+      "line": 30,
+      "address": 20636712,
+      "preimage": "096600B029312A9108F17DD320696878"
+    },
+    {
+      "hook": "ValidateMessages",
+      "expression": "0x13bca40 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/msg_handler.hpp",
+      "line": 93,
+      "address": 20695616,
+      "preimage": "E0031F2AC0035FD6E0031F2AC0035FD6"
+    },
+    {
+      "hook": "WordSetRegister_Custom",
+      "expression": "AMX::WordSetRegister_PlayerName_offset + 0xa4",
+      "file": "research/swsh-mods-exl/source/program/amx_handler.hpp",
+      "line": 90,
+      "address": 20746500,
+      "preimage": "C0035FD60000000000000000F70F1CF8"
+    },
+    {
+      "hook": "ExitWordSetRegister_Custom",
+      "expression": "AMX::WordSetRegister_PlayerName_offset + 0xa8",
+      "file": "research/swsh-mods-exl/source/program/amx_handler.hpp",
+      "line": 91,
+      "address": 20746504,
+      "preimage": "0000000000000000F70F1CF8F65701A9"
+    },
+    {
+      "hook": "RegisterAMXFunctions",
+      "expression": "0x1464ff0 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/amx_handler.hpp",
+      "line": 92,
+      "address": 21385200,
+      "preimage": "60360194E10300AAE00313AAE91EC897"
+    },
+    {
+      "hook": "PG_WordSetRegisterType",
+      "expression": "AMX::PG_WordSetRegister_offset + 0xf8",
+      "file": "research/swsh-mods-exl/source/program/amx_handler.hpp",
+      "line": 89,
+      "address": 21718920,
+      "preimage": "2A4AFC97763B00B5DF010014B60000B4"
+    },
+    {
+      "hook": "SpawnTrigger",
+      "expression": "0x14c8ac0 - VER_OFF",
+      "file": "research/swsh-mods-exl/source/program/patches/dex_animations.hpp",
+      "line": 133,
+      "address": 21793472,
+      "preimage": "E0031F2AFD7B42A9F44F41A9FFC30091"
+    }
+  ],
+  "unresolved": []
+}

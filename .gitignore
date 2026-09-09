@@ -98,3 +98,33 @@ _*.webp
 .DS_Store
 Thumbs.db
 *.log
+
+# --- V2 ---
+# Sauvegardes de travail horodatees : 64 fichiers, 38 Mo, aucun interet public.
+*.avant-*
+*.snapshot.ps1
+*.bak
+
+# Graphe de connaissance : regenerable, 44 Mo dont un graph.json de 8,7 Mo.
+graphify-out/
+
+# Exports de donnees extraites du jeu.
+vanilla_exports/
+
+# Sauvegardes locales du generateur.
+backups/
+
+# Tables de noms et d'objets DERIVEES DU JEU.
+# tools/build-name-tables.py le dit lui-meme : « les fichiers produits sont
+# DERIVES DU JEU. Ne pas les publier ni les versionner. » Ils se regenerent
+# depuis le dump de chacun, il n'y a aucune raison de les redistribuer.
+*.csv
+
+# Notes de travail internes : journal de dev, etat du projet, analyses.
+# Utiles a l'auteur, sans interet pour qui veut juste utiliser le logiciel.
+COMBAT-CACHE.md
+PROJECT_STATUS.md
+DEVELOPPEMENT.md
+
+# Captures d'ecran et notes de conception : 1,6 Mo que rien ne lit.
+docs/

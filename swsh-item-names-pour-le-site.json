@@ -1,0 +1,7714 @@
+{
+ "masterball": {
+  "id": 1,
+  "slug": "masterball",
+  "nameEn": "Master Ball",
+  "nameFr": "Master Ball",
+  "cost": 0,
+  "pocket": "pokeball"
+ },
+ "ultraball": {
+  "id": 2,
+  "slug": "ultraball",
+  "nameEn": "Ultra Ball",
+  "nameFr": "Hyper Ball",
+  "cost": 800,
+  "pocket": "pokeball"
+ },
+ "greatball": {
+  "id": 3,
+  "slug": "greatball",
+  "nameEn": "Great Ball",
+  "nameFr": "Super Ball",
+  "cost": 600,
+  "pocket": "pokeball"
+ },
+ "pokeball": {
+  "id": 4,
+  "slug": "pokeball",
+  "nameEn": "Poké Ball",
+  "nameFr": "Poké Ball",
+  "cost": 200,
+  "pocket": "pokeball"
+ },
+ "safariball": {
+  "id": 5,
+  "slug": "safariball",
+  "nameEn": "Safari Ball",
+  "nameFr": "Safari Ball",
+  "cost": 0,
+  "pocket": "pokeball"
+ },
+ "netball": {
+  "id": 6,
+  "slug": "netball",
+  "nameEn": "Net Ball",
+  "nameFr": "Filet Ball",
+  "cost": 1000,
+  "pocket": "pokeball"
+ },
+ "diveball": {
+  "id": 7,
+  "slug": "diveball",
+  "nameEn": "Dive Ball",
+  "nameFr": "Scuba Ball",
+  "cost": 1000,
+  "pocket": "pokeball"
+ },
+ "nestball": {
+  "id": 8,
+  "slug": "nestball",
+  "nameEn": "Nest Ball",
+  "nameFr": "Faiblo Ball",
+  "cost": 1000,
+  "pocket": "pokeball"
+ },
+ "repeatball": {
+  "id": 9,
+  "slug": "repeatball",
+  "nameEn": "Repeat Ball",
+  "nameFr": "Bis Ball",
+  "cost": 1000,
+  "pocket": "pokeball"
+ },
+ "timerball": {
+  "id": 10,
+  "slug": "timerball",
+  "nameEn": "Timer Ball",
+  "nameFr": "Chrono Ball",
+  "cost": 1000,
+  "pocket": "pokeball"
+ },
+ "luxuryball": {
+  "id": 11,
+  "slug": "luxuryball",
+  "nameEn": "Luxury Ball",
+  "nameFr": "Luxe Ball",
+  "cost": 3000,
+  "pocket": "pokeball"
+ },
+ "premierball": {
+  "id": 12,
+  "slug": "premierball",
+  "nameEn": "Premier Ball",
+  "nameFr": "Honor Ball",
+  "cost": 20,
+  "pocket": "pokeball"
+ },
+ "duskball": {
+  "id": 13,
+  "slug": "duskball",
+  "nameEn": "Dusk Ball",
+  "nameFr": "Sombre Ball",
+  "cost": 1000,
+  "pocket": "pokeball"
+ },
+ "healball": {
+  "id": 14,
+  "slug": "healball",
+  "nameEn": "Heal Ball",
+  "nameFr": "Soin Ball",
+  "cost": 300,
+  "pocket": "pokeball"
+ },
+ "quickball": {
+  "id": 15,
+  "slug": "quickball",
+  "nameEn": "Quick Ball",
+  "nameFr": "Rapide Ball",
+  "cost": 1000,
+  "pocket": "pokeball"
+ },
+ "cherishball": {
+  "id": 16,
+  "slug": "cherishball",
+  "nameEn": "Cherish Ball",
+  "nameFr": "Mémoire Ball",
+  "cost": 0,
+  "pocket": "pokeball"
+ },
+ "potion": {
+  "id": 17,
+  "slug": "potion",
+  "nameEn": "Potion",
+  "nameFr": "Potion",
+  "cost": 200,
+  "pocket": "medicine"
+ },
+ "antidote": {
+  "id": 18,
+  "slug": "antidote",
+  "nameEn": "Antidote",
+  "nameFr": "Antidote",
+  "cost": 200,
+  "pocket": "medicine"
+ },
+ "burnheal": {
+  "id": 19,
+  "slug": "burnheal",
+  "nameEn": "Burn Heal",
+  "nameFr": "Anti-Brûle",
+  "cost": 200,
+  "pocket": "medicine"
+ },
+ "iceheal": {
+  "id": 20,
+  "slug": "iceheal",
+  "nameEn": "Ice Heal",
+  "nameFr": "Antigel",
+  "cost": 200,
+  "pocket": "medicine"
+ },
+ "awakening": {
+  "id": 21,
+  "slug": "awakening",
+  "nameEn": "Awakening",
+  "nameFr": "Réveil",
+  "cost": 200,
+  "pocket": "medicine"
+ },
+ "paralyzeheal": {
+  "id": 22,
+  "slug": "paralyzeheal",
+  "nameEn": "Paralyze Heal",
+  "nameFr": "Anti-Para",
+  "cost": 200,
+  "pocket": "medicine"
+ },
+ "fullrestore": {
+  "id": 23,
+  "slug": "fullrestore",
+  "nameEn": "Full Restore",
+  "nameFr": "Guérison",
+  "cost": 3000,
+  "pocket": "medicine"
+ },
+ "maxpotion": {
+  "id": 24,
+  "slug": "maxpotion",
+  "nameEn": "Max Potion",
+  "nameFr": "Potion Max",
+  "cost": 2500,
+  "pocket": "medicine"
+ },
+ "hyperpotion": {
+  "id": 25,
+  "slug": "hyperpotion",
+  "nameEn": "Hyper Potion",
+  "nameFr": "Hyper Potion",
+  "cost": 1500,
+  "pocket": "medicine"
+ },
+ "superpotion": {
+  "id": 26,
+  "slug": "superpotion",
+  "nameEn": "Super Potion",
+  "nameFr": "Super Potion",
+  "cost": 700,
+  "pocket": "medicine"
+ },
+ "fullheal": {
+  "id": 27,
+  "slug": "fullheal",
+  "nameEn": "Full Heal",
+  "nameFr": "Total Soin",
+  "cost": 400,
+  "pocket": "medicine"
+ },
+ "revive": {
+  "id": 28,
+  "slug": "revive",
+  "nameEn": "Revive",
+  "nameFr": "Rappel",
+  "cost": 2000,
+  "pocket": "medicine"
+ },
+ "maxrevive": {
+  "id": 29,
+  "slug": "maxrevive",
+  "nameEn": "Max Revive",
+  "nameFr": "Rappel Max",
+  "cost": 4000,
+  "pocket": "medicine"
+ },
+ "freshwater": {
+  "id": 30,
+  "slug": "freshwater",
+  "nameEn": "Fresh Water",
+  "nameFr": "Eau Fraîche",
+  "cost": 200,
+  "pocket": "medicine"
+ },
+ "sodapop": {
+  "id": 31,
+  "slug": "sodapop",
+  "nameEn": "Soda Pop",
+  "nameFr": "Soda Cool",
+  "cost": 300,
+  "pocket": "medicine"
+ },
+ "lemonade": {
+  "id": 32,
+  "slug": "lemonade",
+  "nameEn": "Lemonade",
+  "nameFr": "Limonade",
+  "cost": 400,
+  "pocket": "medicine"
+ },
+ "moomoomilk": {
+  "id": 33,
+  "slug": "moomoomilk",
+  "nameEn": "Moomoo Milk",
+  "nameFr": "Lait Meumeu",
+  "cost": 600,
+  "pocket": "medicine"
+ },
+ "energypowder": {
+  "id": 34,
+  "slug": "energypowder",
+  "nameEn": "Energy Powder",
+  "nameFr": "Poudrénergie",
+  "cost": 500,
+  "pocket": "medicine"
+ },
+ "energyroot": {
+  "id": 35,
+  "slug": "energyroot",
+  "nameEn": "Energy Root",
+  "nameFr": "Racinénergie",
+  "cost": 1200,
+  "pocket": "medicine"
+ },
+ "healpowder": {
+  "id": 36,
+  "slug": "healpowder",
+  "nameEn": "Heal Powder",
+  "nameFr": "Poudre Soin",
+  "cost": 300,
+  "pocket": "medicine"
+ },
+ "revivalherb": {
+  "id": 37,
+  "slug": "revivalherb",
+  "nameEn": "Revival Herb",
+  "nameFr": "Herbe Rappel",
+  "cost": 2800,
+  "pocket": "medicine"
+ },
+ "ether": {
+  "id": 38,
+  "slug": "ether",
+  "nameEn": "Ether",
+  "nameFr": "Huile",
+  "cost": 1200,
+  "pocket": "medicine"
+ },
+ "maxether": {
+  "id": 39,
+  "slug": "maxether",
+  "nameEn": "Max Ether",
+  "nameFr": "Huile Max",
+  "cost": 2000,
+  "pocket": "medicine"
+ },
+ "elixir": {
+  "id": 40,
+  "slug": "elixir",
+  "nameEn": "Elixir",
+  "nameFr": "Élixir",
+  "cost": 3000,
+  "pocket": "medicine"
+ },
+ "maxelixir": {
+  "id": 41,
+  "slug": "maxelixir",
+  "nameEn": "Max Elixir",
+  "nameFr": "Élixir Max",
+  "cost": 4500,
+  "pocket": "medicine"
+ },
+ "lavacookie": {
+  "id": 42,
+  "slug": "lavacookie",
+  "nameEn": "Lava Cookie",
+  "nameFr": "Lava Cookie",
+  "cost": 350,
+  "pocket": "medicine"
+ },
+ "berryjuice": {
+  "id": 43,
+  "slug": "berryjuice",
+  "nameEn": "Berry Juice",
+  "nameFr": "Jus de Baie",
+  "cost": 200,
+  "pocket": "medicine"
+ },
+ "hpup": {
+  "id": 45,
+  "slug": "hpup",
+  "nameEn": "HP Up",
+  "nameFr": "PV Plus",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "protein": {
+  "id": 46,
+  "slug": "protein",
+  "nameEn": "Protein",
+  "nameFr": "Protéine",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "iron": {
+  "id": 47,
+  "slug": "iron",
+  "nameEn": "Iron",
+  "nameFr": "Fer",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "carbos": {
+  "id": 48,
+  "slug": "carbos",
+  "nameEn": "Carbos",
+  "nameFr": "Carbone",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "calcium": {
+  "id": 49,
+  "slug": "calcium",
+  "nameEn": "Calcium",
+  "nameFr": "Calcium",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "rarecandy": {
+  "id": 50,
+  "slug": "rarecandy",
+  "nameEn": "Rare Candy",
+  "nameFr": "Super Bonbon",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "ppup": {
+  "id": 51,
+  "slug": "ppup",
+  "nameEn": "PP Up",
+  "nameFr": "PP Plus",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "zinc": {
+  "id": 52,
+  "slug": "zinc",
+  "nameEn": "Zinc",
+  "nameFr": "Zinc",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "ppmax": {
+  "id": 53,
+  "slug": "ppmax",
+  "nameEn": "PP Max",
+  "nameFr": "PP Max",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "oldgateau": {
+  "id": 54,
+  "slug": "oldgateau",
+  "nameEn": "Old Gateau",
+  "nameFr": "Vieux Gâteau",
+  "cost": 350,
+  "pocket": "medicine"
+ },
+ "guardspec": {
+  "id": 55,
+  "slug": "guardspec",
+  "nameEn": "Guard Spec.",
+  "nameFr": "Garde-Stats",
+  "cost": 1500,
+  "pocket": "other"
+ },
+ "direhit": {
+  "id": 56,
+  "slug": "direhit",
+  "nameEn": "Dire Hit",
+  "nameFr": "Muscle +",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "xattack": {
+  "id": 57,
+  "slug": "xattack",
+  "nameEn": "X Attack",
+  "nameFr": "Attaque +",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "xdefense": {
+  "id": 58,
+  "slug": "xdefense",
+  "nameEn": "X Defense",
+  "nameFr": "Défense +",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "xspeed": {
+  "id": 59,
+  "slug": "xspeed",
+  "nameEn": "X Speed",
+  "nameFr": "Vitesse +",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "xaccuracy": {
+  "id": 60,
+  "slug": "xaccuracy",
+  "nameEn": "X Accuracy",
+  "nameFr": "Précision +",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "xspatk": {
+  "id": 61,
+  "slug": "xspatk",
+  "nameEn": "X Sp. Atk",
+  "nameFr": "Atq. Spé. +",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "xspdef": {
+  "id": 62,
+  "slug": "xspdef",
+  "nameEn": "X Sp. Def",
+  "nameFr": "Déf. Spé. +",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "pokedoll": {
+  "id": 63,
+  "slug": "pokedoll",
+  "nameEn": "Poké Doll",
+  "nameFr": "Poké Poupée",
+  "cost": 300,
+  "pocket": "other"
+ },
+ "superrepel": {
+  "id": 76,
+  "slug": "superrepel",
+  "nameEn": "Super Repel",
+  "nameFr": "Super Repousse",
+  "cost": 700,
+  "pocket": "other"
+ },
+ "maxrepel": {
+  "id": 77,
+  "slug": "maxrepel",
+  "nameEn": "Max Repel",
+  "nameFr": "Repousse Max",
+  "cost": 900,
+  "pocket": "other"
+ },
+ "escaperope": {
+  "id": 78,
+  "slug": "escaperope",
+  "nameEn": "Escape Rope",
+  "nameFr": "Corde Sortie",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "repel": {
+  "id": 79,
+  "slug": "repel",
+  "nameEn": "Repel",
+  "nameFr": "Repousse",
+  "cost": 400,
+  "pocket": "other"
+ },
+ "sunstone": {
+  "id": 80,
+  "slug": "sunstone",
+  "nameEn": "Sun Stone",
+  "nameFr": "Pierre Soleil",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "moonstone": {
+  "id": 81,
+  "slug": "moonstone",
+  "nameEn": "Moon Stone",
+  "nameFr": "Pierre Lune",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "firestone": {
+  "id": 82,
+  "slug": "firestone",
+  "nameEn": "Fire Stone",
+  "nameFr": "Pierre Feu",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "thunderstone": {
+  "id": 83,
+  "slug": "thunderstone",
+  "nameEn": "Thunder Stone",
+  "nameFr": "Pierre Foudre",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "waterstone": {
+  "id": 84,
+  "slug": "waterstone",
+  "nameEn": "Water Stone",
+  "nameFr": "Pierre Eau",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "leafstone": {
+  "id": 85,
+  "slug": "leafstone",
+  "nameEn": "Leaf Stone",
+  "nameFr": "Pierre Plante",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "tinymushroom": {
+  "id": 86,
+  "slug": "tinymushroom",
+  "nameEn": "Tiny Mushroom",
+  "nameFr": "Petit Champi",
+  "cost": 500,
+  "pocket": "other"
+ },
+ "bigmushroom": {
+  "id": 87,
+  "slug": "bigmushroom",
+  "nameEn": "Big Mushroom",
+  "nameFr": "Gros Champi",
+  "cost": 5000,
+  "pocket": "other"
+ },
+ "pearl": {
+  "id": 88,
+  "slug": "pearl",
+  "nameEn": "Pearl",
+  "nameFr": "Perle",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "bigpearl": {
+  "id": 89,
+  "slug": "bigpearl",
+  "nameEn": "Big Pearl",
+  "nameFr": "Grande Perle",
+  "cost": 8000,
+  "pocket": "other"
+ },
+ "stardust": {
+  "id": 90,
+  "slug": "stardust",
+  "nameEn": "Stardust",
+  "nameFr": "Poussière Étoile",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "starpiece": {
+  "id": 91,
+  "slug": "starpiece",
+  "nameEn": "Star Piece",
+  "nameFr": "Morceau d’Étoile",
+  "cost": 12000,
+  "pocket": "other"
+ },
+ "nugget": {
+  "id": 92,
+  "slug": "nugget",
+  "nameEn": "Nugget",
+  "nameFr": "Pépite",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "honey": {
+  "id": 94,
+  "slug": "honey",
+  "nameEn": "Honey",
+  "nameFr": "Miel",
+  "cost": 900,
+  "pocket": "other"
+ },
+ "rarebone": {
+  "id": 106,
+  "slug": "rarebone",
+  "nameEn": "Rare Bone",
+  "nameFr": "Os Rare",
+  "cost": 5000,
+  "pocket": "other"
+ },
+ "shinystone": {
+  "id": 107,
+  "slug": "shinystone",
+  "nameEn": "Shiny Stone",
+  "nameFr": "Pierre Éclat",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "duskstone": {
+  "id": 108,
+  "slug": "duskstone",
+  "nameEn": "Dusk Stone",
+  "nameFr": "Pierre Nuit",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "dawnstone": {
+  "id": 109,
+  "slug": "dawnstone",
+  "nameEn": "Dawn Stone",
+  "nameFr": "Pierre Aube",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "ovalstone": {
+  "id": 110,
+  "slug": "ovalstone",
+  "nameEn": "Oval Stone",
+  "nameFr": "Pierre Ovale",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "griseousorb": {
+  "id": 112,
+  "slug": "griseousorb",
+  "nameEn": "Griseous Orb",
+  "nameFr": "Orbe Platiné",
+  "cost": 0,
+  "pocket": "other"
+ },
+ "dousedrive": {
+  "id": 116,
+  "slug": "dousedrive",
+  "nameEn": "Douse Drive",
+  "nameFr": "Module Aqua",
+  "cost": 0,
+  "pocket": "other"
+ },
+ "shockdrive": {
+  "id": 117,
+  "slug": "shockdrive",
+  "nameEn": "Shock Drive",
+  "nameFr": "Module Choc",
+  "cost": 0,
+  "pocket": "other"
+ },
+ "burndrive": {
+  "id": 118,
+  "slug": "burndrive",
+  "nameEn": "Burn Drive",
+  "nameFr": "Module Pyro",
+  "cost": 0,
+  "pocket": "other"
+ },
+ "chilldrive": {
+  "id": 119,
+  "slug": "chilldrive",
+  "nameEn": "Chill Drive",
+  "nameFr": "Module Cryo",
+  "cost": 0,
+  "pocket": "other"
+ },
+ "sweetheart": {
+  "id": 134,
+  "slug": "sweetheart",
+  "nameEn": "Sweet Heart",
+  "nameFr": "Chococœur",
+  "cost": 3000,
+  "pocket": "medicine"
+ },
+ "adamantorb": {
+  "id": 135,
+  "slug": "adamantorb",
+  "nameEn": "Adamant Orb",
+  "nameFr": "Orbe Adamant",
+  "cost": 0,
+  "pocket": "other"
+ },
+ "lustrousorb": {
+  "id": 136,
+  "slug": "lustrousorb",
+  "nameEn": "Lustrous Orb",
+  "nameFr": "Orbe Perlé",
+  "cost": 0,
+  "pocket": "other"
+ },
+ "cheriberry": {
+  "id": 149,
+  "slug": "cheriberry",
+  "nameEn": "Cheri Berry",
+  "nameFr": "Baie Ceriz",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "chestoberry": {
+  "id": 150,
+  "slug": "chestoberry",
+  "nameEn": "Chesto Berry",
+  "nameFr": "Baie Maron",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "pechaberry": {
+  "id": 151,
+  "slug": "pechaberry",
+  "nameEn": "Pecha Berry",
+  "nameFr": "Baie Pêcha",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "rawstberry": {
+  "id": 152,
+  "slug": "rawstberry",
+  "nameEn": "Rawst Berry",
+  "nameFr": "Baie Fraive",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "aspearberry": {
+  "id": 153,
+  "slug": "aspearberry",
+  "nameEn": "Aspear Berry",
+  "nameFr": "Baie Willia",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "leppaberry": {
+  "id": 154,
+  "slug": "leppaberry",
+  "nameEn": "Leppa Berry",
+  "nameFr": "Baie Mepo",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "oranberry": {
+  "id": 155,
+  "slug": "oranberry",
+  "nameEn": "Oran Berry",
+  "nameFr": "Baie Oran",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "persimberry": {
+  "id": 156,
+  "slug": "persimberry",
+  "nameEn": "Persim Berry",
+  "nameFr": "Baie Kika",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "lumberry": {
+  "id": 157,
+  "slug": "lumberry",
+  "nameEn": "Lum Berry",
+  "nameFr": "Baie Prine",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "sitrusberry": {
+  "id": 158,
+  "slug": "sitrusberry",
+  "nameEn": "Sitrus Berry",
+  "nameFr": "Baie Sitrus",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "figyberry": {
+  "id": 159,
+  "slug": "figyberry",
+  "nameEn": "Figy Berry",
+  "nameFr": "Baie Figuy",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "wikiberry": {
+  "id": 160,
+  "slug": "wikiberry",
+  "nameEn": "Wiki Berry",
+  "nameFr": "Baie Wiki",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "magoberry": {
+  "id": 161,
+  "slug": "magoberry",
+  "nameEn": "Mago Berry",
+  "nameFr": "Baie Mago",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "aguavberry": {
+  "id": 162,
+  "slug": "aguavberry",
+  "nameEn": "Aguav Berry",
+  "nameFr": "Baie Gowav",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "iapapaberry": {
+  "id": 163,
+  "slug": "iapapaberry",
+  "nameEn": "Iapapa Berry",
+  "nameFr": "Baie Papaya",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "pomegberry": {
+  "id": 169,
+  "slug": "pomegberry",
+  "nameEn": "Pomeg Berry",
+  "nameFr": "Baie Grena",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "kelpsyberry": {
+  "id": 170,
+  "slug": "kelpsyberry",
+  "nameEn": "Kelpsy Berry",
+  "nameFr": "Baie Alga",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "qualotberry": {
+  "id": 171,
+  "slug": "qualotberry",
+  "nameEn": "Qualot Berry",
+  "nameFr": "Baie Qualot",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "hondewberry": {
+  "id": 172,
+  "slug": "hondewberry",
+  "nameEn": "Hondew Berry",
+  "nameFr": "Baie Lonme",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "grepaberry": {
+  "id": 173,
+  "slug": "grepaberry",
+  "nameEn": "Grepa Berry",
+  "nameFr": "Baie Résin",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "tamatoberry": {
+  "id": 174,
+  "slug": "tamatoberry",
+  "nameEn": "Tamato Berry",
+  "nameFr": "Baie Tamato",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "occaberry": {
+  "id": 184,
+  "slug": "occaberry",
+  "nameEn": "Occa Berry",
+  "nameFr": "Baie Chocco",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "passhoberry": {
+  "id": 185,
+  "slug": "passhoberry",
+  "nameEn": "Passho Berry",
+  "nameFr": "Baie Pocpoc",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "wacanberry": {
+  "id": 186,
+  "slug": "wacanberry",
+  "nameEn": "Wacan Berry",
+  "nameFr": "Baie Parma",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "rindoberry": {
+  "id": 187,
+  "slug": "rindoberry",
+  "nameEn": "Rindo Berry",
+  "nameFr": "Baie Ratam",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "yacheberry": {
+  "id": 188,
+  "slug": "yacheberry",
+  "nameEn": "Yache Berry",
+  "nameFr": "Baie Nanone",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "chopleberry": {
+  "id": 189,
+  "slug": "chopleberry",
+  "nameEn": "Chople Berry",
+  "nameFr": "Baie Pomroz",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "kebiaberry": {
+  "id": 190,
+  "slug": "kebiaberry",
+  "nameEn": "Kebia Berry",
+  "nameFr": "Baie Kébia",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "shucaberry": {
+  "id": 191,
+  "slug": "shucaberry",
+  "nameEn": "Shuca Berry",
+  "nameFr": "Baie Jouca",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "cobaberry": {
+  "id": 192,
+  "slug": "cobaberry",
+  "nameEn": "Coba Berry",
+  "nameFr": "Baie Cobaba",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "payapaberry": {
+  "id": 193,
+  "slug": "payapaberry",
+  "nameEn": "Payapa Berry",
+  "nameFr": "Baie Yapap",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "tangaberry": {
+  "id": 194,
+  "slug": "tangaberry",
+  "nameEn": "Tanga Berry",
+  "nameFr": "Baie Panga",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "chartiberry": {
+  "id": 195,
+  "slug": "chartiberry",
+  "nameEn": "Charti Berry",
+  "nameFr": "Baie Charti",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "kasibberry": {
+  "id": 196,
+  "slug": "kasibberry",
+  "nameEn": "Kasib Berry",
+  "nameFr": "Baie Sédra",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "habanberry": {
+  "id": 197,
+  "slug": "habanberry",
+  "nameEn": "Haban Berry",
+  "nameFr": "Baie Fraigo",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "colburberry": {
+  "id": 198,
+  "slug": "colburberry",
+  "nameEn": "Colbur Berry",
+  "nameFr": "Baie Lampou",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "babiriberry": {
+  "id": 199,
+  "slug": "babiriberry",
+  "nameEn": "Babiri Berry",
+  "nameFr": "Baie Babiri",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "chilanberry": {
+  "id": 200,
+  "slug": "chilanberry",
+  "nameEn": "Chilan Berry",
+  "nameFr": "Baie Zalis",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "liechiberry": {
+  "id": 201,
+  "slug": "liechiberry",
+  "nameEn": "Liechi Berry",
+  "nameFr": "Baie Lichii",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "ganlonberry": {
+  "id": 202,
+  "slug": "ganlonberry",
+  "nameEn": "Ganlon Berry",
+  "nameFr": "Baie Lingan",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "salacberry": {
+  "id": 203,
+  "slug": "salacberry",
+  "nameEn": "Salac Berry",
+  "nameFr": "Baie Sailak",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "petayaberry": {
+  "id": 204,
+  "slug": "petayaberry",
+  "nameEn": "Petaya Berry",
+  "nameFr": "Baie Pitaye",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "apicotberry": {
+  "id": 205,
+  "slug": "apicotberry",
+  "nameEn": "Apicot Berry",
+  "nameFr": "Baie Abriko",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "lansatberry": {
+  "id": 206,
+  "slug": "lansatberry",
+  "nameEn": "Lansat Berry",
+  "nameFr": "Baie Lansat",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "starfberry": {
+  "id": 207,
+  "slug": "starfberry",
+  "nameEn": "Starf Berry",
+  "nameFr": "Baie Frista",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "enigmaberry": {
+  "id": 208,
+  "slug": "enigmaberry",
+  "nameEn": "Enigma Berry",
+  "nameFr": "Baie Enigma",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "micleberry": {
+  "id": 209,
+  "slug": "micleberry",
+  "nameEn": "Micle Berry",
+  "nameFr": "Baie Micle",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "custapberry": {
+  "id": 210,
+  "slug": "custapberry",
+  "nameEn": "Custap Berry",
+  "nameFr": "Baie Chérim",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "jabocaberry": {
+  "id": 211,
+  "slug": "jabocaberry",
+  "nameEn": "Jaboca Berry",
+  "nameFr": "Baie Jaboca",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "rowapberry": {
+  "id": 212,
+  "slug": "rowapberry",
+  "nameEn": "Rowap Berry",
+  "nameFr": "Baie Pommo",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "brightpowder": {
+  "id": 213,
+  "slug": "brightpowder",
+  "nameEn": "Bright Powder",
+  "nameFr": "Poudre Claire",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "whiteherb": {
+  "id": 214,
+  "slug": "whiteherb",
+  "nameEn": "White Herb",
+  "nameFr": "Herbe Blanche",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "machobrace": {
+  "id": 215,
+  "slug": "machobrace",
+  "nameEn": "Macho Brace",
+  "nameFr": "Bracelet Macho",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "quickclaw": {
+  "id": 217,
+  "slug": "quickclaw",
+  "nameEn": "Quick Claw",
+  "nameFr": "Vive Griffe",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "soothebell": {
+  "id": 218,
+  "slug": "soothebell",
+  "nameEn": "Soothe Bell",
+  "nameFr": "Grelot Zen",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "mentalherb": {
+  "id": 219,
+  "slug": "mentalherb",
+  "nameEn": "Mental Herb",
+  "nameFr": "Herbe Mental",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "choiceband": {
+  "id": 220,
+  "slug": "choiceband",
+  "nameEn": "Choice Band",
+  "nameFr": "Bandeau Choix",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "kingsrock": {
+  "id": 221,
+  "slug": "kingsrock",
+  "nameEn": "King’s Rock",
+  "nameFr": "Roche Royale",
+  "cost": 5000,
+  "pocket": "other"
+ },
+ "silverpowder": {
+  "id": 222,
+  "slug": "silverpowder",
+  "nameEn": "Silver Powder",
+  "nameFr": "Poudre Argentée",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "amuletcoin": {
+  "id": 223,
+  "slug": "amuletcoin",
+  "nameEn": "Amulet Coin",
+  "nameFr": "Pièce Rune",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "cleansetag": {
+  "id": 224,
+  "slug": "cleansetag",
+  "nameEn": "Cleanse Tag",
+  "nameFr": "Rune Purifiante",
+  "cost": 5000,
+  "pocket": "other"
+ },
+ "souldew": {
+  "id": 225,
+  "slug": "souldew",
+  "nameEn": "Soul Dew",
+  "nameFr": "Rosée Âme",
+  "cost": 0,
+  "pocket": "other"
+ },
+ "smokeball": {
+  "id": 228,
+  "slug": "smokeball",
+  "nameEn": "Smoke Ball",
+  "nameFr": "Boule Fumée",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "everstone": {
+  "id": 229,
+  "slug": "everstone",
+  "nameEn": "Everstone",
+  "nameFr": "Pierre Stase",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "focusband": {
+  "id": 230,
+  "slug": "focusband",
+  "nameEn": "Focus Band",
+  "nameFr": "Bandeau",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "luckyegg": {
+  "id": 231,
+  "slug": "luckyegg",
+  "nameEn": "Lucky Egg",
+  "nameFr": "Œuf Chance",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "scopelens": {
+  "id": 232,
+  "slug": "scopelens",
+  "nameEn": "Scope Lens",
+  "nameFr": "Lentilscope",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "metalcoat": {
+  "id": 233,
+  "slug": "metalcoat",
+  "nameEn": "Metal Coat",
+  "nameFr": "Peau Métal",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "leftovers": {
+  "id": 234,
+  "slug": "leftovers",
+  "nameEn": "Leftovers",
+  "nameFr": "Restes",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "dragonscale": {
+  "id": 235,
+  "slug": "dragonscale",
+  "nameEn": "Dragon Scale",
+  "nameFr": "Écaille Draco",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "lightball": {
+  "id": 236,
+  "slug": "lightball",
+  "nameEn": "Light Ball",
+  "nameFr": "Balle Lumière",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "softsand": {
+  "id": 237,
+  "slug": "softsand",
+  "nameEn": "Soft Sand",
+  "nameFr": "Sable Doux",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "hardstone": {
+  "id": 238,
+  "slug": "hardstone",
+  "nameEn": "Hard Stone",
+  "nameFr": "Pierre Dure",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "miracleseed": {
+  "id": 239,
+  "slug": "miracleseed",
+  "nameEn": "Miracle Seed",
+  "nameFr": "Graine Miracle",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "blackglasses": {
+  "id": 240,
+  "slug": "blackglasses",
+  "nameEn": "Black Glasses",
+  "nameFr": "Lunettes Noires",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "blackbelt": {
+  "id": 241,
+  "slug": "blackbelt",
+  "nameEn": "Black Belt",
+  "nameFr": "Ceinture Noire",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "magnet": {
+  "id": 242,
+  "slug": "magnet",
+  "nameEn": "Magnet",
+  "nameFr": "Aimant",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "mysticwater": {
+  "id": 243,
+  "slug": "mysticwater",
+  "nameEn": "Mystic Water",
+  "nameFr": "Eau Mystique",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "sharpbeak": {
+  "id": 244,
+  "slug": "sharpbeak",
+  "nameEn": "Sharp Beak",
+  "nameFr": "Bec Pointu",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "poisonbarb": {
+  "id": 245,
+  "slug": "poisonbarb",
+  "nameEn": "Poison Barb",
+  "nameFr": "Pic Venin",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "nevermeltice": {
+  "id": 246,
+  "slug": "nevermeltice",
+  "nameEn": "Never-Melt Ice",
+  "nameFr": "Glace Éternelle",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "spelltag": {
+  "id": 247,
+  "slug": "spelltag",
+  "nameEn": "Spell Tag",
+  "nameFr": "Rune Sort",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "twistedspoon": {
+  "id": 248,
+  "slug": "twistedspoon",
+  "nameEn": "Twisted Spoon",
+  "nameFr": "Cuillère Tordue",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "charcoal": {
+  "id": 249,
+  "slug": "charcoal",
+  "nameEn": "Charcoal",
+  "nameFr": "Charbon",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "dragonfang": {
+  "id": 250,
+  "slug": "dragonfang",
+  "nameEn": "Dragon Fang",
+  "nameFr": "Croc Dragon",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "silkscarf": {
+  "id": 251,
+  "slug": "silkscarf",
+  "nameEn": "Silk Scarf",
+  "nameFr": "Mouchoir Soie",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "upgrade": {
+  "id": 252,
+  "slug": "upgrade",
+  "nameEn": "Upgrade",
+  "nameFr": "Améliorator",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "shellbell": {
+  "id": 253,
+  "slug": "shellbell",
+  "nameEn": "Shell Bell",
+  "nameFr": "Grelot Coque",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "seaincense": {
+  "id": 254,
+  "slug": "seaincense",
+  "nameEn": "Sea Incense",
+  "nameFr": "Encens Mer",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "laxincense": {
+  "id": 255,
+  "slug": "laxincense",
+  "nameEn": "Lax Incense",
+  "nameFr": "Encens Doux",
+  "cost": 5000,
+  "pocket": "other"
+ },
+ "metalpowder": {
+  "id": 257,
+  "slug": "metalpowder",
+  "nameEn": "Metal Powder",
+  "nameFr": "Poudre Métal",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "thickclub": {
+  "id": 258,
+  "slug": "thickclub",
+  "nameEn": "Thick Club",
+  "nameFr": "Masse Os",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "leek": {
+  "id": 259,
+  "slug": "leek",
+  "nameEn": "Leek",
+  "nameFr": "Poireau",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "widelens": {
+  "id": 265,
+  "slug": "widelens",
+  "nameEn": "Wide Lens",
+  "nameFr": "Loupe",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "muscleband": {
+  "id": 266,
+  "slug": "muscleband",
+  "nameEn": "Muscle Band",
+  "nameFr": "Bandeau Muscle",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "wiseglasses": {
+  "id": 267,
+  "slug": "wiseglasses",
+  "nameEn": "Wise Glasses",
+  "nameFr": "Lunettes Sages",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "expertbelt": {
+  "id": 268,
+  "slug": "expertbelt",
+  "nameEn": "Expert Belt",
+  "nameFr": "Ceinture Pro",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "lightclay": {
+  "id": 269,
+  "slug": "lightclay",
+  "nameEn": "Light Clay",
+  "nameFr": "Lumargile",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "lifeorb": {
+  "id": 270,
+  "slug": "lifeorb",
+  "nameEn": "Life Orb",
+  "nameFr": "Orbe Vie",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "powerherb": {
+  "id": 271,
+  "slug": "powerherb",
+  "nameEn": "Power Herb",
+  "nameFr": "Herbe Pouvoir",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "toxicorb": {
+  "id": 272,
+  "slug": "toxicorb",
+  "nameEn": "Toxic Orb",
+  "nameFr": "Orbe Toxique",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "flameorb": {
+  "id": 273,
+  "slug": "flameorb",
+  "nameEn": "Flame Orb",
+  "nameFr": "Orbe Flamme",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "quickpowder": {
+  "id": 274,
+  "slug": "quickpowder",
+  "nameEn": "Quick Powder",
+  "nameFr": "Poudre Vite",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "focussash": {
+  "id": 275,
+  "slug": "focussash",
+  "nameEn": "Focus Sash",
+  "nameFr": "Ceinture Force",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "zoomlens": {
+  "id": 276,
+  "slug": "zoomlens",
+  "nameEn": "Zoom Lens",
+  "nameFr": "Lentille Zoom",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "metronome": {
+  "id": 277,
+  "slug": "metronome",
+  "nameEn": "Metronome",
+  "nameFr": "Métronome",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "ironball": {
+  "id": 278,
+  "slug": "ironball",
+  "nameEn": "Iron Ball",
+  "nameFr": "Balle Fer",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "laggingtail": {
+  "id": 279,
+  "slug": "laggingtail",
+  "nameEn": "Lagging Tail",
+  "nameFr": "Ralentiqueue",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "destinyknot": {
+  "id": 280,
+  "slug": "destinyknot",
+  "nameEn": "Destiny Knot",
+  "nameFr": "Nœud Destin",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "blacksludge": {
+  "id": 281,
+  "slug": "blacksludge",
+  "nameEn": "Black Sludge",
+  "nameFr": "Boue Noire",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "icyrock": {
+  "id": 282,
+  "slug": "icyrock",
+  "nameEn": "Icy Rock",
+  "nameFr": "Roche Glace",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "smoothrock": {
+  "id": 283,
+  "slug": "smoothrock",
+  "nameEn": "Smooth Rock",
+  "nameFr": "Roche Lisse",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "heatrock": {
+  "id": 284,
+  "slug": "heatrock",
+  "nameEn": "Heat Rock",
+  "nameFr": "Roche Chaude",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "damprock": {
+  "id": 285,
+  "slug": "damprock",
+  "nameEn": "Damp Rock",
+  "nameFr": "Roche Humide",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "gripclaw": {
+  "id": 286,
+  "slug": "gripclaw",
+  "nameEn": "Grip Claw",
+  "nameFr": "Accro Griffe",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "choicescarf": {
+  "id": 287,
+  "slug": "choicescarf",
+  "nameEn": "Choice Scarf",
+  "nameFr": "Mouchoir Choix",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "stickybarb": {
+  "id": 288,
+  "slug": "stickybarb",
+  "nameEn": "Sticky Barb",
+  "nameFr": "Piquants",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "powerbracer": {
+  "id": 289,
+  "slug": "powerbracer",
+  "nameEn": "Power Bracer",
+  "nameFr": "Poignet Pouvoir",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "powerbelt": {
+  "id": 290,
+  "slug": "powerbelt",
+  "nameEn": "Power Belt",
+  "nameFr": "Ceinture Pouvoir",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "powerlens": {
+  "id": 291,
+  "slug": "powerlens",
+  "nameEn": "Power Lens",
+  "nameFr": "Lentille Pouvoir",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "powerband": {
+  "id": 292,
+  "slug": "powerband",
+  "nameEn": "Power Band",
+  "nameFr": "Bandeau Pouvoir",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "poweranklet": {
+  "id": 293,
+  "slug": "poweranklet",
+  "nameEn": "Power Anklet",
+  "nameFr": "Chaîne Pouvoir",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "powerweight": {
+  "id": 294,
+  "slug": "powerweight",
+  "nameEn": "Power Weight",
+  "nameFr": "Poids Pouvoir",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "shedshell": {
+  "id": 295,
+  "slug": "shedshell",
+  "nameEn": "Shed Shell",
+  "nameFr": "Carapace Mue",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "bigroot": {
+  "id": 296,
+  "slug": "bigroot",
+  "nameEn": "Big Root",
+  "nameFr": "Grosse Racine",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "choicespecs": {
+  "id": 297,
+  "slug": "choicespecs",
+  "nameEn": "Choice Specs",
+  "nameFr": "Lunettes Choix",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "flameplate": {
+  "id": 298,
+  "slug": "flameplate",
+  "nameEn": "Flame Plate",
+  "nameFr": "Plaque Flamme",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "splashplate": {
+  "id": 299,
+  "slug": "splashplate",
+  "nameEn": "Splash Plate",
+  "nameFr": "Plaque Hydro",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "zapplate": {
+  "id": 300,
+  "slug": "zapplate",
+  "nameEn": "Zap Plate",
+  "nameFr": "Plaque Volt",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "meadowplate": {
+  "id": 301,
+  "slug": "meadowplate",
+  "nameEn": "Meadow Plate",
+  "nameFr": "Plaque Herbe",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "icicleplate": {
+  "id": 302,
+  "slug": "icicleplate",
+  "nameEn": "Icicle Plate",
+  "nameFr": "Plaque Glace",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "fistplate": {
+  "id": 303,
+  "slug": "fistplate",
+  "nameEn": "Fist Plate",
+  "nameFr": "Plaque Poing",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "toxicplate": {
+  "id": 304,
+  "slug": "toxicplate",
+  "nameEn": "Toxic Plate",
+  "nameFr": "Plaque Toxicité",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "earthplate": {
+  "id": 305,
+  "slug": "earthplate",
+  "nameEn": "Earth Plate",
+  "nameFr": "Plaque Terre",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "skyplate": {
+  "id": 306,
+  "slug": "skyplate",
+  "nameEn": "Sky Plate",
+  "nameFr": "Plaque Ciel",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "mindplate": {
+  "id": 307,
+  "slug": "mindplate",
+  "nameEn": "Mind Plate",
+  "nameFr": "Plaque Esprit",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "insectplate": {
+  "id": 308,
+  "slug": "insectplate",
+  "nameEn": "Insect Plate",
+  "nameFr": "Plaque Insecte",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "stoneplate": {
+  "id": 309,
+  "slug": "stoneplate",
+  "nameEn": "Stone Plate",
+  "nameFr": "Plaque Roc",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "spookyplate": {
+  "id": 310,
+  "slug": "spookyplate",
+  "nameEn": "Spooky Plate",
+  "nameFr": "Plaque Fantôme",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "dracoplate": {
+  "id": 311,
+  "slug": "dracoplate",
+  "nameEn": "Draco Plate",
+  "nameFr": "Plaque Draco",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "dreadplate": {
+  "id": 312,
+  "slug": "dreadplate",
+  "nameEn": "Dread Plate",
+  "nameFr": "Plaque Ombre",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "ironplate": {
+  "id": 313,
+  "slug": "ironplate",
+  "nameEn": "Iron Plate",
+  "nameFr": "Plaque Fer",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "oddincense": {
+  "id": 314,
+  "slug": "oddincense",
+  "nameEn": "Odd Incense",
+  "nameFr": "Encens Bizarre",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "rockincense": {
+  "id": 315,
+  "slug": "rockincense",
+  "nameEn": "Rock Incense",
+  "nameFr": "Encens Roc",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "fullincense": {
+  "id": 316,
+  "slug": "fullincense",
+  "nameEn": "Full Incense",
+  "nameFr": "Encens Plein",
+  "cost": 5000,
+  "pocket": "other"
+ },
+ "waveincense": {
+  "id": 317,
+  "slug": "waveincense",
+  "nameEn": "Wave Incense",
+  "nameFr": "Encens Vague",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "roseincense": {
+  "id": 318,
+  "slug": "roseincense",
+  "nameEn": "Rose Incense",
+  "nameFr": "Encens Fleur",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "luckincense": {
+  "id": 319,
+  "slug": "luckincense",
+  "nameEn": "Luck Incense",
+  "nameFr": "Encens Veine",
+  "cost": 11000,
+  "pocket": "other"
+ },
+ "pureincense": {
+  "id": 320,
+  "slug": "pureincense",
+  "nameEn": "Pure Incense",
+  "nameFr": "Encens Pur",
+  "cost": 6000,
+  "pocket": "other"
+ },
+ "protector": {
+  "id": 321,
+  "slug": "protector",
+  "nameEn": "Protector",
+  "nameFr": "Protecteur",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "electirizer": {
+  "id": 322,
+  "slug": "electirizer",
+  "nameEn": "Electirizer",
+  "nameFr": "Électriseur",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "magmarizer": {
+  "id": 323,
+  "slug": "magmarizer",
+  "nameEn": "Magmarizer",
+  "nameFr": "Magmariseur",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "dubiousdisc": {
+  "id": 324,
+  "slug": "dubiousdisc",
+  "nameEn": "Dubious Disc",
+  "nameFr": "CD Douteux",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "reapercloth": {
+  "id": 325,
+  "slug": "reapercloth",
+  "nameEn": "Reaper Cloth",
+  "nameFr": "Tissu Fauche",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "razorclaw": {
+  "id": 326,
+  "slug": "razorclaw",
+  "nameEn": "Razor Claw",
+  "nameFr": "Griffe Rasoir",
+  "cost": 5000,
+  "pocket": "other"
+ },
+ "tm01": {
+  "id": 328,
+  "slug": "tm01",
+  "nameEn": "TM01",
+  "nameFr": "CT01",
+  "cost": 40000,
+  "pocket": "machine"
+ },
+ "tm02": {
+  "id": 329,
+  "slug": "tm02",
+  "nameEn": "TM02",
+  "nameFr": "CT02",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm03": {
+  "id": 330,
+  "slug": "tm03",
+  "nameEn": "TM03",
+  "nameFr": "CT03",
+  "cost": 50000,
+  "pocket": "machine"
+ },
+ "tm04": {
+  "id": 331,
+  "slug": "tm04",
+  "nameEn": "TM04",
+  "nameFr": "CT04",
+  "cost": 50000,
+  "pocket": "machine"
+ },
+ "tm05": {
+  "id": 332,
+  "slug": "tm05",
+  "nameEn": "TM05",
+  "nameFr": "CT05",
+  "cost": 50000,
+  "pocket": "machine"
+ },
+ "tm06": {
+  "id": 333,
+  "slug": "tm06",
+  "nameEn": "TM06",
+  "nameFr": "CT06",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm07": {
+  "id": 334,
+  "slug": "tm07",
+  "nameEn": "TM07",
+  "nameFr": "CT07",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm08": {
+  "id": 335,
+  "slug": "tm08",
+  "nameEn": "TM08",
+  "nameFr": "CT08",
+  "cost": 50000,
+  "pocket": "machine"
+ },
+ "tm09": {
+  "id": 336,
+  "slug": "tm09",
+  "nameEn": "TM09",
+  "nameFr": "CT09",
+  "cost": 50000,
+  "pocket": "machine"
+ },
+ "tm10": {
+  "id": 337,
+  "slug": "tm10",
+  "nameEn": "TM10",
+  "nameFr": "CT10",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm11": {
+  "id": 338,
+  "slug": "tm11",
+  "nameEn": "TM11",
+  "nameFr": "CT11",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm12": {
+  "id": 339,
+  "slug": "tm12",
+  "nameEn": "TM12",
+  "nameFr": "CT12",
+  "cost": 50000,
+  "pocket": "machine"
+ },
+ "tm13": {
+  "id": 340,
+  "slug": "tm13",
+  "nameEn": "TM13",
+  "nameFr": "CT13",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm14": {
+  "id": 341,
+  "slug": "tm14",
+  "nameEn": "TM14",
+  "nameFr": "CT14",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm15": {
+  "id": 342,
+  "slug": "tm15",
+  "nameEn": "TM15",
+  "nameFr": "CT15",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm16": {
+  "id": 343,
+  "slug": "tm16",
+  "nameEn": "TM16",
+  "nameFr": "CT16",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm17": {
+  "id": 344,
+  "slug": "tm17",
+  "nameEn": "TM17",
+  "nameFr": "CT17",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm18": {
+  "id": 345,
+  "slug": "tm18",
+  "nameEn": "TM18",
+  "nameFr": "CT18",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm19": {
+  "id": 346,
+  "slug": "tm19",
+  "nameEn": "TM19",
+  "nameFr": "CT19",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm20": {
+  "id": 347,
+  "slug": "tm20",
+  "nameEn": "TM20",
+  "nameFr": "CT20",
+  "cost": 100000,
+  "pocket": "machine"
+ },
+ "tm21": {
+  "id": 348,
+  "slug": "tm21",
+  "nameEn": "TM21",
+  "nameFr": "CT21",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm22": {
+  "id": 349,
+  "slug": "tm22",
+  "nameEn": "TM22",
+  "nameFr": "CT22",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm23": {
+  "id": 350,
+  "slug": "tm23",
+  "nameEn": "TM23",
+  "nameFr": "CT23",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm24": {
+  "id": 351,
+  "slug": "tm24",
+  "nameEn": "TM24",
+  "nameFr": "CT24",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm25": {
+  "id": 352,
+  "slug": "tm25",
+  "nameEn": "TM25",
+  "nameFr": "CT25",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm26": {
+  "id": 353,
+  "slug": "tm26",
+  "nameEn": "TM26",
+  "nameFr": "CT26",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm27": {
+  "id": 354,
+  "slug": "tm27",
+  "nameEn": "TM27",
+  "nameFr": "CT27",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm28": {
+  "id": 355,
+  "slug": "tm28",
+  "nameEn": "TM28",
+  "nameFr": "CT28",
+  "cost": 100000,
+  "pocket": "machine"
+ },
+ "tm29": {
+  "id": 356,
+  "slug": "tm29",
+  "nameEn": "TM29",
+  "nameFr": "CT29",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm30": {
+  "id": 357,
+  "slug": "tm30",
+  "nameEn": "TM30",
+  "nameFr": "CT30",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm31": {
+  "id": 358,
+  "slug": "tm31",
+  "nameEn": "TM31",
+  "nameFr": "CT31",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm32": {
+  "id": 359,
+  "slug": "tm32",
+  "nameEn": "TM32",
+  "nameFr": "CT32",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm33": {
+  "id": 360,
+  "slug": "tm33",
+  "nameEn": "TM33",
+  "nameFr": "CT33",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm34": {
+  "id": 361,
+  "slug": "tm34",
+  "nameEn": "TM34",
+  "nameFr": "CT34",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm35": {
+  "id": 362,
+  "slug": "tm35",
+  "nameEn": "TM35",
+  "nameFr": "CT35",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm36": {
+  "id": 363,
+  "slug": "tm36",
+  "nameEn": "TM36",
+  "nameFr": "CT36",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm37": {
+  "id": 364,
+  "slug": "tm37",
+  "nameEn": "TM37",
+  "nameFr": "CT37",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm38": {
+  "id": 365,
+  "slug": "tm38",
+  "nameEn": "TM38",
+  "nameFr": "CT38",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm39": {
+  "id": 366,
+  "slug": "tm39",
+  "nameEn": "TM39",
+  "nameFr": "CT39",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm40": {
+  "id": 367,
+  "slug": "tm40",
+  "nameEn": "TM40",
+  "nameFr": "CT40",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm41": {
+  "id": 368,
+  "slug": "tm41",
+  "nameEn": "TM41",
+  "nameFr": "CT41",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm42": {
+  "id": 369,
+  "slug": "tm42",
+  "nameEn": "TM42",
+  "nameFr": "CT42",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm43": {
+  "id": 370,
+  "slug": "tm43",
+  "nameEn": "TM43",
+  "nameFr": "CT43",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm44": {
+  "id": 371,
+  "slug": "tm44",
+  "nameEn": "TM44",
+  "nameFr": "CT44",
+  "cost": 100000,
+  "pocket": "machine"
+ },
+ "tm45": {
+  "id": 372,
+  "slug": "tm45",
+  "nameEn": "TM45",
+  "nameFr": "CT45",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm46": {
+  "id": 373,
+  "slug": "tm46",
+  "nameEn": "TM46",
+  "nameFr": "CT46",
+  "cost": 30000,
+  "pocket": "machine"
+ },
+ "tm47": {
+  "id": 374,
+  "slug": "tm47",
+  "nameEn": "TM47",
+  "nameFr": "CT47",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm48": {
+  "id": 375,
+  "slug": "tm48",
+  "nameEn": "TM48",
+  "nameFr": "CT48",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm49": {
+  "id": 376,
+  "slug": "tm49",
+  "nameEn": "TM49",
+  "nameFr": "CT49",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm50": {
+  "id": 377,
+  "slug": "tm50",
+  "nameEn": "TM50",
+  "nameFr": "CT50",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm51": {
+  "id": 378,
+  "slug": "tm51",
+  "nameEn": "TM51",
+  "nameFr": "CT51",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm52": {
+  "id": 379,
+  "slug": "tm52",
+  "nameEn": "TM52",
+  "nameFr": "CT52",
+  "cost": 100000,
+  "pocket": "machine"
+ },
+ "tm53": {
+  "id": 380,
+  "slug": "tm53",
+  "nameEn": "TM53",
+  "nameFr": "CT53",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm54": {
+  "id": 381,
+  "slug": "tm54",
+  "nameEn": "TM54",
+  "nameFr": "CT54",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm55": {
+  "id": 382,
+  "slug": "tm55",
+  "nameEn": "TM55",
+  "nameFr": "CT55",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm56": {
+  "id": 383,
+  "slug": "tm56",
+  "nameEn": "TM56",
+  "nameFr": "CT56",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm57": {
+  "id": 384,
+  "slug": "tm57",
+  "nameEn": "TM57",
+  "nameFr": "CT57",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm58": {
+  "id": 385,
+  "slug": "tm58",
+  "nameEn": "TM58",
+  "nameFr": "CT58",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm59": {
+  "id": 386,
+  "slug": "tm59",
+  "nameEn": "TM59",
+  "nameFr": "CT59",
+  "cost": 100000,
+  "pocket": "machine"
+ },
+ "tm60": {
+  "id": 387,
+  "slug": "tm60",
+  "nameEn": "TM60",
+  "nameFr": "CT60",
+  "cost": 30000,
+  "pocket": "machine"
+ },
+ "tm61": {
+  "id": 388,
+  "slug": "tm61",
+  "nameEn": "TM61",
+  "nameFr": "CT61",
+  "cost": 30000,
+  "pocket": "machine"
+ },
+ "tm62": {
+  "id": 389,
+  "slug": "tm62",
+  "nameEn": "TM62",
+  "nameFr": "CT62",
+  "cost": 30000,
+  "pocket": "machine"
+ },
+ "tm63": {
+  "id": 390,
+  "slug": "tm63",
+  "nameEn": "TM63",
+  "nameFr": "CT63",
+  "cost": 50000,
+  "pocket": "machine"
+ },
+ "tm64": {
+  "id": 391,
+  "slug": "tm64",
+  "nameEn": "TM64",
+  "nameFr": "CT64",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm65": {
+  "id": 392,
+  "slug": "tm65",
+  "nameEn": "TM65",
+  "nameFr": "CT65",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm66": {
+  "id": 393,
+  "slug": "tm66",
+  "nameEn": "TM66",
+  "nameFr": "CT66",
+  "cost": 30000,
+  "pocket": "machine"
+ },
+ "tm67": {
+  "id": 394,
+  "slug": "tm67",
+  "nameEn": "TM67",
+  "nameFr": "CT67",
+  "cost": 30000,
+  "pocket": "machine"
+ },
+ "tm68": {
+  "id": 395,
+  "slug": "tm68",
+  "nameEn": "TM68",
+  "nameFr": "CT68",
+  "cost": 30000,
+  "pocket": "machine"
+ },
+ "tm69": {
+  "id": 396,
+  "slug": "tm69",
+  "nameEn": "TM69",
+  "nameFr": "CT69",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm70": {
+  "id": 397,
+  "slug": "tm70",
+  "nameEn": "TM70",
+  "nameFr": "CT70",
+  "cost": 50000,
+  "pocket": "machine"
+ },
+ "tm71": {
+  "id": 398,
+  "slug": "tm71",
+  "nameEn": "TM71",
+  "nameFr": "CT71",
+  "cost": 50000,
+  "pocket": "machine"
+ },
+ "tm72": {
+  "id": 399,
+  "slug": "tm72",
+  "nameEn": "TM72",
+  "nameFr": "CT72",
+  "cost": 50000,
+  "pocket": "machine"
+ },
+ "tm73": {
+  "id": 400,
+  "slug": "tm73",
+  "nameEn": "TM73",
+  "nameFr": "CT73",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm74": {
+  "id": 401,
+  "slug": "tm74",
+  "nameEn": "TM74",
+  "nameFr": "CT74",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm75": {
+  "id": 402,
+  "slug": "tm75",
+  "nameEn": "TM75",
+  "nameFr": "CT75",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm76": {
+  "id": 403,
+  "slug": "tm76",
+  "nameEn": "TM76",
+  "nameFr": "CT76",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm77": {
+  "id": 404,
+  "slug": "tm77",
+  "nameEn": "TM77",
+  "nameFr": "CT77",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm78": {
+  "id": 405,
+  "slug": "tm78",
+  "nameEn": "TM78",
+  "nameFr": "CT78",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm79": {
+  "id": 406,
+  "slug": "tm79",
+  "nameEn": "TM79",
+  "nameFr": "CT79",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm80": {
+  "id": 407,
+  "slug": "tm80",
+  "nameEn": "TM80",
+  "nameFr": "CT80",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm81": {
+  "id": 408,
+  "slug": "tm81",
+  "nameEn": "TM81",
+  "nameFr": "CT81",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm82": {
+  "id": 409,
+  "slug": "tm82",
+  "nameEn": "TM82",
+  "nameFr": "CT82",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm83": {
+  "id": 410,
+  "slug": "tm83",
+  "nameEn": "TM83",
+  "nameFr": "CT83",
+  "cost": 100000,
+  "pocket": "machine"
+ },
+ "tm84": {
+  "id": 411,
+  "slug": "tm84",
+  "nameEn": "TM84",
+  "nameFr": "CT84",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm85": {
+  "id": 412,
+  "slug": "tm85",
+  "nameEn": "TM85",
+  "nameFr": "CT85",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm86": {
+  "id": 413,
+  "slug": "tm86",
+  "nameEn": "TM86",
+  "nameFr": "CT86",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm87": {
+  "id": 414,
+  "slug": "tm87",
+  "nameEn": "TM87",
+  "nameFr": "CT87",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm88": {
+  "id": 415,
+  "slug": "tm88",
+  "nameEn": "TM88",
+  "nameFr": "CT88",
+  "cost": 20000,
+  "pocket": "machine"
+ },
+ "tm89": {
+  "id": 416,
+  "slug": "tm89",
+  "nameEn": "TM89",
+  "nameFr": "CT89",
+  "cost": 20000,
+  "pocket": "machine"
+ },
+ "tm90": {
+  "id": 417,
+  "slug": "tm90",
+  "nameEn": "TM90",
+  "nameFr": "CT90",
+  "cost": 20000,
+  "pocket": "machine"
+ },
+ "tm91": {
+  "id": 418,
+  "slug": "tm91",
+  "nameEn": "TM91",
+  "nameFr": "CT91",
+  "cost": 20000,
+  "pocket": "machine"
+ },
+ "tm92": {
+  "id": 419,
+  "slug": "tm92",
+  "nameEn": "TM92",
+  "nameFr": "CT92",
+  "cost": 100000,
+  "pocket": "machine"
+ },
+ "redapricorn": {
+  "id": 485,
+  "slug": "redapricorn",
+  "nameEn": "Red Apricorn",
+  "nameFr": "Noigrume Rouge",
+  "cost": 200,
+  "pocket": "other"
+ },
+ "blueapricorn": {
+  "id": 486,
+  "slug": "blueapricorn",
+  "nameEn": "Blue Apricorn",
+  "nameFr": "Noigrume Bleu",
+  "cost": 200,
+  "pocket": "other"
+ },
+ "yellowapricorn": {
+  "id": 487,
+  "slug": "yellowapricorn",
+  "nameEn": "Yellow Apricorn",
+  "nameFr": "Noigrume Jaune",
+  "cost": 200,
+  "pocket": "other"
+ },
+ "greenapricorn": {
+  "id": 488,
+  "slug": "greenapricorn",
+  "nameEn": "Green Apricorn",
+  "nameFr": "Noigrume Vert",
+  "cost": 200,
+  "pocket": "other"
+ },
+ "pinkapricorn": {
+  "id": 489,
+  "slug": "pinkapricorn",
+  "nameEn": "Pink Apricorn",
+  "nameFr": "Noigrume Rose",
+  "cost": 200,
+  "pocket": "other"
+ },
+ "whiteapricorn": {
+  "id": 490,
+  "slug": "whiteapricorn",
+  "nameEn": "White Apricorn",
+  "nameFr": "Noigrume Blanc",
+  "cost": 200,
+  "pocket": "other"
+ },
+ "blackapricorn": {
+  "id": 491,
+  "slug": "blackapricorn",
+  "nameEn": "Black Apricorn",
+  "nameFr": "Noigrume Noir",
+  "cost": 200,
+  "pocket": "other"
+ },
+ "fastball": {
+  "id": 492,
+  "slug": "fastball",
+  "nameEn": "Fast Ball",
+  "nameFr": "Speed Ball",
+  "cost": 0,
+  "pocket": "pokeball"
+ },
+ "levelball": {
+  "id": 493,
+  "slug": "levelball",
+  "nameEn": "Level Ball",
+  "nameFr": "Niveau Ball",
+  "cost": 0,
+  "pocket": "pokeball"
+ },
+ "lureball": {
+  "id": 494,
+  "slug": "lureball",
+  "nameEn": "Lure Ball",
+  "nameFr": "Appât Ball",
+  "cost": 0,
+  "pocket": "pokeball"
+ },
+ "heavyball": {
+  "id": 495,
+  "slug": "heavyball",
+  "nameEn": "Heavy Ball",
+  "nameFr": "Masse Ball",
+  "cost": 0,
+  "pocket": "pokeball"
+ },
+ "loveball": {
+  "id": 496,
+  "slug": "loveball",
+  "nameEn": "Love Ball",
+  "nameFr": "Love Ball",
+  "cost": 0,
+  "pocket": "pokeball"
+ },
+ "friendball": {
+  "id": 497,
+  "slug": "friendball",
+  "nameEn": "Friend Ball",
+  "nameFr": "Copain Ball",
+  "cost": 0,
+  "pocket": "pokeball"
+ },
+ "moonball": {
+  "id": 498,
+  "slug": "moonball",
+  "nameEn": "Moon Ball",
+  "nameFr": "Lune Ball",
+  "cost": 0,
+  "pocket": "pokeball"
+ },
+ "sportball": {
+  "id": 499,
+  "slug": "sportball",
+  "nameEn": "Sport Ball",
+  "nameFr": "Compét’Ball",
+  "cost": 0,
+  "pocket": "pokeball"
+ },
+ "parkball": {
+  "id": 500,
+  "slug": "parkball",
+  "nameEn": "Park Ball",
+  "nameFr": "Parc Ball",
+  "cost": 0,
+  "pocket": "pokeball"
+ },
+ "ragecandybar": {
+  "id": 504,
+  "slug": "ragecandybar",
+  "nameEn": "Rage Candy Bar",
+  "nameFr": "Bonbon Rage",
+  "cost": 350,
+  "pocket": "medicine"
+ },
+ "prismscale": {
+  "id": 537,
+  "slug": "prismscale",
+  "nameEn": "Prism Scale",
+  "nameFr": "Bel’Écaille",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "eviolite": {
+  "id": 538,
+  "slug": "eviolite",
+  "nameEn": "Eviolite",
+  "nameFr": "Évoluroc",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "floatstone": {
+  "id": 539,
+  "slug": "floatstone",
+  "nameEn": "Float Stone",
+  "nameFr": "Pierrallégée",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "rockyhelmet": {
+  "id": 540,
+  "slug": "rockyhelmet",
+  "nameEn": "Rocky Helmet",
+  "nameFr": "Casque Brut",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "airballoon": {
+  "id": 541,
+  "slug": "airballoon",
+  "nameEn": "Air Balloon",
+  "nameFr": "Ballon",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "redcard": {
+  "id": 542,
+  "slug": "redcard",
+  "nameEn": "Red Card",
+  "nameFr": "Carton Rouge",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "ringtarget": {
+  "id": 543,
+  "slug": "ringtarget",
+  "nameEn": "Ring Target",
+  "nameFr": "Point de Mire",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "bindingband": {
+  "id": 544,
+  "slug": "bindingband",
+  "nameEn": "Binding Band",
+  "nameFr": "Bande Étreinte",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "absorbbulb": {
+  "id": 545,
+  "slug": "absorbbulb",
+  "nameEn": "Absorb Bulb",
+  "nameFr": "Bulbe",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "cellbattery": {
+  "id": 546,
+  "slug": "cellbattery",
+  "nameEn": "Cell Battery",
+  "nameFr": "Pile",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "ejectbutton": {
+  "id": 547,
+  "slug": "ejectbutton",
+  "nameEn": "Eject Button",
+  "nameFr": "Bouton Fuite",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "normalgem": {
+  "id": 564,
+  "slug": "normalgem",
+  "nameEn": "Normal Gem",
+  "nameFr": "Joyau Normal",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "healthfeather": {
+  "id": 565,
+  "slug": "healthfeather",
+  "nameEn": "Health Feather",
+  "nameFr": "Plume Santé",
+  "cost": 300,
+  "pocket": "other"
+ },
+ "musclefeather": {
+  "id": 566,
+  "slug": "musclefeather",
+  "nameEn": "Muscle Feather",
+  "nameFr": "Plume Force",
+  "cost": 300,
+  "pocket": "other"
+ },
+ "resistfeather": {
+  "id": 567,
+  "slug": "resistfeather",
+  "nameEn": "Resist Feather",
+  "nameFr": "Plume Armure",
+  "cost": 300,
+  "pocket": "other"
+ },
+ "geniusfeather": {
+  "id": 568,
+  "slug": "geniusfeather",
+  "nameEn": "Genius Feather",
+  "nameFr": "Plume Esprit",
+  "cost": 300,
+  "pocket": "other"
+ },
+ "cleverfeather": {
+  "id": 569,
+  "slug": "cleverfeather",
+  "nameEn": "Clever Feather",
+  "nameFr": "Plume Mental",
+  "cost": 300,
+  "pocket": "other"
+ },
+ "swiftfeather": {
+  "id": 570,
+  "slug": "swiftfeather",
+  "nameEn": "Swift Feather",
+  "nameFr": "Plume Sprint",
+  "cost": 300,
+  "pocket": "other"
+ },
+ "prettyfeather": {
+  "id": 571,
+  "slug": "prettyfeather",
+  "nameEn": "Pretty Feather",
+  "nameFr": "Jolie Plume",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "dreamball": {
+  "id": 576,
+  "slug": "dreamball",
+  "nameEn": "Dream Ball",
+  "nameFr": "Rêve Ball",
+  "cost": 0,
+  "pocket": "pokeball"
+ },
+ "balmmushroom": {
+  "id": 580,
+  "slug": "balmmushroom",
+  "nameEn": "Balm Mushroom",
+  "nameFr": "Champi Suave",
+  "cost": 15000,
+  "pocket": "other"
+ },
+ "bignugget": {
+  "id": 581,
+  "slug": "bignugget",
+  "nameEn": "Big Nugget",
+  "nameFr": "Maxi Pépite",
+  "cost": 40000,
+  "pocket": "other"
+ },
+ "pearlstring": {
+  "id": 582,
+  "slug": "pearlstring",
+  "nameEn": "Pearl String",
+  "nameFr": "Perle Triple",
+  "cost": 20000,
+  "pocket": "other"
+ },
+ "cometshard": {
+  "id": 583,
+  "slug": "cometshard",
+  "nameEn": "Comet Shard",
+  "nameFr": "Morceau Comète",
+  "cost": 25000,
+  "pocket": "other"
+ },
+ "casteliacone": {
+  "id": 591,
+  "slug": "casteliacone",
+  "nameEn": "Casteliacone",
+  "nameFr": "Glace Volute",
+  "cost": 350,
+  "pocket": "medicine"
+ },
+ "tm93": {
+  "id": 618,
+  "slug": "tm93",
+  "nameEn": "TM93",
+  "nameFr": "CT93",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm94": {
+  "id": 619,
+  "slug": "tm94",
+  "nameEn": "TM94",
+  "nameFr": "CT94",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tm95": {
+  "id": 620,
+  "slug": "tm95",
+  "nameEn": "TM95",
+  "nameFr": "CT95",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "dnasplicers": {
+  "id": 628,
+  "slug": "dnasplicers",
+  "nameEn": "DNA Splicers",
+  "nameFr": "Pointeau ADN",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "dnasplicers-629": {
+  "id": 629,
+  "slug": "dnasplicers-629",
+  "nameEn": "DNA Splicers",
+  "nameFr": "Pointeau ADN",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "ovalcharm": {
+  "id": 631,
+  "slug": "ovalcharm",
+  "nameEn": "Oval Charm",
+  "nameFr": "Charme Ovale",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "shinycharm": {
+  "id": 632,
+  "slug": "shinycharm",
+  "nameEn": "Shiny Charm",
+  "nameFr": "Charme Chroma",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "revealglass": {
+  "id": 638,
+  "slug": "revealglass",
+  "nameEn": "Reveal Glass",
+  "nameFr": "Miroir Sacré",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "weaknesspolicy": {
+  "id": 639,
+  "slug": "weaknesspolicy",
+  "nameEn": "Weakness Policy",
+  "nameFr": "Vulné-Assurance",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "assaultvest": {
+  "id": 640,
+  "slug": "assaultvest",
+  "nameEn": "Assault Vest",
+  "nameFr": "Veste de Combat",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "pixieplate": {
+  "id": 644,
+  "slug": "pixieplate",
+  "nameEn": "Pixie Plate",
+  "nameFr": "Plaque Pixie",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "abilitycapsule": {
+  "id": 645,
+  "slug": "abilitycapsule",
+  "nameEn": "Ability Capsule",
+  "nameFr": "Pilule Talent",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "whippeddream": {
+  "id": 646,
+  "slug": "whippeddream",
+  "nameEn": "Whipped Dream",
+  "nameFr": "Chantibonbon",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "sachet": {
+  "id": 647,
+  "slug": "sachet",
+  "nameEn": "Sachet",
+  "nameFr": "Sachet Senteur",
+  "cost": 2000,
+  "pocket": "other"
+ },
+ "luminousmoss": {
+  "id": 648,
+  "slug": "luminousmoss",
+  "nameEn": "Luminous Moss",
+  "nameFr": "Lichen Lumineux",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "snowball": {
+  "id": 649,
+  "slug": "snowball",
+  "nameEn": "Snowball",
+  "nameFr": "Boule de Neige",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "safetygoggles": {
+  "id": 650,
+  "slug": "safetygoggles",
+  "nameEn": "Safety Goggles",
+  "nameFr": "Lunettes Filtre",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "roseliberry": {
+  "id": 686,
+  "slug": "roseliberry",
+  "nameEn": "Roseli Berry",
+  "nameFr": "Baie Selro",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "keeberry": {
+  "id": 687,
+  "slug": "keeberry",
+  "nameEn": "Kee Berry",
+  "nameFr": "Baie Éka",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "marangaberry": {
+  "id": 688,
+  "slug": "marangaberry",
+  "nameEn": "Maranga Berry",
+  "nameFr": "Baie Rangma",
+  "cost": 80,
+  "pocket": "other"
+ },
+ "tm96": {
+  "id": 690,
+  "slug": "tm96",
+  "nameEn": "TM96",
+  "nameFr": "CT96",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm97": {
+  "id": 691,
+  "slug": "tm97",
+  "nameEn": "TM97",
+  "nameFr": "CT97",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm98": {
+  "id": 692,
+  "slug": "tm98",
+  "nameEn": "TM98",
+  "nameFr": "CT98",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "tm99": {
+  "id": 693,
+  "slug": "tm99",
+  "nameEn": "TM99",
+  "nameFr": "CT99",
+  "cost": 1000,
+  "pocket": "machine"
+ },
+ "adventureguide": {
+  "id": 703,
+  "slug": "adventureguide",
+  "nameEn": "Adventure Guide",
+  "nameFr": "ABC Aventure",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "lumiosegalette": {
+  "id": 708,
+  "slug": "lumiosegalette",
+  "nameEn": "Lumiose Galette",
+  "nameFr": "Galette Illumis",
+  "cost": 350,
+  "pocket": "medicine"
+ },
+ "shaloursable": {
+  "id": 709,
+  "slug": "shaloursable",
+  "nameEn": "Shalour Sable",
+  "nameFr": "Sablé Yantreizh",
+  "cost": 350,
+  "pocket": "medicine"
+ },
+ "bottlecap": {
+  "id": 795,
+  "slug": "bottlecap",
+  "nameEn": "Bottle Cap",
+  "nameFr": "Capsule d’Argent",
+  "cost": 5000,
+  "pocket": "other"
+ },
+ "goldbottlecap": {
+  "id": 796,
+  "slug": "goldbottlecap",
+  "nameEn": "Gold Bottle Cap",
+  "nameFr": "Capsule d’Or",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "adrenalineorb": {
+  "id": 846,
+  "slug": "adrenalineorb",
+  "nameEn": "Adrenaline Orb",
+  "nameFr": "Orbe Frousse",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "zygardecube": {
+  "id": 847,
+  "slug": "zygardecube",
+  "nameEn": "Zygarde Cube",
+  "nameFr": "Boîte Zygarde",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "icestone": {
+  "id": 849,
+  "slug": "icestone",
+  "nameEn": "Ice Stone",
+  "nameFr": "Pierre Glace",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "beastball": {
+  "id": 851,
+  "slug": "beastball",
+  "nameEn": "Beast Ball",
+  "nameFr": "Ultra Ball",
+  "cost": 0,
+  "pocket": "pokeball"
+ },
+ "bigmalasada": {
+  "id": 852,
+  "slug": "bigmalasada",
+  "nameEn": "Big Malasada",
+  "nameFr": "Malasada Maxi",
+  "cost": 350,
+  "pocket": "medicine"
+ },
+ "terrainextender": {
+  "id": 879,
+  "slug": "terrainextender",
+  "nameEn": "Terrain Extender",
+  "nameFr": "Champ’Duit",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "protectivepads": {
+  "id": 880,
+  "slug": "protectivepads",
+  "nameEn": "Protective Pads",
+  "nameFr": "Pare-Effet",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "electricseed": {
+  "id": 881,
+  "slug": "electricseed",
+  "nameEn": "Electric Seed",
+  "nameFr": "Graine Électrik",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "psychicseed": {
+  "id": 882,
+  "slug": "psychicseed",
+  "nameEn": "Psychic Seed",
+  "nameFr": "Graine Psychique",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "mistyseed": {
+  "id": 883,
+  "slug": "mistyseed",
+  "nameEn": "Misty Seed",
+  "nameFr": "Graine Brume",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "grassyseed": {
+  "id": 884,
+  "slug": "grassyseed",
+  "nameEn": "Grassy Seed",
+  "nameFr": "Graine Herbe",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "pewtercrunchies": {
+  "id": 903,
+  "slug": "pewtercrunchies",
+  "nameEn": "Pewter Crunchies",
+  "nameFr": "Crok’Argenta",
+  "cost": 250,
+  "pocket": "medicine"
+ },
+ "fightingmemory": {
+  "id": 904,
+  "slug": "fightingmemory",
+  "nameEn": "Fighting Memory",
+  "nameFr": "ROM Combat",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "flyingmemory": {
+  "id": 905,
+  "slug": "flyingmemory",
+  "nameEn": "Flying Memory",
+  "nameFr": "ROM Vol",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "poisonmemory": {
+  "id": 906,
+  "slug": "poisonmemory",
+  "nameEn": "Poison Memory",
+  "nameFr": "ROM Poison",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "groundmemory": {
+  "id": 907,
+  "slug": "groundmemory",
+  "nameEn": "Ground Memory",
+  "nameFr": "ROM Sol",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "rockmemory": {
+  "id": 908,
+  "slug": "rockmemory",
+  "nameEn": "Rock Memory",
+  "nameFr": "ROM Roche",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "bugmemory": {
+  "id": 909,
+  "slug": "bugmemory",
+  "nameEn": "Bug Memory",
+  "nameFr": "ROM Insecte",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "ghostmemory": {
+  "id": 910,
+  "slug": "ghostmemory",
+  "nameEn": "Ghost Memory",
+  "nameFr": "ROM Spectre",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "steelmemory": {
+  "id": 911,
+  "slug": "steelmemory",
+  "nameEn": "Steel Memory",
+  "nameFr": "ROM Acier",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "firememory": {
+  "id": 912,
+  "slug": "firememory",
+  "nameEn": "Fire Memory",
+  "nameFr": "ROM Feu",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "watermemory": {
+  "id": 913,
+  "slug": "watermemory",
+  "nameEn": "Water Memory",
+  "nameFr": "ROM Eau",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "grassmemory": {
+  "id": 914,
+  "slug": "grassmemory",
+  "nameEn": "Grass Memory",
+  "nameFr": "ROM Plante",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "electricmemory": {
+  "id": 915,
+  "slug": "electricmemory",
+  "nameEn": "Electric Memory",
+  "nameFr": "ROM Électrik",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "psychicmemory": {
+  "id": 916,
+  "slug": "psychicmemory",
+  "nameEn": "Psychic Memory",
+  "nameFr": "ROM Psy",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "icememory": {
+  "id": 917,
+  "slug": "icememory",
+  "nameEn": "Ice Memory",
+  "nameFr": "ROM Glace",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "dragonmemory": {
+  "id": 918,
+  "slug": "dragonmemory",
+  "nameEn": "Dragon Memory",
+  "nameFr": "ROM Dragon",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "darkmemory": {
+  "id": 919,
+  "slug": "darkmemory",
+  "nameEn": "Dark Memory",
+  "nameFr": "ROM Ténèbres",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "fairymemory": {
+  "id": 920,
+  "slug": "fairymemory",
+  "nameEn": "Fairy Memory",
+  "nameFr": "ROM Fée",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "nsolarizer": {
+  "id": 943,
+  "slug": "nsolarizer",
+  "nameEn": "N-Solarizer",
+  "nameFr": "Necrosol",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "nlunarizer": {
+  "id": 944,
+  "slug": "nlunarizer",
+  "nameEn": "N-Lunarizer",
+  "nameFr": "Necroluna",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "nsolarizer-945": {
+  "id": 945,
+  "slug": "nsolarizer-945",
+  "nameEn": "N-Solarizer",
+  "nameFr": "Necrosol",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "nlunarizer-946": {
+  "id": 946,
+  "slug": "nlunarizer-946",
+  "nameEn": "N-Lunarizer",
+  "nameFr": "Necroluna",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "endorsement": {
+  "id": 1074,
+  "slug": "endorsement",
+  "nameEn": "Endorsement",
+  "nameFr": "Recommandation",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "pokemonboxlink": {
+  "id": 1075,
+  "slug": "pokemonboxlink",
+  "nameEn": "Pokémon Box Link",
+  "nameFr": "Boîte Pokémon",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "wishingstar": {
+  "id": 1076,
+  "slug": "wishingstar",
+  "nameEn": "Wishing Star",
+  "nameFr": "Étoile Vœu",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "dynamaxband": {
+  "id": 1077,
+  "slug": "dynamaxband",
+  "nameEn": "Dynamax Band",
+  "nameFr": "Poignet Dynamax",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "fishingrod": {
+  "id": 1080,
+  "slug": "fishingrod",
+  "nameEn": "Fishing Rod",
+  "nameFr": "Canne à Pêche",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "rotombike": {
+  "id": 1081,
+  "slug": "rotombike",
+  "nameEn": "Rotom Bike",
+  "nameFr": "Moticyclette",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "sausages": {
+  "id": 1084,
+  "slug": "sausages",
+  "nameEn": "Sausages",
+  "nameFr": "Saucisses",
+  "cost": 400,
+  "pocket": "other"
+ },
+ "bobsfoodtin": {
+  "id": 1085,
+  "slug": "bobsfoodtin",
+  "nameEn": "Bob’s Food Tin",
+  "nameFr": "Conserve de Bob",
+  "cost": 950,
+  "pocket": "other"
+ },
+ "bachsfoodtin": {
+  "id": 1086,
+  "slug": "bachsfoodtin",
+  "nameEn": "Bach’s Food Tin",
+  "nameFr": "Conserve de Bach",
+  "cost": 950,
+  "pocket": "other"
+ },
+ "tinofbeans": {
+  "id": 1087,
+  "slug": "tinofbeans",
+  "nameEn": "Tin of Beans",
+  "nameFr": "Haricots",
+  "cost": 400,
+  "pocket": "other"
+ },
+ "bread": {
+  "id": 1088,
+  "slug": "bread",
+  "nameEn": "Bread",
+  "nameFr": "Pain de Mie",
+  "cost": 150,
+  "pocket": "other"
+ },
+ "pasta": {
+  "id": 1089,
+  "slug": "pasta",
+  "nameEn": "Pasta",
+  "nameFr": "Pâtes",
+  "cost": 150,
+  "pocket": "other"
+ },
+ "mixedmushrooms": {
+  "id": 1090,
+  "slug": "mixedmushrooms",
+  "nameEn": "Mixed Mushrooms",
+  "nameFr": "Champignons",
+  "cost": 400,
+  "pocket": "other"
+ },
+ "smokepoketail": {
+  "id": 1091,
+  "slug": "smokepoketail",
+  "nameEn": "Smoke-Poke Tail",
+  "nameFr": "Queue Fumée",
+  "cost": 2200,
+  "pocket": "other"
+ },
+ "largeleek": {
+  "id": 1092,
+  "slug": "largeleek",
+  "nameEn": "Large Leek",
+  "nameFr": "Gros Poireau",
+  "cost": 2200,
+  "pocket": "other"
+ },
+ "fancyapple": {
+  "id": 1093,
+  "slug": "fancyapple",
+  "nameEn": "Fancy Apple",
+  "nameFr": "Pomme Juteuse",
+  "cost": 2200,
+  "pocket": "other"
+ },
+ "brittlebones": {
+  "id": 1094,
+  "slug": "brittlebones",
+  "nameEn": "Brittle Bones",
+  "nameFr": "Os à Moelle",
+  "cost": 950,
+  "pocket": "other"
+ },
+ "packofpotatoes": {
+  "id": 1095,
+  "slug": "packofpotatoes",
+  "nameEn": "Pack of Potatoes",
+  "nameFr": "Pommes de Terre",
+  "cost": 400,
+  "pocket": "other"
+ },
+ "pungentroot": {
+  "id": 1096,
+  "slug": "pungentroot",
+  "nameEn": "Pungent Root",
+  "nameFr": "Tubercule",
+  "cost": 950,
+  "pocket": "other"
+ },
+ "saladmix": {
+  "id": 1097,
+  "slug": "saladmix",
+  "nameEn": "Salad Mix",
+  "nameFr": "Légumes",
+  "cost": 400,
+  "pocket": "other"
+ },
+ "friedfood": {
+  "id": 1098,
+  "slug": "friedfood",
+  "nameEn": "Fried Food",
+  "nameFr": "Fritures",
+  "cost": 150,
+  "pocket": "other"
+ },
+ "boiledegg": {
+  "id": 1099,
+  "slug": "boiledegg",
+  "nameEn": "Boiled Egg",
+  "nameFr": "Œuf Dur",
+  "cost": 2200,
+  "pocket": "other"
+ },
+ "campinggear": {
+  "id": 1100,
+  "slug": "campinggear",
+  "nameEn": "Camping Gear",
+  "nameFr": "Kit de Camping",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "rustedsword": {
+  "id": 1103,
+  "slug": "rustedsword",
+  "nameEn": "Rusted Sword",
+  "nameFr": "Épée Rouillée",
+  "cost": 0,
+  "pocket": "other"
+ },
+ "rustedshield": {
+  "id": 1104,
+  "slug": "rustedshield",
+  "nameEn": "Rusted Shield",
+  "nameFr": "Bouclier Rouillé",
+  "cost": 0,
+  "pocket": "other"
+ },
+ "fossilizedbird": {
+  "id": 1105,
+  "slug": "fossilizedbird",
+  "nameEn": "Fossilized Bird",
+  "nameFr": "Fossile Oiseau",
+  "cost": 5000,
+  "pocket": "other"
+ },
+ "fossilizedfish": {
+  "id": 1106,
+  "slug": "fossilizedfish",
+  "nameEn": "Fossilized Fish",
+  "nameFr": "Fossile Poisson",
+  "cost": 5000,
+  "pocket": "other"
+ },
+ "fossilizeddrake": {
+  "id": 1107,
+  "slug": "fossilizeddrake",
+  "nameEn": "Fossilized Drake",
+  "nameFr": "Fossile Dragon",
+  "cost": 5000,
+  "pocket": "other"
+ },
+ "fossilizeddino": {
+  "id": 1108,
+  "slug": "fossilizeddino",
+  "nameEn": "Fossilized Dino",
+  "nameFr": "Fossile Aileron",
+  "cost": 5000,
+  "pocket": "other"
+ },
+ "strawberrysweet": {
+  "id": 1109,
+  "slug": "strawberrysweet",
+  "nameEn": "Strawberry Sweet",
+  "nameFr": "Fraise en Sucre",
+  "cost": 500,
+  "pocket": "other"
+ },
+ "lovesweet": {
+  "id": 1110,
+  "slug": "lovesweet",
+  "nameEn": "Love Sweet",
+  "nameFr": "Cœur en Sucre",
+  "cost": 500,
+  "pocket": "other"
+ },
+ "berrysweet": {
+  "id": 1111,
+  "slug": "berrysweet",
+  "nameEn": "Berry Sweet",
+  "nameFr": "Baie en Sucre",
+  "cost": 500,
+  "pocket": "other"
+ },
+ "cloversweet": {
+  "id": 1112,
+  "slug": "cloversweet",
+  "nameEn": "Clover Sweet",
+  "nameFr": "Trèfle en Sucre",
+  "cost": 500,
+  "pocket": "other"
+ },
+ "flowersweet": {
+  "id": 1113,
+  "slug": "flowersweet",
+  "nameEn": "Flower Sweet",
+  "nameFr": "Fleur en Sucre",
+  "cost": 500,
+  "pocket": "other"
+ },
+ "starsweet": {
+  "id": 1114,
+  "slug": "starsweet",
+  "nameEn": "Star Sweet",
+  "nameFr": "Étoile en Sucre",
+  "cost": 500,
+  "pocket": "other"
+ },
+ "ribbonsweet": {
+  "id": 1115,
+  "slug": "ribbonsweet",
+  "nameEn": "Ribbon Sweet",
+  "nameFr": "Ruban en Sucre",
+  "cost": 500,
+  "pocket": "other"
+ },
+ "sweetapple": {
+  "id": 1116,
+  "slug": "sweetapple",
+  "nameEn": "Sweet Apple",
+  "nameFr": "Pomme Sucrée",
+  "cost": 2200,
+  "pocket": "other"
+ },
+ "tartapple": {
+  "id": 1117,
+  "slug": "tartapple",
+  "nameEn": "Tart Apple",
+  "nameFr": "Pomme Acidulée",
+  "cost": 2200,
+  "pocket": "other"
+ },
+ "throatspray": {
+  "id": 1118,
+  "slug": "throatspray",
+  "nameEn": "Throat Spray",
+  "nameFr": "Spray Gorge",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "ejectpack": {
+  "id": 1119,
+  "slug": "ejectpack",
+  "nameEn": "Eject Pack",
+  "nameFr": "Sac Fuite",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "heavydutyboots": {
+  "id": 1120,
+  "slug": "heavydutyboots",
+  "nameEn": "Heavy-Duty Boots",
+  "nameFr": "Grosses Bottes",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "blunderpolicy": {
+  "id": 1121,
+  "slug": "blunderpolicy",
+  "nameEn": "Blunder Policy",
+  "nameFr": "Assurance Échec",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "roomservice": {
+  "id": 1122,
+  "slug": "roomservice",
+  "nameEn": "Room Service",
+  "nameFr": "Chariot Distordu",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "utilityumbrella": {
+  "id": 1123,
+  "slug": "utilityumbrella",
+  "nameEn": "Utility Umbrella",
+  "nameFr": "Parapluie Solide",
+  "cost": 4000,
+  "pocket": "other"
+ },
+ "expcandyxs": {
+  "id": 1124,
+  "slug": "expcandyxs",
+  "nameEn": "Exp. Candy XS",
+  "nameFr": "Bonbon Exp. XS",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "expcandys": {
+  "id": 1125,
+  "slug": "expcandys",
+  "nameEn": "Exp. Candy S",
+  "nameFr": "Bonbon Exp. S",
+  "cost": 240,
+  "pocket": "other"
+ },
+ "expcandym": {
+  "id": 1126,
+  "slug": "expcandym",
+  "nameEn": "Exp. Candy M",
+  "nameFr": "Bonbon Exp. M",
+  "cost": 1000,
+  "pocket": "other"
+ },
+ "expcandyl": {
+  "id": 1127,
+  "slug": "expcandyl",
+  "nameEn": "Exp. Candy L",
+  "nameFr": "Bonbon Exp. L",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "expcandyxl": {
+  "id": 1128,
+  "slug": "expcandyxl",
+  "nameEn": "Exp. Candy XL",
+  "nameFr": "Bonbon Exp. XL",
+  "cost": 10000,
+  "pocket": "other"
+ },
+ "dynamaxcandy": {
+  "id": 1129,
+  "slug": "dynamaxcandy",
+  "nameEn": "Dynamax Candy",
+  "nameFr": "Bonbon Dynamax",
+  "cost": 0,
+  "pocket": "other"
+ },
+ "tr00": {
+  "id": 1130,
+  "slug": "tr00",
+  "nameEn": "TR00",
+  "nameFr": "DT00",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr01": {
+  "id": 1131,
+  "slug": "tr01",
+  "nameEn": "TR01",
+  "nameFr": "DT01",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr02": {
+  "id": 1132,
+  "slug": "tr02",
+  "nameEn": "TR02",
+  "nameFr": "DT02",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr03": {
+  "id": 1133,
+  "slug": "tr03",
+  "nameEn": "TR03",
+  "nameFr": "DT03",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr04": {
+  "id": 1134,
+  "slug": "tr04",
+  "nameEn": "TR04",
+  "nameFr": "DT04",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr05": {
+  "id": 1135,
+  "slug": "tr05",
+  "nameEn": "TR05",
+  "nameFr": "DT05",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr06": {
+  "id": 1136,
+  "slug": "tr06",
+  "nameEn": "TR06",
+  "nameFr": "DT06",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr07": {
+  "id": 1137,
+  "slug": "tr07",
+  "nameEn": "TR07",
+  "nameFr": "DT07",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr08": {
+  "id": 1138,
+  "slug": "tr08",
+  "nameEn": "TR08",
+  "nameFr": "DT08",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr09": {
+  "id": 1139,
+  "slug": "tr09",
+  "nameEn": "TR09",
+  "nameFr": "DT09",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr10": {
+  "id": 1140,
+  "slug": "tr10",
+  "nameEn": "TR10",
+  "nameFr": "DT10",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr11": {
+  "id": 1141,
+  "slug": "tr11",
+  "nameEn": "TR11",
+  "nameFr": "DT11",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr12": {
+  "id": 1142,
+  "slug": "tr12",
+  "nameEn": "TR12",
+  "nameFr": "DT12",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr13": {
+  "id": 1143,
+  "slug": "tr13",
+  "nameEn": "TR13",
+  "nameFr": "DT13",
+  "cost": 2000,
+  "pocket": "machine"
+ },
+ "tr14": {
+  "id": 1144,
+  "slug": "tr14",
+  "nameEn": "TR14",
+  "nameFr": "DT14",
+  "cost": 2000,
+  "pocket": "machine"
+ },
+ "tr15": {
+  "id": 1145,
+  "slug": "tr15",
+  "nameEn": "TR15",
+  "nameFr": "DT15",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr16": {
+  "id": 1146,
+  "slug": "tr16",
+  "nameEn": "TR16",
+  "nameFr": "DT16",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr17": {
+  "id": 1147,
+  "slug": "tr17",
+  "nameEn": "TR17",
+  "nameFr": "DT17",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr18": {
+  "id": 1148,
+  "slug": "tr18",
+  "nameEn": "TR18",
+  "nameFr": "DT18",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr19": {
+  "id": 1149,
+  "slug": "tr19",
+  "nameEn": "TR19",
+  "nameFr": "DT19",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr20": {
+  "id": 1150,
+  "slug": "tr20",
+  "nameEn": "TR20",
+  "nameFr": "DT20",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr21": {
+  "id": 1151,
+  "slug": "tr21",
+  "nameEn": "TR21",
+  "nameFr": "DT21",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr22": {
+  "id": 1152,
+  "slug": "tr22",
+  "nameEn": "TR22",
+  "nameFr": "DT22",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr23": {
+  "id": 1153,
+  "slug": "tr23",
+  "nameEn": "TR23",
+  "nameFr": "DT23",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr24": {
+  "id": 1154,
+  "slug": "tr24",
+  "nameEn": "TR24",
+  "nameFr": "DT24",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr25": {
+  "id": 1155,
+  "slug": "tr25",
+  "nameEn": "TR25",
+  "nameFr": "DT25",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr26": {
+  "id": 1156,
+  "slug": "tr26",
+  "nameEn": "TR26",
+  "nameFr": "DT26",
+  "cost": 2000,
+  "pocket": "machine"
+ },
+ "tr27": {
+  "id": 1157,
+  "slug": "tr27",
+  "nameEn": "TR27",
+  "nameFr": "DT27",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr28": {
+  "id": 1158,
+  "slug": "tr28",
+  "nameEn": "TR28",
+  "nameFr": "DT28",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr29": {
+  "id": 1159,
+  "slug": "tr29",
+  "nameEn": "TR29",
+  "nameFr": "DT29",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr30": {
+  "id": 1160,
+  "slug": "tr30",
+  "nameEn": "TR30",
+  "nameFr": "DT30",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr31": {
+  "id": 1161,
+  "slug": "tr31",
+  "nameEn": "TR31",
+  "nameFr": "DT31",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr32": {
+  "id": 1162,
+  "slug": "tr32",
+  "nameEn": "TR32",
+  "nameFr": "DT32",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr33": {
+  "id": 1163,
+  "slug": "tr33",
+  "nameEn": "TR33",
+  "nameFr": "DT33",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr34": {
+  "id": 1164,
+  "slug": "tr34",
+  "nameEn": "TR34",
+  "nameFr": "DT34",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr35": {
+  "id": 1165,
+  "slug": "tr35",
+  "nameEn": "TR35",
+  "nameFr": "DT35",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr36": {
+  "id": 1166,
+  "slug": "tr36",
+  "nameEn": "TR36",
+  "nameFr": "DT36",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr37": {
+  "id": 1167,
+  "slug": "tr37",
+  "nameEn": "TR37",
+  "nameFr": "DT37",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr38": {
+  "id": 1168,
+  "slug": "tr38",
+  "nameEn": "TR38",
+  "nameFr": "DT38",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr39": {
+  "id": 1169,
+  "slug": "tr39",
+  "nameEn": "TR39",
+  "nameFr": "DT39",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr40": {
+  "id": 1170,
+  "slug": "tr40",
+  "nameEn": "TR40",
+  "nameFr": "DT40",
+  "cost": 2000,
+  "pocket": "machine"
+ },
+ "tr41": {
+  "id": 1171,
+  "slug": "tr41",
+  "nameEn": "TR41",
+  "nameFr": "DT41",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr42": {
+  "id": 1172,
+  "slug": "tr42",
+  "nameEn": "TR42",
+  "nameFr": "DT42",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr43": {
+  "id": 1173,
+  "slug": "tr43",
+  "nameEn": "TR43",
+  "nameFr": "DT43",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr44": {
+  "id": 1174,
+  "slug": "tr44",
+  "nameEn": "TR44",
+  "nameFr": "DT44",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr45": {
+  "id": 1175,
+  "slug": "tr45",
+  "nameEn": "TR45",
+  "nameFr": "DT45",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr46": {
+  "id": 1176,
+  "slug": "tr46",
+  "nameEn": "TR46",
+  "nameFr": "DT46",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr47": {
+  "id": 1177,
+  "slug": "tr47",
+  "nameEn": "TR47",
+  "nameFr": "DT47",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr48": {
+  "id": 1178,
+  "slug": "tr48",
+  "nameEn": "TR48",
+  "nameFr": "DT48",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr49": {
+  "id": 1179,
+  "slug": "tr49",
+  "nameEn": "TR49",
+  "nameFr": "DT49",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr50": {
+  "id": 1180,
+  "slug": "tr50",
+  "nameEn": "TR50",
+  "nameFr": "DT50",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr51": {
+  "id": 1181,
+  "slug": "tr51",
+  "nameEn": "TR51",
+  "nameFr": "DT51",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr52": {
+  "id": 1182,
+  "slug": "tr52",
+  "nameEn": "TR52",
+  "nameFr": "DT52",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr53": {
+  "id": 1183,
+  "slug": "tr53",
+  "nameEn": "TR53",
+  "nameFr": "DT53",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr54": {
+  "id": 1184,
+  "slug": "tr54",
+  "nameEn": "TR54",
+  "nameFr": "DT54",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr55": {
+  "id": 1185,
+  "slug": "tr55",
+  "nameEn": "TR55",
+  "nameFr": "DT55",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr56": {
+  "id": 1186,
+  "slug": "tr56",
+  "nameEn": "TR56",
+  "nameFr": "DT56",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr57": {
+  "id": 1187,
+  "slug": "tr57",
+  "nameEn": "TR57",
+  "nameFr": "DT57",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr58": {
+  "id": 1188,
+  "slug": "tr58",
+  "nameEn": "TR58",
+  "nameFr": "DT58",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr59": {
+  "id": 1189,
+  "slug": "tr59",
+  "nameEn": "TR59",
+  "nameFr": "DT59",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr60": {
+  "id": 1190,
+  "slug": "tr60",
+  "nameEn": "TR60",
+  "nameFr": "DT60",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr61": {
+  "id": 1191,
+  "slug": "tr61",
+  "nameEn": "TR61",
+  "nameFr": "DT61",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr62": {
+  "id": 1192,
+  "slug": "tr62",
+  "nameEn": "TR62",
+  "nameFr": "DT62",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr63": {
+  "id": 1193,
+  "slug": "tr63",
+  "nameEn": "TR63",
+  "nameFr": "DT63",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr64": {
+  "id": 1194,
+  "slug": "tr64",
+  "nameEn": "TR64",
+  "nameFr": "DT64",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr65": {
+  "id": 1195,
+  "slug": "tr65",
+  "nameEn": "TR65",
+  "nameFr": "DT65",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr66": {
+  "id": 1196,
+  "slug": "tr66",
+  "nameEn": "TR66",
+  "nameFr": "DT66",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr67": {
+  "id": 1197,
+  "slug": "tr67",
+  "nameEn": "TR67",
+  "nameFr": "DT67",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr68": {
+  "id": 1198,
+  "slug": "tr68",
+  "nameEn": "TR68",
+  "nameFr": "DT68",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr69": {
+  "id": 1199,
+  "slug": "tr69",
+  "nameEn": "TR69",
+  "nameFr": "DT69",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr70": {
+  "id": 1200,
+  "slug": "tr70",
+  "nameEn": "TR70",
+  "nameFr": "DT70",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr71": {
+  "id": 1201,
+  "slug": "tr71",
+  "nameEn": "TR71",
+  "nameFr": "DT71",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr72": {
+  "id": 1202,
+  "slug": "tr72",
+  "nameEn": "TR72",
+  "nameFr": "DT72",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr73": {
+  "id": 1203,
+  "slug": "tr73",
+  "nameEn": "TR73",
+  "nameFr": "DT73",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr74": {
+  "id": 1204,
+  "slug": "tr74",
+  "nameEn": "TR74",
+  "nameFr": "DT74",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr75": {
+  "id": 1205,
+  "slug": "tr75",
+  "nameEn": "TR75",
+  "nameFr": "DT75",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr76": {
+  "id": 1206,
+  "slug": "tr76",
+  "nameEn": "TR76",
+  "nameFr": "DT76",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr77": {
+  "id": 1207,
+  "slug": "tr77",
+  "nameEn": "TR77",
+  "nameFr": "DT77",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr78": {
+  "id": 1208,
+  "slug": "tr78",
+  "nameEn": "TR78",
+  "nameFr": "DT78",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr79": {
+  "id": 1209,
+  "slug": "tr79",
+  "nameEn": "TR79",
+  "nameFr": "DT79",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr80": {
+  "id": 1210,
+  "slug": "tr80",
+  "nameEn": "TR80",
+  "nameFr": "DT80",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr81": {
+  "id": 1211,
+  "slug": "tr81",
+  "nameEn": "TR81",
+  "nameFr": "DT81",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr82": {
+  "id": 1212,
+  "slug": "tr82",
+  "nameEn": "TR82",
+  "nameFr": "DT82",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr83": {
+  "id": 1213,
+  "slug": "tr83",
+  "nameEn": "TR83",
+  "nameFr": "DT83",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr84": {
+  "id": 1214,
+  "slug": "tr84",
+  "nameEn": "TR84",
+  "nameFr": "DT84",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr85": {
+  "id": 1215,
+  "slug": "tr85",
+  "nameEn": "TR85",
+  "nameFr": "DT85",
+  "cost": 2000,
+  "pocket": "machine"
+ },
+ "tr86": {
+  "id": 1216,
+  "slug": "tr86",
+  "nameEn": "TR86",
+  "nameFr": "DT86",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr87": {
+  "id": 1217,
+  "slug": "tr87",
+  "nameEn": "TR87",
+  "nameFr": "DT87",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr88": {
+  "id": 1218,
+  "slug": "tr88",
+  "nameEn": "TR88",
+  "nameFr": "DT88",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr89": {
+  "id": 1219,
+  "slug": "tr89",
+  "nameEn": "TR89",
+  "nameFr": "DT89",
+  "cost": 16000,
+  "pocket": "machine"
+ },
+ "tr90": {
+  "id": 1220,
+  "slug": "tr90",
+  "nameEn": "TR90",
+  "nameFr": "DT90",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr91": {
+  "id": 1221,
+  "slug": "tr91",
+  "nameEn": "TR91",
+  "nameFr": "DT91",
+  "cost": 4000,
+  "pocket": "machine"
+ },
+ "tr92": {
+  "id": 1222,
+  "slug": "tr92",
+  "nameEn": "TR92",
+  "nameFr": "DT92",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr93": {
+  "id": 1223,
+  "slug": "tr93",
+  "nameEn": "TR93",
+  "nameFr": "DT93",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr94": {
+  "id": 1224,
+  "slug": "tr94",
+  "nameEn": "TR94",
+  "nameFr": "DT94",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr95": {
+  "id": 1225,
+  "slug": "tr95",
+  "nameEn": "TR95",
+  "nameFr": "DT95",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr96": {
+  "id": 1226,
+  "slug": "tr96",
+  "nameEn": "TR96",
+  "nameFr": "DT96",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr97": {
+  "id": 1227,
+  "slug": "tr97",
+  "nameEn": "TR97",
+  "nameFr": "DT97",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "tr98": {
+  "id": 1228,
+  "slug": "tr98",
+  "nameEn": "TR98",
+  "nameFr": "DT98",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tr99": {
+  "id": 1229,
+  "slug": "tr99",
+  "nameEn": "TR99",
+  "nameFr": "DT99",
+  "cost": 6000,
+  "pocket": "machine"
+ },
+ "tm00": {
+  "id": 1230,
+  "slug": "tm00",
+  "nameEn": "TM00",
+  "nameFr": "CT00",
+  "cost": 10000,
+  "pocket": "machine"
+ },
+ "lonelymint": {
+  "id": 1231,
+  "slug": "lonelymint",
+  "nameEn": "Lonely Mint",
+  "nameFr": "Aromate Solo",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "adamantmint": {
+  "id": 1232,
+  "slug": "adamantmint",
+  "nameEn": "Adamant Mint",
+  "nameFr": "Aromate Rigide",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "naughtymint": {
+  "id": 1233,
+  "slug": "naughtymint",
+  "nameEn": "Naughty Mint",
+  "nameFr": "Aromate Mauvais",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "bravemint": {
+  "id": 1234,
+  "slug": "bravemint",
+  "nameEn": "Brave Mint",
+  "nameFr": "Aromate Brave",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "boldmint": {
+  "id": 1235,
+  "slug": "boldmint",
+  "nameEn": "Bold Mint",
+  "nameFr": "Aromate Assuré",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "impishmint": {
+  "id": 1236,
+  "slug": "impishmint",
+  "nameEn": "Impish Mint",
+  "nameFr": "Aromate Malin",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "laxmint": {
+  "id": 1237,
+  "slug": "laxmint",
+  "nameEn": "Lax Mint",
+  "nameFr": "Aromate Lâche",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "relaxedmint": {
+  "id": 1238,
+  "slug": "relaxedmint",
+  "nameEn": "Relaxed Mint",
+  "nameFr": "Aromate Relax",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "modestmint": {
+  "id": 1239,
+  "slug": "modestmint",
+  "nameEn": "Modest Mint",
+  "nameFr": "Aromate Modeste",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "mildmint": {
+  "id": 1240,
+  "slug": "mildmint",
+  "nameEn": "Mild Mint",
+  "nameFr": "Aromate Doux",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "rashmint": {
+  "id": 1241,
+  "slug": "rashmint",
+  "nameEn": "Rash Mint",
+  "nameFr": "Aromate Foufou",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "quietmint": {
+  "id": 1242,
+  "slug": "quietmint",
+  "nameEn": "Quiet Mint",
+  "nameFr": "Aromate Discret",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "calmmint": {
+  "id": 1243,
+  "slug": "calmmint",
+  "nameEn": "Calm Mint",
+  "nameFr": "Aromate Calme",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "gentlemint": {
+  "id": 1244,
+  "slug": "gentlemint",
+  "nameEn": "Gentle Mint",
+  "nameFr": "Aromate Gentil",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "carefulmint": {
+  "id": 1245,
+  "slug": "carefulmint",
+  "nameEn": "Careful Mint",
+  "nameFr": "Aromate Prudent",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sassymint": {
+  "id": 1246,
+  "slug": "sassymint",
+  "nameEn": "Sassy Mint",
+  "nameFr": "Aromate Malpoli",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "timidmint": {
+  "id": 1247,
+  "slug": "timidmint",
+  "nameEn": "Timid Mint",
+  "nameFr": "Aromate Timide",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "hastymint": {
+  "id": 1248,
+  "slug": "hastymint",
+  "nameEn": "Hasty Mint",
+  "nameFr": "Aromate Pressé",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "jollymint": {
+  "id": 1249,
+  "slug": "jollymint",
+  "nameEn": "Jolly Mint",
+  "nameFr": "Aromate Jovial",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "naivemint": {
+  "id": 1250,
+  "slug": "naivemint",
+  "nameEn": "Naive Mint",
+  "nameFr": "Aromate Naïf",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "seriousmint": {
+  "id": 1251,
+  "slug": "seriousmint",
+  "nameEn": "Serious Mint",
+  "nameFr": "Aromate Sérieux",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "wishingpiece": {
+  "id": 1252,
+  "slug": "wishingpiece",
+  "nameEn": "Wishing Piece",
+  "nameFr": "Morceau Vœu",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "crackedpot": {
+  "id": 1253,
+  "slug": "crackedpot",
+  "nameEn": "Cracked Pot",
+  "nameFr": "Théière Fêlée",
+  "cost": 1600,
+  "pocket": "other"
+ },
+ "chippedpot": {
+  "id": 1254,
+  "slug": "chippedpot",
+  "nameEn": "Chipped Pot",
+  "nameFr": "Théière Ébréchée",
+  "cost": 38000,
+  "pocket": "other"
+ },
+ "hitechearbuds": {
+  "id": 1255,
+  "slug": "hitechearbuds",
+  "nameEn": "Hi-tech Earbuds",
+  "nameFr": "Bouchons Audio",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "fruitbunch": {
+  "id": 1256,
+  "slug": "fruitbunch",
+  "nameEn": "Fruit Bunch",
+  "nameFr": "Fruits",
+  "cost": 2200,
+  "pocket": "other"
+ },
+ "moomoocheese": {
+  "id": 1257,
+  "slug": "moomoocheese",
+  "nameEn": "Moomoo Cheese",
+  "nameFr": "Fromage Meumeu",
+  "cost": 2200,
+  "pocket": "other"
+ },
+ "spicemix": {
+  "id": 1258,
+  "slug": "spicemix",
+  "nameEn": "Spice Mix",
+  "nameFr": "Épices",
+  "cost": 400,
+  "pocket": "other"
+ },
+ "freshcream": {
+  "id": 1259,
+  "slug": "freshcream",
+  "nameEn": "Fresh Cream",
+  "nameFr": "Crème Fraîche",
+  "cost": 950,
+  "pocket": "other"
+ },
+ "packagedcurry": {
+  "id": 1260,
+  "slug": "packagedcurry",
+  "nameEn": "Packaged Curry",
+  "nameFr": "Curry Instantané",
+  "cost": 950,
+  "pocket": "other"
+ },
+ "coconutmilk": {
+  "id": 1261,
+  "slug": "coconutmilk",
+  "nameEn": "Coconut Milk",
+  "nameFr": "Lait de Coco",
+  "cost": 950,
+  "pocket": "other"
+ },
+ "instantnoodles": {
+  "id": 1262,
+  "slug": "instantnoodles",
+  "nameEn": "Instant Noodles",
+  "nameFr": "Nouilles",
+  "cost": 150,
+  "pocket": "other"
+ },
+ "precookedburger": {
+  "id": 1263,
+  "slug": "precookedburger",
+  "nameEn": "Precooked Burger",
+  "nameFr": "Steak Haché",
+  "cost": 150,
+  "pocket": "other"
+ },
+ "gigantamix": {
+  "id": 1264,
+  "slug": "gigantamix",
+  "nameEn": "Gigantamix",
+  "nameFr": "Poudre Gigamax",
+  "cost": 15000,
+  "pocket": "other"
+ },
+ "rotombike-1266": {
+  "id": 1266,
+  "slug": "rotombike-1266",
+  "nameEn": "Rotom Bike",
+  "nameFr": "Moticyclette",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "catchingcharm": {
+  "id": 1267,
+  "slug": "catchingcharm",
+  "nameEn": "Catching Charm",
+  "nameFr": "Charme Stabilité",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "oldletter": {
+  "id": 1269,
+  "slug": "oldletter",
+  "nameEn": "Old Letter",
+  "nameFr": "Lettre Jaunie",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "bandautograph": {
+  "id": 1270,
+  "slug": "bandautograph",
+  "nameEn": "Band Autograph",
+  "nameFr": "Dédicace",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "soniasbook": {
+  "id": 1271,
+  "slug": "soniasbook",
+  "nameEn": "Sonia’s Book",
+  "nameFr": "Livre de Sonya",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "rotomcatalog": {
+  "id": 1278,
+  "slug": "rotomcatalog",
+  "nameEn": "Rotom Catalog",
+  "nameFr": "Moti-Catalogue",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "and458": {
+  "id": 1279,
+  "slug": "and458",
+  "nameEn": "★And458",
+  "nameFr": "★And458",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "and15": {
+  "id": 1280,
+  "slug": "and15",
+  "nameEn": "★And15",
+  "nameFr": "★And15",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "and337": {
+  "id": 1281,
+  "slug": "and337",
+  "nameEn": "★And337",
+  "nameFr": "★And337",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "and603": {
+  "id": 1282,
+  "slug": "and603",
+  "nameEn": "★And603",
+  "nameFr": "★And603",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "and390": {
+  "id": 1283,
+  "slug": "and390",
+  "nameEn": "★And390",
+  "nameFr": "★And390",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sgr6879": {
+  "id": 1284,
+  "slug": "sgr6879",
+  "nameEn": "★Sgr6879",
+  "nameFr": "★Sgr6879",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sgr6859": {
+  "id": 1285,
+  "slug": "sgr6859",
+  "nameEn": "★Sgr6859",
+  "nameFr": "★Sgr6859",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sgr6913": {
+  "id": 1286,
+  "slug": "sgr6913",
+  "nameEn": "★Sgr6913",
+  "nameFr": "★Sgr6913",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sgr7348": {
+  "id": 1287,
+  "slug": "sgr7348",
+  "nameEn": "★Sgr7348",
+  "nameFr": "★Sgr7348",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sgr7121": {
+  "id": 1288,
+  "slug": "sgr7121",
+  "nameEn": "★Sgr7121",
+  "nameFr": "★Sgr7121",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sgr6746": {
+  "id": 1289,
+  "slug": "sgr6746",
+  "nameEn": "★Sgr6746",
+  "nameFr": "★Sgr6746",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sgr7194": {
+  "id": 1290,
+  "slug": "sgr7194",
+  "nameEn": "★Sgr7194",
+  "nameFr": "★Sgr7194",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sgr7337": {
+  "id": 1291,
+  "slug": "sgr7337",
+  "nameEn": "★Sgr7337",
+  "nameFr": "★Sgr7337",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sgr7343": {
+  "id": 1292,
+  "slug": "sgr7343",
+  "nameEn": "★Sgr7343",
+  "nameFr": "★Sgr7343",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sgr6812": {
+  "id": 1293,
+  "slug": "sgr6812",
+  "nameEn": "★Sgr6812",
+  "nameFr": "★Sgr6812",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sgr7116": {
+  "id": 1294,
+  "slug": "sgr7116",
+  "nameEn": "★Sgr7116",
+  "nameFr": "★Sgr7116",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sgr7264": {
+  "id": 1295,
+  "slug": "sgr7264",
+  "nameEn": "★Sgr7264",
+  "nameFr": "★Sgr7264",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sgr7597": {
+  "id": 1296,
+  "slug": "sgr7597",
+  "nameEn": "★Sgr7597",
+  "nameFr": "★Sgr7597",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "del7882": {
+  "id": 1297,
+  "slug": "del7882",
+  "nameEn": "★Del7882",
+  "nameFr": "★Del7882",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "del7906": {
+  "id": 1298,
+  "slug": "del7906",
+  "nameEn": "★Del7906",
+  "nameFr": "★Del7906",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "del7852": {
+  "id": 1299,
+  "slug": "del7852",
+  "nameEn": "★Del7852",
+  "nameFr": "★Del7852",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "psc596": {
+  "id": 1300,
+  "slug": "psc596",
+  "nameEn": "★Psc596",
+  "nameFr": "★Psc596",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "psc361": {
+  "id": 1301,
+  "slug": "psc361",
+  "nameEn": "★Psc361",
+  "nameFr": "★Psc361",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "psc510": {
+  "id": 1302,
+  "slug": "psc510",
+  "nameEn": "★Psc510",
+  "nameFr": "★Psc510",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "psc437": {
+  "id": 1303,
+  "slug": "psc437",
+  "nameEn": "★Psc437",
+  "nameFr": "★Psc437",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "psc8773": {
+  "id": 1304,
+  "slug": "psc8773",
+  "nameEn": "★Psc8773",
+  "nameFr": "★Psc8773",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "lep1865": {
+  "id": 1305,
+  "slug": "lep1865",
+  "nameEn": "★Lep1865",
+  "nameFr": "★Lep1865",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "lep1829": {
+  "id": 1306,
+  "slug": "lep1829",
+  "nameEn": "★Lep1829",
+  "nameFr": "★Lep1829",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "boo5340": {
+  "id": 1307,
+  "slug": "boo5340",
+  "nameEn": "★Boo5340",
+  "nameFr": "★Boo5340",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "boo5506": {
+  "id": 1308,
+  "slug": "boo5506",
+  "nameEn": "★Boo5506",
+  "nameFr": "★Boo5506",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "boo5435": {
+  "id": 1309,
+  "slug": "boo5435",
+  "nameEn": "★Boo5435",
+  "nameFr": "★Boo5435",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "boo5602": {
+  "id": 1310,
+  "slug": "boo5602",
+  "nameEn": "★Boo5602",
+  "nameFr": "★Boo5602",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "boo5733": {
+  "id": 1311,
+  "slug": "boo5733",
+  "nameEn": "★Boo5733",
+  "nameFr": "★Boo5733",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "boo5235": {
+  "id": 1312,
+  "slug": "boo5235",
+  "nameEn": "★Boo5235",
+  "nameFr": "★Boo5235",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "boo5351": {
+  "id": 1313,
+  "slug": "boo5351",
+  "nameEn": "★Boo5351",
+  "nameFr": "★Boo5351",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "hya3748": {
+  "id": 1314,
+  "slug": "hya3748",
+  "nameEn": "★Hya3748",
+  "nameFr": "★Hya3748",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "hya3903": {
+  "id": 1315,
+  "slug": "hya3903",
+  "nameEn": "★Hya3903",
+  "nameFr": "★Hya3903",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "hya3418": {
+  "id": 1316,
+  "slug": "hya3418",
+  "nameEn": "★Hya3418",
+  "nameFr": "★Hya3418",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "hya3482": {
+  "id": 1317,
+  "slug": "hya3482",
+  "nameEn": "★Hya3482",
+  "nameFr": "★Hya3482",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "hya3845": {
+  "id": 1318,
+  "slug": "hya3845",
+  "nameEn": "★Hya3845",
+  "nameFr": "★Hya3845",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "eri1084": {
+  "id": 1319,
+  "slug": "eri1084",
+  "nameEn": "★Eri1084",
+  "nameFr": "★Eri1084",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "eri472": {
+  "id": 1320,
+  "slug": "eri472",
+  "nameEn": "★Eri472",
+  "nameFr": "★Eri472",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "eri1666": {
+  "id": 1321,
+  "slug": "eri1666",
+  "nameEn": "★Eri1666",
+  "nameFr": "★Eri1666",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "eri897": {
+  "id": 1322,
+  "slug": "eri897",
+  "nameEn": "★Eri897",
+  "nameFr": "★Eri897",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "eri1231": {
+  "id": 1323,
+  "slug": "eri1231",
+  "nameEn": "★Eri1231",
+  "nameFr": "★Eri1231",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "eri874": {
+  "id": 1324,
+  "slug": "eri874",
+  "nameEn": "★Eri874",
+  "nameFr": "★Eri874",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "eri1298": {
+  "id": 1325,
+  "slug": "eri1298",
+  "nameEn": "★Eri1298",
+  "nameFr": "★Eri1298",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "eri1325": {
+  "id": 1326,
+  "slug": "eri1325",
+  "nameEn": "★Eri1325",
+  "nameFr": "★Eri1325",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "eri984": {
+  "id": 1327,
+  "slug": "eri984",
+  "nameEn": "★Eri984",
+  "nameFr": "★Eri984",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "eri1464": {
+  "id": 1328,
+  "slug": "eri1464",
+  "nameEn": "★Eri1464",
+  "nameFr": "★Eri1464",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "eri1393": {
+  "id": 1329,
+  "slug": "eri1393",
+  "nameEn": "★Eri1393",
+  "nameFr": "★Eri1393",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "eri850": {
+  "id": 1330,
+  "slug": "eri850",
+  "nameEn": "★Eri850",
+  "nameFr": "★Eri850",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "tau1409": {
+  "id": 1331,
+  "slug": "tau1409",
+  "nameEn": "★Tau1409",
+  "nameFr": "★Tau1409",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "tau1457": {
+  "id": 1332,
+  "slug": "tau1457",
+  "nameEn": "★Tau1457",
+  "nameFr": "★Tau1457",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "tau1165": {
+  "id": 1333,
+  "slug": "tau1165",
+  "nameEn": "★Tau1165",
+  "nameFr": "★Tau1165",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "tau1791": {
+  "id": 1334,
+  "slug": "tau1791",
+  "nameEn": "★Tau1791",
+  "nameFr": "★Tau1791",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "tau1910": {
+  "id": 1335,
+  "slug": "tau1910",
+  "nameEn": "★Tau1910",
+  "nameFr": "★Tau1910",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "tau1346": {
+  "id": 1336,
+  "slug": "tau1346",
+  "nameEn": "★Tau1346",
+  "nameFr": "★Tau1346",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "tau1373": {
+  "id": 1337,
+  "slug": "tau1373",
+  "nameEn": "★Tau1373",
+  "nameFr": "★Tau1373",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "tau1412": {
+  "id": 1338,
+  "slug": "tau1412",
+  "nameEn": "★Tau1412",
+  "nameFr": "★Tau1412",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cma2491": {
+  "id": 1339,
+  "slug": "cma2491",
+  "nameEn": "★CMa2491",
+  "nameFr": "★CMa2491",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cma2693": {
+  "id": 1340,
+  "slug": "cma2693",
+  "nameEn": "★CMa2693",
+  "nameFr": "★CMa2693",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cma2294": {
+  "id": 1341,
+  "slug": "cma2294",
+  "nameEn": "★CMa2294",
+  "nameFr": "★CMa2294",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cma2827": {
+  "id": 1342,
+  "slug": "cma2827",
+  "nameEn": "★CMa2827",
+  "nameFr": "★CMa2827",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cma2282": {
+  "id": 1343,
+  "slug": "cma2282",
+  "nameEn": "★CMa2282",
+  "nameFr": "★CMa2282",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cma2618": {
+  "id": 1344,
+  "slug": "cma2618",
+  "nameEn": "★CMa2618",
+  "nameFr": "★CMa2618",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cma2657": {
+  "id": 1345,
+  "slug": "cma2657",
+  "nameEn": "★CMa2657",
+  "nameFr": "★CMa2657",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cma2646": {
+  "id": 1346,
+  "slug": "cma2646",
+  "nameEn": "★CMa2646",
+  "nameFr": "★CMa2646",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma4905": {
+  "id": 1347,
+  "slug": "uma4905",
+  "nameEn": "★UMa4905",
+  "nameFr": "★UMa4905",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma4301": {
+  "id": 1348,
+  "slug": "uma4301",
+  "nameEn": "★UMa4301",
+  "nameFr": "★UMa4301",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma5191": {
+  "id": 1349,
+  "slug": "uma5191",
+  "nameEn": "★UMa5191",
+  "nameFr": "★UMa5191",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma5054": {
+  "id": 1350,
+  "slug": "uma5054",
+  "nameEn": "★UMa5054",
+  "nameFr": "★UMa5054",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma4295": {
+  "id": 1351,
+  "slug": "uma4295",
+  "nameEn": "★UMa4295",
+  "nameFr": "★UMa4295",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma4660": {
+  "id": 1352,
+  "slug": "uma4660",
+  "nameEn": "★UMa4660",
+  "nameFr": "★UMa4660",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma4554": {
+  "id": 1353,
+  "slug": "uma4554",
+  "nameEn": "★UMa4554",
+  "nameFr": "★UMa4554",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma4069": {
+  "id": 1354,
+  "slug": "uma4069",
+  "nameEn": "★UMa4069",
+  "nameFr": "★UMa4069",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma3569": {
+  "id": 1355,
+  "slug": "uma3569",
+  "nameEn": "★UMa3569",
+  "nameFr": "★UMa3569",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma3323": {
+  "id": 1356,
+  "slug": "uma3323",
+  "nameEn": "★UMa3323",
+  "nameFr": "★UMa3323",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma4033": {
+  "id": 1357,
+  "slug": "uma4033",
+  "nameEn": "★UMa4033",
+  "nameFr": "★UMa4033",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma4377": {
+  "id": 1358,
+  "slug": "uma4377",
+  "nameEn": "★UMa4377",
+  "nameFr": "★UMa4377",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma4375": {
+  "id": 1359,
+  "slug": "uma4375",
+  "nameEn": "★UMa4375",
+  "nameFr": "★UMa4375",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma4518": {
+  "id": 1360,
+  "slug": "uma4518",
+  "nameEn": "★UMa4518",
+  "nameFr": "★UMa4518",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "uma3594": {
+  "id": 1361,
+  "slug": "uma3594",
+  "nameEn": "★UMa3594",
+  "nameFr": "★UMa3594",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vir5056": {
+  "id": 1362,
+  "slug": "vir5056",
+  "nameEn": "★Vir5056",
+  "nameFr": "★Vir5056",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vir4825": {
+  "id": 1363,
+  "slug": "vir4825",
+  "nameEn": "★Vir4825",
+  "nameFr": "★Vir4825",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vir4932": {
+  "id": 1364,
+  "slug": "vir4932",
+  "nameEn": "★Vir4932",
+  "nameFr": "★Vir4932",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vir4540": {
+  "id": 1365,
+  "slug": "vir4540",
+  "nameEn": "★Vir4540",
+  "nameFr": "★Vir4540",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vir4689": {
+  "id": 1366,
+  "slug": "vir4689",
+  "nameEn": "★Vir4689",
+  "nameFr": "★Vir4689",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vir5338": {
+  "id": 1367,
+  "slug": "vir5338",
+  "nameEn": "★Vir5338",
+  "nameFr": "★Vir5338",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vir4910": {
+  "id": 1368,
+  "slug": "vir4910",
+  "nameEn": "★Vir4910",
+  "nameFr": "★Vir4910",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vir5315": {
+  "id": 1369,
+  "slug": "vir5315",
+  "nameEn": "★Vir5315",
+  "nameFr": "★Vir5315",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vir5359": {
+  "id": 1370,
+  "slug": "vir5359",
+  "nameEn": "★Vir5359",
+  "nameFr": "★Vir5359",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vir5409": {
+  "id": 1371,
+  "slug": "vir5409",
+  "nameEn": "★Vir5409",
+  "nameFr": "★Vir5409",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vir5107": {
+  "id": 1372,
+  "slug": "vir5107",
+  "nameEn": "★Vir5107",
+  "nameFr": "★Vir5107",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ari617": {
+  "id": 1373,
+  "slug": "ari617",
+  "nameEn": "★Ari617",
+  "nameFr": "★Ari617",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ari553": {
+  "id": 1374,
+  "slug": "ari553",
+  "nameEn": "★Ari553",
+  "nameFr": "★Ari553",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ari546": {
+  "id": 1375,
+  "slug": "ari546",
+  "nameEn": "★Ari546",
+  "nameFr": "★Ari546",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ari951": {
+  "id": 1376,
+  "slug": "ari951",
+  "nameEn": "★Ari951",
+  "nameFr": "★Ari951",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ori1713": {
+  "id": 1377,
+  "slug": "ori1713",
+  "nameEn": "★Ori1713",
+  "nameFr": "★Ori1713",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ori2061": {
+  "id": 1378,
+  "slug": "ori2061",
+  "nameEn": "★Ori2061",
+  "nameFr": "★Ori2061",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ori1790": {
+  "id": 1379,
+  "slug": "ori1790",
+  "nameEn": "★Ori1790",
+  "nameFr": "★Ori1790",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ori1903": {
+  "id": 1380,
+  "slug": "ori1903",
+  "nameEn": "★Ori1903",
+  "nameFr": "★Ori1903",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ori1948": {
+  "id": 1381,
+  "slug": "ori1948",
+  "nameEn": "★Ori1948",
+  "nameFr": "★Ori1948",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ori2004": {
+  "id": 1382,
+  "slug": "ori2004",
+  "nameEn": "★Ori2004",
+  "nameFr": "★Ori2004",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ori1852": {
+  "id": 1383,
+  "slug": "ori1852",
+  "nameEn": "★Ori1852",
+  "nameFr": "★Ori1852",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ori1879": {
+  "id": 1384,
+  "slug": "ori1879",
+  "nameEn": "★Ori1879",
+  "nameFr": "★Ori1879",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ori1899": {
+  "id": 1385,
+  "slug": "ori1899",
+  "nameEn": "★Ori1899",
+  "nameFr": "★Ori1899",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ori1543": {
+  "id": 1386,
+  "slug": "ori1543",
+  "nameEn": "★Ori1543",
+  "nameFr": "★Ori1543",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cas21": {
+  "id": 1387,
+  "slug": "cas21",
+  "nameEn": "★Cas21",
+  "nameFr": "★Cas21",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cas168": {
+  "id": 1388,
+  "slug": "cas168",
+  "nameEn": "★Cas168",
+  "nameFr": "★Cas168",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cas403": {
+  "id": 1389,
+  "slug": "cas403",
+  "nameEn": "★Cas403",
+  "nameFr": "★Cas403",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cas153": {
+  "id": 1390,
+  "slug": "cas153",
+  "nameEn": "★Cas153",
+  "nameFr": "★Cas153",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cas542": {
+  "id": 1391,
+  "slug": "cas542",
+  "nameEn": "★Cas542",
+  "nameFr": "★Cas542",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cas219": {
+  "id": 1392,
+  "slug": "cas219",
+  "nameEn": "★Cas219",
+  "nameFr": "★Cas219",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cas265": {
+  "id": 1393,
+  "slug": "cas265",
+  "nameEn": "★Cas265",
+  "nameFr": "★Cas265",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cnc3572": {
+  "id": 1394,
+  "slug": "cnc3572",
+  "nameEn": "★Cnc3572",
+  "nameFr": "★Cnc3572",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cnc3208": {
+  "id": 1395,
+  "slug": "cnc3208",
+  "nameEn": "★Cnc3208",
+  "nameFr": "★Cnc3208",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cnc3461": {
+  "id": 1396,
+  "slug": "cnc3461",
+  "nameEn": "★Cnc3461",
+  "nameFr": "★Cnc3461",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cnc3449": {
+  "id": 1397,
+  "slug": "cnc3449",
+  "nameEn": "★Cnc3449",
+  "nameFr": "★Cnc3449",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cnc3429": {
+  "id": 1398,
+  "slug": "cnc3429",
+  "nameEn": "★Cnc3429",
+  "nameFr": "★Cnc3429",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cnc3627": {
+  "id": 1399,
+  "slug": "cnc3627",
+  "nameEn": "★Cnc3627",
+  "nameFr": "★Cnc3627",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cnc3268": {
+  "id": 1400,
+  "slug": "cnc3268",
+  "nameEn": "★Cnc3268",
+  "nameFr": "★Cnc3268",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cnc3249": {
+  "id": 1401,
+  "slug": "cnc3249",
+  "nameEn": "★Cnc3249",
+  "nameFr": "★Cnc3249",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "com4968": {
+  "id": 1402,
+  "slug": "com4968",
+  "nameEn": "★Com4968",
+  "nameFr": "★Com4968",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "crv4757": {
+  "id": 1403,
+  "slug": "crv4757",
+  "nameEn": "★Crv4757",
+  "nameFr": "★Crv4757",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "crv4623": {
+  "id": 1404,
+  "slug": "crv4623",
+  "nameEn": "★Crv4623",
+  "nameFr": "★Crv4623",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "crv4662": {
+  "id": 1405,
+  "slug": "crv4662",
+  "nameEn": "★Crv4662",
+  "nameFr": "★Crv4662",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "crv4786": {
+  "id": 1406,
+  "slug": "crv4786",
+  "nameEn": "★Crv4786",
+  "nameFr": "★Crv4786",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aur1708": {
+  "id": 1407,
+  "slug": "aur1708",
+  "nameEn": "★Aur1708",
+  "nameFr": "★Aur1708",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aur2088": {
+  "id": 1408,
+  "slug": "aur2088",
+  "nameEn": "★Aur2088",
+  "nameFr": "★Aur2088",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aur1605": {
+  "id": 1409,
+  "slug": "aur1605",
+  "nameEn": "★Aur1605",
+  "nameFr": "★Aur1605",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aur2095": {
+  "id": 1410,
+  "slug": "aur2095",
+  "nameEn": "★Aur2095",
+  "nameFr": "★Aur2095",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aur1577": {
+  "id": 1411,
+  "slug": "aur1577",
+  "nameEn": "★Aur1577",
+  "nameFr": "★Aur1577",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aur1641": {
+  "id": 1412,
+  "slug": "aur1641",
+  "nameEn": "★Aur1641",
+  "nameFr": "★Aur1641",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aur1612": {
+  "id": 1413,
+  "slug": "aur1612",
+  "nameEn": "★Aur1612",
+  "nameFr": "★Aur1612",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "pav7790": {
+  "id": 1414,
+  "slug": "pav7790",
+  "nameEn": "★Pav7790",
+  "nameFr": "★Pav7790",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cet911": {
+  "id": 1415,
+  "slug": "cet911",
+  "nameEn": "★Cet911",
+  "nameFr": "★Cet911",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cet681": {
+  "id": 1416,
+  "slug": "cet681",
+  "nameEn": "★Cet681",
+  "nameFr": "★Cet681",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cet188": {
+  "id": 1417,
+  "slug": "cet188",
+  "nameEn": "★Cet188",
+  "nameFr": "★Cet188",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cet539": {
+  "id": 1418,
+  "slug": "cet539",
+  "nameEn": "★Cet539",
+  "nameFr": "★Cet539",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cet804": {
+  "id": 1419,
+  "slug": "cet804",
+  "nameEn": "★Cet804",
+  "nameFr": "★Cet804",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cep8974": {
+  "id": 1420,
+  "slug": "cep8974",
+  "nameEn": "★Cep8974",
+  "nameFr": "★Cep8974",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cep8162": {
+  "id": 1421,
+  "slug": "cep8162",
+  "nameEn": "★Cep8162",
+  "nameFr": "★Cep8162",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cep8238": {
+  "id": 1422,
+  "slug": "cep8238",
+  "nameEn": "★Cep8238",
+  "nameFr": "★Cep8238",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cep8417": {
+  "id": 1423,
+  "slug": "cep8417",
+  "nameEn": "★Cep8417",
+  "nameFr": "★Cep8417",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cen5267": {
+  "id": 1424,
+  "slug": "cen5267",
+  "nameEn": "★Cen5267",
+  "nameFr": "★Cen5267",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cen5288": {
+  "id": 1425,
+  "slug": "cen5288",
+  "nameEn": "★Cen5288",
+  "nameFr": "★Cen5288",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cen551": {
+  "id": 1426,
+  "slug": "cen551",
+  "nameEn": "★Cen551",
+  "nameFr": "★Cen551",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cen5459": {
+  "id": 1427,
+  "slug": "cen5459",
+  "nameEn": "★Cen5459",
+  "nameFr": "★Cen5459",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cen5460": {
+  "id": 1428,
+  "slug": "cen5460",
+  "nameEn": "★Cen5460",
+  "nameFr": "★Cen5460",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cmi2943": {
+  "id": 1429,
+  "slug": "cmi2943",
+  "nameEn": "★CMi2943",
+  "nameFr": "★CMi2943",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cmi2845": {
+  "id": 1430,
+  "slug": "cmi2845",
+  "nameEn": "★CMi2845",
+  "nameFr": "★CMi2845",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "equ8131": {
+  "id": 1431,
+  "slug": "equ8131",
+  "nameEn": "★Equ8131",
+  "nameFr": "★Equ8131",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vul7405": {
+  "id": 1432,
+  "slug": "vul7405",
+  "nameEn": "★Vul7405",
+  "nameFr": "★Vul7405",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "umi424": {
+  "id": 1433,
+  "slug": "umi424",
+  "nameEn": "★UMi424",
+  "nameFr": "★UMi424",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "umi5563": {
+  "id": 1434,
+  "slug": "umi5563",
+  "nameEn": "★UMi5563",
+  "nameFr": "★UMi5563",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "umi5735": {
+  "id": 1435,
+  "slug": "umi5735",
+  "nameEn": "★UMi5735",
+  "nameFr": "★UMi5735",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "umi6789": {
+  "id": 1436,
+  "slug": "umi6789",
+  "nameEn": "★UMi6789",
+  "nameFr": "★UMi6789",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "crt4287": {
+  "id": 1437,
+  "slug": "crt4287",
+  "nameEn": "★Crt4287",
+  "nameFr": "★Crt4287",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "lyr7001": {
+  "id": 1438,
+  "slug": "lyr7001",
+  "nameEn": "★Lyr7001",
+  "nameFr": "★Lyr7001",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "lyr7178": {
+  "id": 1439,
+  "slug": "lyr7178",
+  "nameEn": "★Lyr7178",
+  "nameFr": "★Lyr7178",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "lyr7106": {
+  "id": 1440,
+  "slug": "lyr7106",
+  "nameEn": "★Lyr7106",
+  "nameFr": "★Lyr7106",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "lyr7298": {
+  "id": 1441,
+  "slug": "lyr7298",
+  "nameEn": "★Lyr7298",
+  "nameFr": "★Lyr7298",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ara6585": {
+  "id": 1442,
+  "slug": "ara6585",
+  "nameEn": "★Ara6585",
+  "nameFr": "★Ara6585",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco6134": {
+  "id": 1443,
+  "slug": "sco6134",
+  "nameEn": "★Sco6134",
+  "nameFr": "★Sco6134",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco6527": {
+  "id": 1444,
+  "slug": "sco6527",
+  "nameEn": "★Sco6527",
+  "nameFr": "★Sco6527",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco6553": {
+  "id": 1445,
+  "slug": "sco6553",
+  "nameEn": "★Sco6553",
+  "nameFr": "★Sco6553",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco5953": {
+  "id": 1446,
+  "slug": "sco5953",
+  "nameEn": "★Sco5953",
+  "nameFr": "★Sco5953",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco5984": {
+  "id": 1447,
+  "slug": "sco5984",
+  "nameEn": "★Sco5984",
+  "nameFr": "★Sco5984",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco6508": {
+  "id": 1448,
+  "slug": "sco6508",
+  "nameEn": "★Sco6508",
+  "nameFr": "★Sco6508",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco6084": {
+  "id": 1449,
+  "slug": "sco6084",
+  "nameEn": "★Sco6084",
+  "nameFr": "★Sco6084",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco5944": {
+  "id": 1450,
+  "slug": "sco5944",
+  "nameEn": "★Sco5944",
+  "nameFr": "★Sco5944",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco6630": {
+  "id": 1451,
+  "slug": "sco6630",
+  "nameEn": "★Sco6630",
+  "nameFr": "★Sco6630",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco6027": {
+  "id": 1452,
+  "slug": "sco6027",
+  "nameEn": "★Sco6027",
+  "nameFr": "★Sco6027",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco6247": {
+  "id": 1453,
+  "slug": "sco6247",
+  "nameEn": "★Sco6247",
+  "nameFr": "★Sco6247",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco6252": {
+  "id": 1454,
+  "slug": "sco6252",
+  "nameEn": "★Sco6252",
+  "nameFr": "★Sco6252",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco5928": {
+  "id": 1455,
+  "slug": "sco5928",
+  "nameEn": "★Sco5928",
+  "nameFr": "★Sco5928",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco6241": {
+  "id": 1456,
+  "slug": "sco6241",
+  "nameEn": "★Sco6241",
+  "nameFr": "★Sco6241",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sco6165": {
+  "id": 1457,
+  "slug": "sco6165",
+  "nameEn": "★Sco6165",
+  "nameFr": "★Sco6165",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "tri544": {
+  "id": 1458,
+  "slug": "tri544",
+  "nameEn": "★Tri544",
+  "nameFr": "★Tri544",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "leo3982": {
+  "id": 1459,
+  "slug": "leo3982",
+  "nameEn": "★Leo3982",
+  "nameFr": "★Leo3982",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "leo4534": {
+  "id": 1460,
+  "slug": "leo4534",
+  "nameEn": "★Leo4534",
+  "nameFr": "★Leo4534",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "leo4357": {
+  "id": 1461,
+  "slug": "leo4357",
+  "nameEn": "★Leo4357",
+  "nameFr": "★Leo4357",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "leo4057": {
+  "id": 1462,
+  "slug": "leo4057",
+  "nameEn": "★Leo4057",
+  "nameFr": "★Leo4057",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "leo4359": {
+  "id": 1463,
+  "slug": "leo4359",
+  "nameEn": "★Leo4359",
+  "nameFr": "★Leo4359",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "leo4031": {
+  "id": 1464,
+  "slug": "leo4031",
+  "nameEn": "★Leo4031",
+  "nameFr": "★Leo4031",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "leo3852": {
+  "id": 1465,
+  "slug": "leo3852",
+  "nameEn": "★Leo3852",
+  "nameFr": "★Leo3852",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "leo3905": {
+  "id": 1466,
+  "slug": "leo3905",
+  "nameEn": "★Leo3905",
+  "nameFr": "★Leo3905",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "leo3773": {
+  "id": 1467,
+  "slug": "leo3773",
+  "nameEn": "★Leo3773",
+  "nameFr": "★Leo3773",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "gru8425": {
+  "id": 1468,
+  "slug": "gru8425",
+  "nameEn": "★Gru8425",
+  "nameFr": "★Gru8425",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "gru8636": {
+  "id": 1469,
+  "slug": "gru8636",
+  "nameEn": "★Gru8636",
+  "nameFr": "★Gru8636",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "gru8353": {
+  "id": 1470,
+  "slug": "gru8353",
+  "nameEn": "★Gru8353",
+  "nameFr": "★Gru8353",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "lib5685": {
+  "id": 1471,
+  "slug": "lib5685",
+  "nameEn": "★Lib5685",
+  "nameFr": "★Lib5685",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "lib5531": {
+  "id": 1472,
+  "slug": "lib5531",
+  "nameEn": "★Lib5531",
+  "nameFr": "★Lib5531",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "lib5787": {
+  "id": 1473,
+  "slug": "lib5787",
+  "nameEn": "★Lib5787",
+  "nameFr": "★Lib5787",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "lib5603": {
+  "id": 1474,
+  "slug": "lib5603",
+  "nameEn": "★Lib5603",
+  "nameFr": "★Lib5603",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "pup3165": {
+  "id": 1475,
+  "slug": "pup3165",
+  "nameEn": "★Pup3165",
+  "nameFr": "★Pup3165",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "pup3185": {
+  "id": 1476,
+  "slug": "pup3185",
+  "nameEn": "★Pup3185",
+  "nameFr": "★Pup3185",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "pup3045": {
+  "id": 1477,
+  "slug": "pup3045",
+  "nameEn": "★Pup3045",
+  "nameFr": "★Pup3045",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cyg7924": {
+  "id": 1478,
+  "slug": "cyg7924",
+  "nameEn": "★Cyg7924",
+  "nameFr": "★Cyg7924",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cyg7417": {
+  "id": 1479,
+  "slug": "cyg7417",
+  "nameEn": "★Cyg7417",
+  "nameFr": "★Cyg7417",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cyg7796": {
+  "id": 1480,
+  "slug": "cyg7796",
+  "nameEn": "★Cyg7796",
+  "nameFr": "★Cyg7796",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cyg8301": {
+  "id": 1481,
+  "slug": "cyg8301",
+  "nameEn": "★Cyg8301",
+  "nameFr": "★Cyg8301",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cyg7949": {
+  "id": 1482,
+  "slug": "cyg7949",
+  "nameEn": "★Cyg7949",
+  "nameFr": "★Cyg7949",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cyg7528": {
+  "id": 1483,
+  "slug": "cyg7528",
+  "nameEn": "★Cyg7528",
+  "nameFr": "★Cyg7528",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "oct7228": {
+  "id": 1484,
+  "slug": "oct7228",
+  "nameEn": "★Oct7228",
+  "nameFr": "★Oct7228",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "col1956": {
+  "id": 1485,
+  "slug": "col1956",
+  "nameEn": "★Col1956",
+  "nameFr": "★Col1956",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "col2040": {
+  "id": 1486,
+  "slug": "col2040",
+  "nameEn": "★Col2040",
+  "nameFr": "★Col2040",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "col2177": {
+  "id": 1487,
+  "slug": "col2177",
+  "nameEn": "★Col2177",
+  "nameFr": "★Col2177",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "gem2990": {
+  "id": 1488,
+  "slug": "gem2990",
+  "nameEn": "★Gem2990",
+  "nameFr": "★Gem2990",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "gem2891": {
+  "id": 1489,
+  "slug": "gem2891",
+  "nameEn": "★Gem2891",
+  "nameFr": "★Gem2891",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "gem2421": {
+  "id": 1490,
+  "slug": "gem2421",
+  "nameEn": "★Gem2421",
+  "nameFr": "★Gem2421",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "gem2473": {
+  "id": 1491,
+  "slug": "gem2473",
+  "nameEn": "★Gem2473",
+  "nameFr": "★Gem2473",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "gem2216": {
+  "id": 1492,
+  "slug": "gem2216",
+  "nameEn": "★Gem2216",
+  "nameFr": "★Gem2216",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "gem2777": {
+  "id": 1493,
+  "slug": "gem2777",
+  "nameEn": "★Gem2777",
+  "nameFr": "★Gem2777",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "gem2650": {
+  "id": 1494,
+  "slug": "gem2650",
+  "nameEn": "★Gem2650",
+  "nameFr": "★Gem2650",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "gem2286": {
+  "id": 1495,
+  "slug": "gem2286",
+  "nameEn": "★Gem2286",
+  "nameFr": "★Gem2286",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "gem2484": {
+  "id": 1496,
+  "slug": "gem2484",
+  "nameEn": "★Gem2484",
+  "nameFr": "★Gem2484",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "gem2930": {
+  "id": 1497,
+  "slug": "gem2930",
+  "nameEn": "★Gem2930",
+  "nameFr": "★Gem2930",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "peg8775": {
+  "id": 1498,
+  "slug": "peg8775",
+  "nameEn": "★Peg8775",
+  "nameFr": "★Peg8775",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "peg8781": {
+  "id": 1499,
+  "slug": "peg8781",
+  "nameEn": "★Peg8781",
+  "nameFr": "★Peg8781",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "peg39": {
+  "id": 1500,
+  "slug": "peg39",
+  "nameEn": "★Peg39",
+  "nameFr": "★Peg39",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "peg8308": {
+  "id": 1501,
+  "slug": "peg8308",
+  "nameEn": "★Peg8308",
+  "nameFr": "★Peg8308",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "peg8650": {
+  "id": 1502,
+  "slug": "peg8650",
+  "nameEn": "★Peg8650",
+  "nameFr": "★Peg8650",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "peg8634": {
+  "id": 1503,
+  "slug": "peg8634",
+  "nameEn": "★Peg8634",
+  "nameFr": "★Peg8634",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "peg8684": {
+  "id": 1504,
+  "slug": "peg8684",
+  "nameEn": "★Peg8684",
+  "nameFr": "★Peg8684",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "peg8450": {
+  "id": 1505,
+  "slug": "peg8450",
+  "nameEn": "★Peg8450",
+  "nameFr": "★Peg8450",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "peg8880": {
+  "id": 1506,
+  "slug": "peg8880",
+  "nameEn": "★Peg8880",
+  "nameFr": "★Peg8880",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "peg8905": {
+  "id": 1507,
+  "slug": "peg8905",
+  "nameEn": "★Peg8905",
+  "nameFr": "★Peg8905",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "oph6556": {
+  "id": 1508,
+  "slug": "oph6556",
+  "nameEn": "★Oph6556",
+  "nameFr": "★Oph6556",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "oph6378": {
+  "id": 1509,
+  "slug": "oph6378",
+  "nameEn": "★Oph6378",
+  "nameFr": "★Oph6378",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "oph6603": {
+  "id": 1510,
+  "slug": "oph6603",
+  "nameEn": "★Oph6603",
+  "nameFr": "★Oph6603",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "oph6149": {
+  "id": 1511,
+  "slug": "oph6149",
+  "nameEn": "★Oph6149",
+  "nameFr": "★Oph6149",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "oph6056": {
+  "id": 1512,
+  "slug": "oph6056",
+  "nameEn": "★Oph6056",
+  "nameFr": "★Oph6056",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "oph6075": {
+  "id": 1513,
+  "slug": "oph6075",
+  "nameEn": "★Oph6075",
+  "nameFr": "★Oph6075",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ser5854": {
+  "id": 1514,
+  "slug": "ser5854",
+  "nameEn": "★Ser5854",
+  "nameFr": "★Ser5854",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ser7141": {
+  "id": 1515,
+  "slug": "ser7141",
+  "nameEn": "★Ser7141",
+  "nameFr": "★Ser7141",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "ser5879": {
+  "id": 1516,
+  "slug": "ser5879",
+  "nameEn": "★Ser5879",
+  "nameFr": "★Ser5879",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "her6406": {
+  "id": 1517,
+  "slug": "her6406",
+  "nameEn": "★Her6406",
+  "nameFr": "★Her6406",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "her6148": {
+  "id": 1518,
+  "slug": "her6148",
+  "nameEn": "★Her6148",
+  "nameFr": "★Her6148",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "her6410": {
+  "id": 1519,
+  "slug": "her6410",
+  "nameEn": "★Her6410",
+  "nameFr": "★Her6410",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "her6526": {
+  "id": 1520,
+  "slug": "her6526",
+  "nameEn": "★Her6526",
+  "nameFr": "★Her6526",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "her6117": {
+  "id": 1521,
+  "slug": "her6117",
+  "nameEn": "★Her6117",
+  "nameFr": "★Her6117",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "her6008": {
+  "id": 1522,
+  "slug": "her6008",
+  "nameEn": "★Her6008",
+  "nameFr": "★Her6008",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "per936": {
+  "id": 1523,
+  "slug": "per936",
+  "nameEn": "★Per936",
+  "nameFr": "★Per936",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "per1017": {
+  "id": 1524,
+  "slug": "per1017",
+  "nameEn": "★Per1017",
+  "nameFr": "★Per1017",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "per1131": {
+  "id": 1525,
+  "slug": "per1131",
+  "nameEn": "★Per1131",
+  "nameFr": "★Per1131",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "per1228": {
+  "id": 1526,
+  "slug": "per1228",
+  "nameEn": "★Per1228",
+  "nameFr": "★Per1228",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "per834": {
+  "id": 1527,
+  "slug": "per834",
+  "nameEn": "★Per834",
+  "nameFr": "★Per834",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "per941": {
+  "id": 1528,
+  "slug": "per941",
+  "nameEn": "★Per941",
+  "nameFr": "★Per941",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "phe99": {
+  "id": 1529,
+  "slug": "phe99",
+  "nameEn": "★Phe99",
+  "nameFr": "★Phe99",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "phe338": {
+  "id": 1530,
+  "slug": "phe338",
+  "nameEn": "★Phe338",
+  "nameFr": "★Phe338",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vel3634": {
+  "id": 1531,
+  "slug": "vel3634",
+  "nameEn": "★Vel3634",
+  "nameFr": "★Vel3634",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vel3485": {
+  "id": 1532,
+  "slug": "vel3485",
+  "nameEn": "★Vel3485",
+  "nameFr": "★Vel3485",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "vel3734": {
+  "id": 1533,
+  "slug": "vel3734",
+  "nameEn": "★Vel3734",
+  "nameFr": "★Vel3734",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aqr8232": {
+  "id": 1534,
+  "slug": "aqr8232",
+  "nameEn": "★Aqr8232",
+  "nameFr": "★Aqr8232",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aqr8414": {
+  "id": 1535,
+  "slug": "aqr8414",
+  "nameEn": "★Aqr8414",
+  "nameFr": "★Aqr8414",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aqr8709": {
+  "id": 1536,
+  "slug": "aqr8709",
+  "nameEn": "★Aqr8709",
+  "nameFr": "★Aqr8709",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aqr8518": {
+  "id": 1537,
+  "slug": "aqr8518",
+  "nameEn": "★Aqr8518",
+  "nameFr": "★Aqr8518",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aqr7950": {
+  "id": 1538,
+  "slug": "aqr7950",
+  "nameEn": "★Aqr7950",
+  "nameFr": "★Aqr7950",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aqr8499": {
+  "id": 1539,
+  "slug": "aqr8499",
+  "nameEn": "★Aqr8499",
+  "nameFr": "★Aqr8499",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aqr8610": {
+  "id": 1540,
+  "slug": "aqr8610",
+  "nameEn": "★Aqr8610",
+  "nameFr": "★Aqr8610",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aqr8264": {
+  "id": 1541,
+  "slug": "aqr8264",
+  "nameEn": "★Aqr8264",
+  "nameFr": "★Aqr8264",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cru4853": {
+  "id": 1542,
+  "slug": "cru4853",
+  "nameEn": "★Cru4853",
+  "nameFr": "★Cru4853",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cru4730": {
+  "id": 1543,
+  "slug": "cru4730",
+  "nameEn": "★Cru4730",
+  "nameFr": "★Cru4730",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cru4763": {
+  "id": 1544,
+  "slug": "cru4763",
+  "nameEn": "★Cru4763",
+  "nameFr": "★Cru4763",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cru4700": {
+  "id": 1545,
+  "slug": "cru4700",
+  "nameEn": "★Cru4700",
+  "nameFr": "★Cru4700",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cru4656": {
+  "id": 1546,
+  "slug": "cru4656",
+  "nameEn": "★Cru4656",
+  "nameFr": "★Cru4656",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "psa8728": {
+  "id": 1547,
+  "slug": "psa8728",
+  "nameEn": "★PsA8728",
+  "nameFr": "★PsA8728",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "tra6217": {
+  "id": 1548,
+  "slug": "tra6217",
+  "nameEn": "★TrA6217",
+  "nameFr": "★TrA6217",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cap7776": {
+  "id": 1549,
+  "slug": "cap7776",
+  "nameEn": "★Cap7776",
+  "nameFr": "★Cap7776",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cap7754": {
+  "id": 1550,
+  "slug": "cap7754",
+  "nameEn": "★Cap7754",
+  "nameFr": "★Cap7754",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cap8278": {
+  "id": 1551,
+  "slug": "cap8278",
+  "nameEn": "★Cap8278",
+  "nameFr": "★Cap8278",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cap8322": {
+  "id": 1552,
+  "slug": "cap8322",
+  "nameEn": "★Cap8322",
+  "nameFr": "★Cap8322",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cap7773": {
+  "id": 1553,
+  "slug": "cap7773",
+  "nameEn": "★Cap7773",
+  "nameFr": "★Cap7773",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "sge7479": {
+  "id": 1554,
+  "slug": "sge7479",
+  "nameEn": "★Sge7479",
+  "nameFr": "★Sge7479",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "car2326": {
+  "id": 1555,
+  "slug": "car2326",
+  "nameEn": "★Car2326",
+  "nameFr": "★Car2326",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "car3685": {
+  "id": 1556,
+  "slug": "car3685",
+  "nameEn": "★Car3685",
+  "nameFr": "★Car3685",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "car3307": {
+  "id": 1557,
+  "slug": "car3307",
+  "nameEn": "★Car3307",
+  "nameFr": "★Car3307",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "car3699": {
+  "id": 1558,
+  "slug": "car3699",
+  "nameEn": "★Car3699",
+  "nameFr": "★Car3699",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "dra5744": {
+  "id": 1559,
+  "slug": "dra5744",
+  "nameEn": "★Dra5744",
+  "nameFr": "★Dra5744",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "dra5291": {
+  "id": 1560,
+  "slug": "dra5291",
+  "nameEn": "★Dra5291",
+  "nameFr": "★Dra5291",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "dra6705": {
+  "id": 1561,
+  "slug": "dra6705",
+  "nameEn": "★Dra6705",
+  "nameFr": "★Dra6705",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "dra6536": {
+  "id": 1562,
+  "slug": "dra6536",
+  "nameEn": "★Dra6536",
+  "nameFr": "★Dra6536",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "dra7310": {
+  "id": 1563,
+  "slug": "dra7310",
+  "nameEn": "★Dra7310",
+  "nameFr": "★Dra7310",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "dra6688": {
+  "id": 1564,
+  "slug": "dra6688",
+  "nameEn": "★Dra6688",
+  "nameFr": "★Dra6688",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "dra4434": {
+  "id": 1565,
+  "slug": "dra4434",
+  "nameEn": "★Dra4434",
+  "nameFr": "★Dra4434",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "dra6370": {
+  "id": 1566,
+  "slug": "dra6370",
+  "nameEn": "★Dra6370",
+  "nameFr": "★Dra6370",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "dra7462": {
+  "id": 1567,
+  "slug": "dra7462",
+  "nameEn": "★Dra7462",
+  "nameFr": "★Dra7462",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "dra6396": {
+  "id": 1568,
+  "slug": "dra6396",
+  "nameEn": "★Dra6396",
+  "nameFr": "★Dra6396",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "dra6132": {
+  "id": 1569,
+  "slug": "dra6132",
+  "nameEn": "★Dra6132",
+  "nameFr": "★Dra6132",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "dra6636": {
+  "id": 1570,
+  "slug": "dra6636",
+  "nameEn": "★Dra6636",
+  "nameFr": "★Dra6636",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cvn4915": {
+  "id": 1571,
+  "slug": "cvn4915",
+  "nameEn": "★CVn4915",
+  "nameFr": "★CVn4915",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cvn4785": {
+  "id": 1572,
+  "slug": "cvn4785",
+  "nameEn": "★CVn4785",
+  "nameFr": "★CVn4785",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "cvn4846": {
+  "id": 1573,
+  "slug": "cvn4846",
+  "nameEn": "★CVn4846",
+  "nameFr": "★CVn4846",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aql7595": {
+  "id": 1574,
+  "slug": "aql7595",
+  "nameEn": "★Aql7595",
+  "nameFr": "★Aql7595",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aql7557": {
+  "id": 1575,
+  "slug": "aql7557",
+  "nameEn": "★Aql7557",
+  "nameFr": "★Aql7557",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aql7525": {
+  "id": 1576,
+  "slug": "aql7525",
+  "nameEn": "★Aql7525",
+  "nameFr": "★Aql7525",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aql7602": {
+  "id": 1577,
+  "slug": "aql7602",
+  "nameEn": "★Aql7602",
+  "nameFr": "★Aql7602",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "aql7235": {
+  "id": 1578,
+  "slug": "aql7235",
+  "nameEn": "★Aql7235",
+  "nameFr": "★Aql7235",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "maxhoney": {
+  "id": 1579,
+  "slug": "maxhoney",
+  "nameEn": "Max Honey",
+  "nameFr": "Maxi Miel",
+  "cost": 4000,
+  "pocket": "medicine"
+ },
+ "maxmushrooms": {
+  "id": 1580,
+  "slug": "maxmushrooms",
+  "nameEn": "Max Mushrooms",
+  "nameFr": "Maxi Champi",
+  "cost": 6000,
+  "pocket": "other"
+ },
+ "galaricatwig": {
+  "id": 1581,
+  "slug": "galaricatwig",
+  "nameEn": "Galarica Twig",
+  "nameFr": "Branche Galanoa",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "galaricacuff": {
+  "id": 1582,
+  "slug": "galaricacuff",
+  "nameEn": "Galarica Cuff",
+  "nameFr": "Bracelet Galanoa",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "stylecard": {
+  "id": 1583,
+  "slug": "stylecard",
+  "nameEn": "Style Card",
+  "nameFr": "Carte Élégance",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "armorpass": {
+  "id": 1584,
+  "slug": "armorpass",
+  "nameEn": "Armor Pass",
+  "nameFr": "Pass Isolarmure",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "rotombike-1585": {
+  "id": 1585,
+  "slug": "rotombike-1585",
+  "nameEn": "Rotom Bike",
+  "nameFr": "Moticyclette",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "rotombike-1586": {
+  "id": 1586,
+  "slug": "rotombike-1586",
+  "nameEn": "Rotom Bike",
+  "nameFr": "Moticyclette",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "expcharm": {
+  "id": 1587,
+  "slug": "expcharm",
+  "nameEn": "Exp. Charm",
+  "nameFr": "Charme Exp",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "armoriteore": {
+  "id": 1588,
+  "slug": "armoriteore",
+  "nameEn": "Armorite Ore",
+  "nameFr": "Armurium",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "markcharm": {
+  "id": 1589,
+  "slug": "markcharm",
+  "nameEn": "Mark Charm",
+  "nameFr": "Charme Insigne",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "reinsofunity": {
+  "id": 1590,
+  "slug": "reinsofunity",
+  "nameEn": "Reins of Unity",
+  "nameFr": "Rênes de l’Unité",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "reinsofunity-1591": {
+  "id": 1591,
+  "slug": "reinsofunity-1591",
+  "nameEn": "Reins of Unity",
+  "nameFr": "Rênes de l’Unité",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "galaricawreath": {
+  "id": 1592,
+  "slug": "galaricawreath",
+  "nameEn": "Galarica Wreath",
+  "nameFr": "Couronne Galanoa",
+  "cost": 3000,
+  "pocket": "other"
+ },
+ "legendaryclue1": {
+  "id": 1593,
+  "slug": "legendaryclue1",
+  "nameEn": "Legendary Clue 1",
+  "nameFr": "Note Légende 1",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "legendaryclue2": {
+  "id": 1594,
+  "slug": "legendaryclue2",
+  "nameEn": "Legendary Clue 2",
+  "nameFr": "Note Légende 2",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "legendaryclue3": {
+  "id": 1595,
+  "slug": "legendaryclue3",
+  "nameEn": "Legendary Clue 3",
+  "nameFr": "Note Légende 3",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "legendaryclue": {
+  "id": 1596,
+  "slug": "legendaryclue",
+  "nameEn": "Legendary Clue?",
+  "nameFr": "Note Légende (?)",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "crownpass": {
+  "id": 1597,
+  "slug": "crownpass",
+  "nameEn": "Crown Pass",
+  "nameFr": "Pass Couronneige",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "woodencrown": {
+  "id": 1598,
+  "slug": "woodencrown",
+  "nameEn": "Wooden Crown",
+  "nameFr": "Couronne en Bois",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "radiantpetal": {
+  "id": 1599,
+  "slug": "radiantpetal",
+  "nameEn": "Radiant Petal",
+  "nameFr": "Pétale Brillant",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "whitemanehair": {
+  "id": 1600,
+  "slug": "whitemanehair",
+  "nameEn": "White Mane Hair",
+  "nameFr": "Crins Blancs",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "blackmanehair": {
+  "id": 1601,
+  "slug": "blackmanehair",
+  "nameEn": "Black Mane Hair",
+  "nameFr": "Crins Sombres",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "icerootcarrot": {
+  "id": 1602,
+  "slug": "icerootcarrot",
+  "nameEn": "Iceroot Carrot",
+  "nameFr": "Carotte Gelée",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "shaderootcarrot": {
+  "id": 1603,
+  "slug": "shaderootcarrot",
+  "nameEn": "Shaderoot Carrot",
+  "nameFr": "Carotte Sombre",
+  "cost": 0,
+  "pocket": "key"
+ },
+ "dyniteore": {
+  "id": 1604,
+  "slug": "dyniteore",
+  "nameEn": "Dynite Ore",
+  "nameFr": "Dynamaxium",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "carrotseeds": {
+  "id": 1605,
+  "slug": "carrotseeds",
+  "nameEn": "Carrot Seeds",
+  "nameFr": "Graines Carotte",
+  "cost": 20,
+  "pocket": "key"
+ },
+ "abilitypatch": {
+  "id": 1606,
+  "slug": "abilitypatch",
+  "nameEn": "Ability Patch",
+  "nameFr": "Patch Talent",
+  "cost": 20,
+  "pocket": "other"
+ },
+ "reinsofunity-1607": {
+  "id": 1607,
+  "slug": "reinsofunity-1607",
+  "nameEn": "Reins of Unity",
+  "nameFr": "Rênes de l’Unité",
+  "cost": 0,
+  "pocket": "key"
+ }
+}

@@ -1,0 +1,686 @@
+{
+  "$comment": [
+    "SOURCE UNIQUE DE VERITE du contrat config.toml entre les deux couches.",
+    "",
+    "Couche generateur : CustomSwShRandomizer.ps1 ECRIT config.toml.",
+    "Couche runtime    : research/swsh-mods-exl/source/program/config.hpp le LIT.",
+    "",
+    "Les deux couches ne partagent aucun code et le C++ lit avec .value_or(defaut) :",
+    "une cle absente ou mal orthographiee retombe donc SILENCIEUSEMENT sur le defaut,",
+    "sans la moindre erreur. C'est exactement ainsi que trois defauts sont passes",
+    "inapercus (voir docs/decisions/ADR-001-contrat-config.md).",
+    "",
+    "Ce fichier decrit le contrat attendu. tools/check-config-contract.py le compare",
+    "aux deux implementations et echoue si elles divergent.",
+    "",
+    "Champs :",
+    "  type     bool | u32 | s32 | u64 | float | string | array<u32> | array<u8>",
+    "  default  valeur retenue par le C++ quand la cle est absente",
+    "  clamp    bornes appliquees par le C++ apres lecture, si il y en a",
+    "  read     le module runtime lit-il cette cle (verifie dans config.hpp)",
+    "  written  le generateur doit-il l'ecrire dans config.toml",
+    "  ui       l'option est-elle reglable depuis l'interface",
+    "  status   verified | provisional | dead | unreachable",
+    "  note     pourquoi, quand ce n'est pas evident"
+  ],
+  "schemaVersion": 1,
+  "generatedFor": "PokeFeur SWSH — swsh-mods-exl subsdk9",
+  "gameBuild": "Sword/Shield 1.3.2",
+  "sections": {
+    "underworld": {
+      "feature": "Mod underworld (amont)",
+      "install": "install_underworld_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        }
+      }
+    },
+    "overworld_shiny": {
+      "feature": "Chromatiques et auras dans l'overworld",
+      "install": "install_overworld_shiny_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        },
+        "boosted_percentage": {
+          "type": "u32",
+          "default": 0,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        },
+        "sound": {
+          "type": "string",
+          "default": "Play_Camp_Cooking_Explosion",
+          "read": true,
+          "written": false,
+          "ui": false,
+          "status": "unreachable",
+          "note": "Le module lit cette cle mais le generateur ne l'ecrit jamais : le son est fige sur le defaut."
+        },
+        "shiny_ptcl": {
+          "type": "string",
+          "default": "bin/field/effect/particle/ef_cyc_aura/ef_cyc_aura_rare_bk.ptcl",
+          "read": true,
+          "written": false,
+          "ui": false,
+          "status": "unreachable",
+          "note": "Idem : particule figee sur le defaut."
+        },
+        "show_aura_for_brilliants": {
+          "type": "bool",
+          "default": true,
+          "read": true,
+          "written": false,
+          "ui": false,
+          "status": "unreachable"
+        },
+        "show_message_box": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": false,
+          "status": "verified",
+          "note": "Ecrit en dur a false : la boite de message exige des fichiers ROMFS supplementaires et peut simuler un chargement infini au retour de combat."
+        },
+        "include_battle_sounds": {
+          "type": "bool",
+          "default": true,
+          "read": true,
+          "written": false,
+          "ui": false,
+          "status": "unreachable"
+        },
+        "play_sound_for_following": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": false,
+          "ui": false,
+          "status": "unreachable"
+        },
+        "show_ptcl_for_following": {
+          "type": "bool",
+          "default": true,
+          "read": true,
+          "written": false,
+          "ui": false,
+          "status": "unreachable"
+        }
+      }
+    },
+    "randomizer": {
+      "feature": "Combat cache — randomiseur runtime des rencontres",
+      "install": "install_randomizer_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        },
+        "visible_mode": {
+          "type": "string",
+          "default": "",
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified",
+          "enum": [
+            "vanilla",
+            "random",
+            "zone",
+            "global",
+            "decouverte",
+            "decouverte_random"
+          ]
+        },
+        "battle_mode": {
+          "type": "string",
+          "default": "",
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified",
+          "enum": [
+            "vanilla",
+            "random",
+            "zone",
+            "global"
+          ]
+        },
+        "visible_pool": {
+          "type": "array<u32>",
+          "default": [],
+          "maxLength": 1024,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified",
+          "note": "Vide = tout le Pokedex national."
+        },
+        "battle_pool": {
+          "type": "array<u32>",
+          "default": [],
+          "maxLength": 1024,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        },
+        "reset_discoveries": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": false,
+          "status": "verified",
+          "note": "Ecrit en dur a false."
+        },
+        "seed": {
+          "type": "u64",
+          "default": 11400714819323198485,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified",
+          "note": "Defaut = 0x9E3779B97F4A7C15 (nombre d'or 64 bits). Meme graine que la generation hors ligne."
+        },
+        "visual_species": {
+          "type": "array<u32>",
+          "default": [],
+          "maxLength": 1024,
+          "read": true,
+          "written": true,
+          "ui": false,
+          "status": "provisional",
+          "note": "Ancienne cle, conservee pour les configs anterieures a la refonte."
+        },
+        "mode": {
+          "type": "string",
+          "default": "visual_and_battle_same",
+          "read": true,
+          "written": true,
+          "ui": false,
+          "status": "provisional",
+          "note": "Ancienne cle. Le C++ en deduit visible_mode/battle_mode si les nouvelles sont absentes."
+        },
+        "mapping": {
+          "type": "string",
+          "default": "species",
+          "read": true,
+          "written": true,
+          "ui": false,
+          "status": "provisional",
+          "note": "Ancienne cle."
+        },
+        "visible_behavior": {
+          "type": "string",
+          "default": "",
+          "read": true,
+          "written": true,
+          "ui": false,
+          "status": "provisional",
+          "note": "Ancienne cle, deduite de mode."
+        },
+        "draw_mode": {
+          "type": "string",
+          "default": "",
+          "read": true,
+          "written": true,
+          "ui": false,
+          "status": "provisional",
+          "note": "Ancienne cle, deduite de mode."
+        }
+      }
+    },
+    "camera_tweaks": {
+      "feature": "Camera etendue",
+      "install": "install_camera_tweaks_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        },
+        "adjustment_speed": {
+          "type": "float",
+          "default": 3.0,
+          "read": true,
+          "written": false,
+          "ui": false,
+          "status": "unreachable"
+        },
+        "min_pitch": {
+          "type": "float",
+          "default": -20.0,
+          "read": true,
+          "written": false,
+          "ui": false,
+          "status": "unreachable"
+        },
+        "max_pitch": {
+          "type": "float",
+          "default": -5.0,
+          "read": true,
+          "written": false,
+          "ui": false,
+          "status": "unreachable"
+        },
+        "min_distance": {
+          "type": "float",
+          "default": 370.0,
+          "read": true,
+          "written": false,
+          "ui": false,
+          "status": "unreachable"
+        },
+        "max_distance": {
+          "type": "float",
+          "default": 800.0,
+          "read": true,
+          "written": false,
+          "ui": false,
+          "status": "unreachable"
+        }
+      }
+    },
+    "uncap_level": {
+      "feature": "Retrait du plafond de niveau",
+      "install": "install_uncap_level_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        },
+        "fully": {
+          "type": "bool",
+          "default": true,
+          "read": true,
+          "written": true,
+          "ui": false,
+          "status": "verified",
+          "note": "Ecrit en dur a true."
+        }
+      }
+    },
+    "freecam": {
+      "feature": "Camera libre",
+      "install": "install_freecam_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        },
+        "disable_terrain_culling": {
+          "type": "bool",
+          "default": true,
+          "read": true,
+          "written": false,
+          "ui": false,
+          "status": "unreachable"
+        },
+        "always_use_extended_camera": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": false,
+          "ui": false,
+          "status": "unreachable"
+        }
+      }
+    },
+    "glimwood_overworld": {
+      "feature": "Apparitions overworld a Bois Evanoui",
+      "install": "install_glimwood_overworld_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        },
+        "maximum_spawns": {
+          "type": "s32",
+          "default": 1,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        }
+      }
+    },
+    "synchro_mode": {
+      "feature": "Synchronisation de nature",
+      "install": "install_synchro_mode_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        }
+      }
+    },
+    "extended_following": {
+      "feature": "Pokemon suiveur etendu",
+      "install": "install_extended_following_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        }
+      }
+    },
+    "fishing_tweaks": {
+      "feature": "Ajustements de peche",
+      "install": "install_fishing_tweaks_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        },
+        "keep_chain_after_brilliant": {
+          "type": "bool",
+          "default": true,
+          "read": true,
+          "written": true,
+          "ui": false,
+          "status": "verified",
+          "note": "Ecrit en dur a true."
+        }
+      }
+    },
+    "dex_animations": {
+      "feature": "Animations du Pokedex",
+      "install": "install_dex_animations_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified",
+          "note": "CORRIGE. Le defaut d'origine tenait a quatre causes cumulees : la section n'etait pas ecrite dans config.toml, dex_animations.amx n'etait pas copie et etait meme supprime par la boucle de nettoyage, l'entree dex_dialog manquait dans script_id_record.bin, et aucune option d'interface n'existait. Les quatre sont reparees, pilotees par la case ModDexAnimations."
+        }
+      }
+    },
+    "exp_level_cap": {
+      "feature": "Plafond de niveau par badge (equivalent NUZLOCKE_LEVEL_CAP du randomiseur DS)",
+      "install": "install_exp_level_cap_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        },
+        "mode": {
+          "type": "string",
+          "default": "receiver_vs_defeated",
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified",
+          "enum": [
+            "story_gym_league",
+            "receiver_vs_defeated"
+          ],
+          "note": "L'interface propose 5 choix, le module n'en comprend que 2. L'en-tete de config.toml trace la correspondance."
+        },
+        "story_caps": {
+          "type": "array<u8>",
+          "default": [
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100,
+            100
+          ],
+          "length": 9,
+          "clamp": [
+            1,
+            100
+          ],
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified",
+          "note": "Un plafond par palier d'histoire, indexe par GetStoryCapIndex() qui derive de GetVanillaBadgeCap()."
+        }
+      }
+    },
+    "exp_runtime": {
+      "feature": "Multiplicateur d'experience (equivalent EXP_MULTIPLIER du randomiseur DS)",
+      "install": "install_exp_level_cap_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        },
+        "enabled": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        },
+        "multiplier": {
+          "type": "float",
+          "default": 1.0,
+          "clamp": [
+            0.01,
+            100.0
+          ],
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified",
+          "note": "DOIT etre ecrit au format flottant TOML. Un entier nu est refuse par toml++ et retombe silencieusement sur 1.0."
+        }
+      }
+    },
+    "exp_share": {
+      "feature": "Partage d'experience",
+      "install": "install_exp_share_patch",
+      "keys": {
+        "enabled": {
+          "type": "bool",
+          "default": true,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified",
+          "note": "Seule section sans cle 'active'. Le correctif est installe sans condition."
+        }
+      }
+    },
+    "runtime_status": {
+      "feature": "Affichage d'etat du randomiseur en jeu",
+      "install": "install_randomizer_runtime_status_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": true,
+          "read": true,
+          "written": true,
+          "ui": false,
+          "status": "verified",
+          "note": "Ecrit en dur a false par le generateur, alors que le defaut du module est true."
+        }
+      }
+    },
+    "early_bike": {
+      "feature": "Velo disponible tot",
+      "install": "install_early_bike_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": false,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified"
+        }
+      }
+    },
+    "runtime_pc": {
+      "feature": "Menu PC du randomiseur",
+      "install": "install_randomizer_pc_menu_patch",
+      "keys": {
+        "active": {
+          "type": "bool",
+          "default": true,
+          "read": true,
+          "written": true,
+          "ui": true,
+          "status": "verified",
+          "note": "CORRIGE le 2026-09-04. Auparavant : le generateur ecrivait cette cle, aucune source C++ ne la lisait, et main.cpp installait le menu PC sans condition — le reglage de l'interface ne faisait rien. config.hpp lit desormais la cle et main.cpp gate l'installation dessus. Defaut a true pour que les configurations deja generees, qui ne portent pas forcement la cle, gardent le comportement anterieur."
+        }
+      }
+    }
+  },
+  "ungatedPatches": {
+    "$comment": "Correctifs installes par main.cpp sans aucune porte de configuration : impossibles a desactiver.",
+    "install_hid_patch": "Entrees manette. Requis par le menu PC et les bascules en jeu.",
+    "install_amx_patch": "Enregistrement des natives AMX. Requis par les messages personnalises.",
+    "install_msg_handler_patch": "Remplacement de chaines. Requis par l'affichage d'etat.",
+    "install_randomizer_pc_menu_patch": "Menu PC. Voir la section runtime_pc ci-dessus.",
+    "install_debug_patch": "Uniquement compile sous -DDEBUG."
+  },
+  "romfsAssets": {
+    "$comment": "Deuxieme moitie du contrat, ajoutee le 2026-09-05. ADR-001 la nommait comme limite connue : activer une fonctionnalite ne suffit pas a l'ecrire dans config.toml, il faut aussi que ses fichiers ROMFS soient copies et que ses scripts soient enregistres. dex_animations a echoue sur ces deux points sans qu'aucun outil ne puisse le voir. Ce bloc les declare ; tools/check-romfs-assets.py confronte la declaration au PowerShell reel.",
+    "assetRoot": "assets/exlaunch/runtime",
+    "cleanupList": "$allRuntimeFiles de Copy-ExLaunchCustomRomfsFiles : tout fichier qui y figure est SUPPRIME de la sortie s'il n'est pas copie par une porte. Un fichier present dans cette liste et dans aucune porte est donc activement efface - c'est exactement ce qui arrivait a dex_animations.amx.",
+    "features": {
+      "early_bike": {
+        "gate": "EarlyBikeEnabled",
+        "csharpGate": "earlyBikeEnabled",
+        "configSection": "early_bike",
+        "files": [
+          "bin/script/amx/early_bike.amx"
+        ],
+        "scriptRecord": [
+          {
+            "name": "grant_early_bike",
+            "scriptId": 8138798641344546299,
+            "amx": "bin/script/amx/early_bike.amx",
+            "text": "script/script_dummy.dat",
+            "kind": "ajout"
+          }
+        ],
+        "status": "verified",
+        "note": "Mesure du 2026-09-05 sur le dump Epee : +1 entree, aucune entree d'origine touchee."
+      },
+      "runtime_pc": {
+        "gate": "RuntimePcControlsEnabled",
+        "csharpGate": "runtimePcControls",
+        "configSection": "runtime_pc",
+        "files": [
+          "bin/script/amx/randomizer_pc_menu.amx"
+        ],
+        "scriptRecord": [
+          {
+            "name": "randomizer_pc_menu",
+            "scriptId": 14090517710305701056,
+            "amx": "bin/script/amx/randomizer_pc_menu.amx",
+            "text": "script/script_dummy.dat",
+            "kind": "ajout"
+          },
+          {
+            "name": null,
+            "scriptId": 13435777772824609090,
+            "amx": "bin/script/amx/randomizer_pc_menu.amx",
+            "text": "script/pokemoncenter.dat",
+            "kind": "remplacement",
+            "note": "Identifiant ecrit en dur, sans nom de script : c'est une entree VANILLA existante. Mesure du 2026-09-05 : elle pointait sur bin/script/amx/pokemoncenter.amx | script/pokemoncenter.dat. Le correctif la detourne vers le menu du randomiseur - c'est ainsi qu'entrer dans un Centre Pokemon ouvre le menu. Seule entree d'origine modifiee par tout le generateur."
+          }
+        ],
+        "status": "verified",
+        "note": "Mesure du 2026-09-05 : +1 entree et 1 entree d'origine remplacee."
+      },
+      "dex_animations": {
+        "gate": "DexAnimationsEnabled",
+        "csharpGate": "dexAnimationsEnabled",
+        "configSection": "dex_animations",
+        "files": [
+          "bin/script/amx/dex_animations.amx"
+        ],
+        "scriptRecord": [
+          {
+            "name": "dex_dialog",
+            "scriptId": 14182160213763154639,
+            "amx": "bin/script/amx/dex_animations.amx",
+            "text": "script/script_dummy.dat",
+            "kind": "ajout"
+          }
+        ],
+        "status": "verified",
+        "note": "Le nom du script vient du C++ : dex_animations.hpp fait apparaitre un objet de terrain nomme getFNV1aHashedString(\"dex_dialog\"), et dex_animations.p ne repond que dans case \"dex_dialog\". Mesure du 2026-09-05 : +1 entree, aucune entree d'origine touchee."
+      },
+      "custom_message": {
+        "gate": null,
+        "csharpGate": null,
+        "configSection": null,
+        "files": [
+          "bin/script/amx/custom_message.amx",
+          "bin/message/English/script/string_format.dat",
+          "bin/message/English/script/string_format.tbl"
+        ],
+        "scriptRecord": [],
+        "status": "unreachable",
+        "note": "Les trois fichiers sont produits par la compilation et figurent dans la liste de nettoyage, mais AUCUNE porte ne les copie et aucun enregistrement ne les declare : ils sont donc systematiquement effaces de la sortie. custom_message.p charge script/string_format.dat via LoadExtraMessage ; sans le fichier ni l'entree d'enregistrement, la fonctionnalite est inatteignable. Verifie le 2026-09-05 : aucune autre fonctionnalite n'en depend - ADD_BASIC_MESSAGE garde ses chaines en memoire (msg_handler.hpp), donc dex_animations n'a pas besoin de ces fichiers."
+      }
+    }
+  }
+}

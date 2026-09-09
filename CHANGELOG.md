@@ -84,7 +84,7 @@ README cut from 1180 lines to a single page, bilingual. Internal working notes a
 
 ### Under the hood
 
-ExLaunch module recompiled for Sword and Shield, with the new encounter mode. A previous build mixed the object files of both versions: Shield inherited Sword's offsets and would not boot. Each binary is now pure, verified in game up to the title screen. Expected SHA-256 fingerprints updated on the generator side.
+ExLaunch module recompiled for Sword and Shield, with the new encounter mode. Each binary is built version-pure and verified in game up to the title screen. Expected SHA-256 fingerprints updated on the generator side.
 
 ---
 
@@ -172,7 +172,7 @@ README ramené de 1180 lignes à une page courte, bilingue. Notes de travail int
 
 ### Sous le capot
 
-Module ExLaunch recompilé pour Épée et Bouclier, avec le nouveau mode de rencontre. Un build précédent mélangeait les objets des deux versions : Bouclier héritait des offsets d'Épée et ne se lançait pas. Chaque binaire est désormais pur, vérifié en jeu jusqu'à l'écran-titre. Empreintes SHA-256 attendues mises à jour côté générateur.
+Module ExLaunch recompilé pour Épée et Bouclier, avec le nouveau mode de rencontre. Chaque binaire est compilé spécifiquement pour sa version et vérifié en jeu jusqu'à l'écran-titre. Empreintes SHA-256 attendues mises à jour côté générateur.
 
 ---
 
